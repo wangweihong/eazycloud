@@ -3,10 +3,12 @@ package log_test
 import (
 	"context"
 	"errors"
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"testing"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"testing"
+
+	"github.com/wangweihong/eazycloud/pkg/log"
 
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"

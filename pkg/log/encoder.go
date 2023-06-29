@@ -1,8 +1,9 @@
 package log
 
 import (
-	"go.uber.org/zap/zapcore"
 	"time"
+
+	"go.uber.org/zap/zapcore"
 )
 
 func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {

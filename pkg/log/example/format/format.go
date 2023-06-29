@@ -16,7 +16,8 @@ func main() {
 	jsonLog := log.New(opt2)
 	defer jsonLog.Flush()
 
-	// {"level":"INFO","timestamp":"2023-06-15 16:58:50.688","caller":"format/format.go:18","message":"i am json log","key":"value"}
+	// {"level":"INFO","timestamp":"2023-06-15 16:58:50.688","caller":"format/format.go:18","message":"i am json
+	// log","key":"value"}
 	jsonLog.Infow("i am json log", "key", "value")
 
 }

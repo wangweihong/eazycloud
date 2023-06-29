@@ -3,9 +3,10 @@ package log
 import (
 	"context"
 	"fmt"
-	"github.com/wangweihong/eazycloud/pkg/log/klog"
 	"log"
 	"sync"
+
+	"github.com/wangweihong/eazycloud/pkg/log/klog"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

@@ -1,9 +1,11 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/wangweihong/eazycloud/pkg/log"
 	"time"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/wangweihong/eazycloud/pkg/log"
 )
 
 func main() {

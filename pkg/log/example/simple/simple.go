@@ -1,10 +1,12 @@
 package main
 
 import (
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"time"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"time"
+
+	"github.com/wangweihong/eazycloud/pkg/log"
 )
 
 func main() {

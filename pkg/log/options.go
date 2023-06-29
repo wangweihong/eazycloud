@@ -2,8 +2,9 @@ package log
 
 import (
 	"fmt"
-	"github.com/wangweihong/eazycloud/pkg/json"
 	"strings"
+
+	"github.com/wangweihong/eazycloud/pkg/json"
 
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
