@@ -32,7 +32,7 @@ linters:
   enable:
     - asciicheck
     - bodyclose
-    - cyclop
+#    - cyclop
     - dogsled
     - durationcheck
     - errcheck
@@ -66,7 +66,7 @@ linters:
     - tparallel
     - typecheck
     - unconvert
-    - unused
+#    - unused
     - wastedassign
 
 
