@@ -71,6 +71,7 @@ go.clean:
 go.lint: tools.verify.golangci-lint
 	@echo "===========> Run golangci to lint source codes"
 	@golangci-lint run -c $(ROOT_DIR)/.golangci.yaml $(ROOT_DIR)/...
+#	@golangci-lint run -c $(ROOT_DIR)/.golangci.yaml --out-format json $(ROOT_DIR)/... | jq .
 
 .PHONY: go.test
 go.test: tools.verify.go-junit-report
