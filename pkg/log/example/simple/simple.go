@@ -64,7 +64,7 @@ type requestArray []*request
 
 func (rs requestArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
 	for _, r := range rs {
-		enc.AppendObject(r)
+		_ = enc.AppendObject(r)
 	}
 	return nil
 }

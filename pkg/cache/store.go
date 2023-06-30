@@ -38,7 +38,7 @@ type Store interface {
 }
 
 // KeyFunc knows how to make a key from an object. Implementations should be deterministic.
-// 用于从对象中计算出指定的key.如MetaNamespaceKeyFunc，通过对象命名空间和对象计算出key
+// 用于从对象中计算出指定的key.如MetaNamespaceKeyFunc，通过对象命名空间和对象计算出key.
 type KeyFunc func(obj interface{}) (string, error)
 
 // KeyError will be returned any time a KeyFunc gives an error; it includes the object
@@ -66,7 +66,7 @@ type cache struct {
 var _ Store = &cache{}
 
 // Add inserts an item into the cache.
-// 将指定的对象添加到缓存中
+// 将指定的对象添加到缓存中.
 func (c *cache) Add(obj interface{}) error {
 	key, err := c.keyFunc(obj)
 	if err != nil {
@@ -77,7 +77,7 @@ func (c *cache) Add(obj interface{}) error {
 }
 
 // Update sets an item in the cache to its updated state.
-// 更新缓存中指定对象信息
+// 更新缓存中指定对象信息.
 func (c *cache) Update(obj interface{}) error {
 	key, err := c.keyFunc(obj)
 	if err != nil {
@@ -88,7 +88,7 @@ func (c *cache) Update(obj interface{}) error {
 }
 
 // Delete removes an item from the cache.
-// 将对象从缓存中移除
+// 将对象从缓存中移除.
 func (c *cache) Delete(obj interface{}) error {
 	key, err := c.keyFunc(obj)
 	if err != nil {
@@ -106,20 +106,20 @@ func (c *cache) List() []interface{} {
 
 // ListKeys returns a list of all the keys of the objects currently
 // in the cache.
-// 缓存中的对象索引列表
+// 缓存中的对象索引列表.
 func (c *cache) ListKeys() []string {
 	return c.cacheStorage.ListKeys()
 }
 
 // GetIndexers returns the indexers of cache
-// 缓存中的索引器列表。（索引器是除了key以外的其他快速定位一系列的方法)
+// 缓存中的索引器列表。（索引器是除了key以外的其他快速定位一系列的方法).
 func (c *cache) GetIndexers() Indexers {
 	return c.cacheStorage.GetIndexers()
 }
 
 // Index returns a list of items that match on the index function
 // Index is thread-safe so long as you treat all items as immutable
-// 获取指定索引器
+// 获取指定索引器.
 func (c *cache) Index(indexName string, obj interface{}) ([]interface{}, error) {
 	return c.cacheStorage.Index(indexName, obj)
 }
@@ -128,7 +128,7 @@ func (c *cache) IndexKeys(indexName, indexKey string) ([]string, error) {
 	return c.cacheStorage.IndexKeys(indexName, indexKey)
 }
 
-// ListIndexFuncValues returns the list of generated values of an Index func
+// ListIndexFuncValues returns the list of generated values of an Index func.
 func (c *cache) ListIndexFuncValues(indexName string) []string {
 	return c.cacheStorage.ListIndexFuncValues(indexName)
 }
@@ -174,7 +174,7 @@ func (c *cache) Replace(list []interface{}, resourceVersion string) error {
 	return nil
 }
 
-// Resync is meaningless for one of these
+// Resync is meaningless for one of these.
 func (c *cache) Resync() error {
 	return nil
 }

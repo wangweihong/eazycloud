@@ -1,6 +1,6 @@
 package example
 
-// deepcopy-gen --input-dirs=./tools/deepcopy-gen/example --output-base=../
+// deepcopy-gen --input-dirs=./tools/deepcopy-gen/example --output-base=../.
 type Inner interface {
 	Function() float64
 	DeepCopyInner() Inner
@@ -8,7 +8,7 @@ type Inner interface {
 
 // +k8s:deepcopy-gen=true
 type Ttest struct {
-	//build-in
+	// build-in
 	Byte    byte
 	Int16   int16
 	Int32   int32
@@ -21,10 +21,10 @@ type Ttest struct {
 	Float64 float64
 	String  string
 
-	//interface
+	// interface
 	I []Inner
 
-	//maps
+	// maps
 	MapByte         map[string]byte
 	MapInt16        map[string]int16
 	MapInt32        map[string]int32
@@ -45,7 +45,7 @@ type Ttest struct {
 	MapStruct       map[string]Ttest
 	MapStructPtr    map[string]*Ttest
 
-	//pointer
+	// pointer
 	PointerBuiltin   *string
 	PointerPtr       **string
 	PointerMap       *map[string]string
@@ -55,7 +55,7 @@ type Ttest struct {
 	PointerStruct    *Ttest
 	PointerStructPtr **Ttest
 
-	//slice
+	// slice
 	SliceByte         []byte
 	SliceInt16        []int16
 	SliceInt32        []int32

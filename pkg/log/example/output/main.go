@@ -5,9 +5,9 @@ import "github.com/wangweihong/eazycloud/pkg/log"
 func main() {
 	// case 1: no output
 	outputToDiscard()
-	//case 2: output to multiple file
+	// case 2: output to multiple file
 	outputToFile()
-	//case 3: output to stdout
+	// case 3: output to stdout
 	outputToStd()
 }
 
@@ -41,5 +41,4 @@ func outputToStd() {
 	defer log.Flush()
 
 	log.Info("i will be stdout")
-
 }

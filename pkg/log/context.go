@@ -11,7 +11,7 @@ func WithContext(ctx context.Context) context.Context {
 	return std.WithContext(ctx)
 }
 
-// save log handler into zap
+// save log handler into zap.
 func (l *zapLogger) WithContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, logKeyCtx{}, l)
 }

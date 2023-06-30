@@ -1,6 +1,7 @@
 package example
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -27,7 +28,7 @@ type UserManagerInterface interface {
 	ListInTenantIndex(tenant string) []string
 	ListInGroup(group string) []*User
 	ListInGroupIndex(group string) []string
-	//删除用户中某个组的索引
+	// 删除用户中某个组的索引
 	CleanGroup(group string) error
 	ListInRole(role string) []*User
 	ListInRoleIndex(role string) []string
@@ -55,7 +56,7 @@ func (u userManager) Update(obj *User) error {
 	if obj.UUID == "" {
 		return fmt.Errorf("user uuid is empty")
 	}
-	//TODO: check user data if valid
+	// TODO: check user data if valid
 	meta := obj.DeepCopy()
 	meta.UpdateTime = time.Now()
 
@@ -89,7 +90,7 @@ func (u userManager) Get(obj interface{}) (*User, bool, error) {
 
 	item, ok := meta.(*User)
 	if !ok {
-		return nil, false, fmt.Errorf("Object is not User")
+		return nil, false, errors.New("object is not user")
 	}
 
 	return item.DeepCopy(), true, nil
@@ -107,7 +108,7 @@ func (u userManager) GetByKey(key string) (*User, bool, error) {
 
 	item, ok := obj.(*User)
 	if !ok {
-		return nil, true, fmt.Errorf("Object is not User")
+		return nil, true, errors.New("object is not User")
 	}
 
 	return item, false, nil
@@ -235,8 +236,10 @@ func (u userManager) CleanRole(role string) error {
 
 var _ UserManagerInterface = &userManager{}
 
-var umOnce sync.Once
-var umInstance *userManager
+var (
+	umOnce     sync.Once
+	umInstance *userManager
+)
 
 func GetUMInstance() UserManagerInterface {
 	umOnce.Do(func() {
@@ -267,7 +270,7 @@ func userKeyFunc(obj interface{}) (string, error) {
 	return user.UUID, nil
 }
 
-// Object support indexer type
+// Object support indexer type.
 const (
 	indexTypeTenantUser = "tenantUser"
 	indexTypeGroupUser  = "groupUser"

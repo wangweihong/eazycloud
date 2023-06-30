@@ -39,10 +39,10 @@ type Index map[string]sets.String
 
 // Indexers maps a name to a IndexFunc
 // 索引器列表
-// key为索引器名，IndexFunc则为如何通过某个对象来计算出该对象的索引值(一个或多个)
+// key为索引器名，IndexFunc则为如何通过某个对象来计算出该对象的索引值(一个或多个).
 type Indexers map[string]IndexFunc
 
-// Indices maps a name to an Index
+// Indices maps a name to an Index.
 type Indices map[string]Index // 索引表。 key为通常存储的是索引器名。
 
 type IndexFunc func(obj interface{}) ([]string, error)

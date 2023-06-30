@@ -44,10 +44,10 @@ type ThreadSafeStore interface {
 	Resync() error
 }
 
-// 提供一个支持快速索引的本地缓存表
+// 提供一个支持快速索引的本地缓存表.
 type threadSafeMap struct {
 	lock  sync.RWMutex
-	items map[string]interface{} //真正存储对象的表
+	items map[string]interface{} // 真正存储对象的表
 
 	// indexers maps a name to an IndexFunc
 	indexers Indexers // 索引器列表.key为索引器，值为如果通过对象计算索引
@@ -58,7 +58,7 @@ type threadSafeMap struct {
 	//								[值2]
 }
 
-//添加指定对象,并基于索引器建立索引
+// 添加指定对象,并基于索引器建立索引.
 func (c *threadSafeMap) Add(key string, obj interface{}) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -67,7 +67,7 @@ func (c *threadSafeMap) Add(key string, obj interface{}) {
 	c.updateIndices(oldObject, obj, key)
 }
 
-//添加某个对象，并基于索引器建立索引
+// 添加某个对象，并基于索引器建立索引.
 func (c *threadSafeMap) Update(key string, obj interface{}) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -81,7 +81,7 @@ func (c *threadSafeMap) Update(key string, obj interface{}) error {
 	return nil
 }
 
-// 删除某个对象，并将该对象从索引表中移除
+// 删除某个对象，并将该对象从索引表中移除.
 func (c *threadSafeMap) Delete(key string) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -91,7 +91,7 @@ func (c *threadSafeMap) Delete(key string) {
 	}
 }
 
-//Get 返回指定的对象
+// Get 返回指定的对象.
 func (c *threadSafeMap) Get(key string) (item interface{}, exists bool) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -99,7 +99,7 @@ func (c *threadSafeMap) Get(key string) (item interface{}, exists bool) {
 	return item, exists
 }
 
-//List 返回所有的对象
+// List 返回所有的对象.
 func (c *threadSafeMap) List() []interface{} {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -112,7 +112,7 @@ func (c *threadSafeMap) List() []interface{} {
 
 // ListKeys returns a list of all the keys of the objects currently
 // in the threadSafeMap.
-//ListKeys  返回所有的对象的ID
+// ListKeys  返回所有的对象的ID.
 func (c *threadSafeMap) ListKeys() []string {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -123,7 +123,7 @@ func (c *threadSafeMap) ListKeys() []string {
 	return list
 }
 
-//更新缓存中的对象表,并且更新对应的索引器
+// 更新缓存中的对象表,并且更新对应的索引器.
 func (c *threadSafeMap) Replace(items map[string]interface{}, resourceVersion string) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -138,7 +138,7 @@ func (c *threadSafeMap) Replace(items map[string]interface{}, resourceVersion st
 
 // Index returns a list of items that match the given object on the index function.
 // Index is thread-safe so long as you treat all items as immutable.
-// 如索引器为租户, object的租户为tenant1, 则返回所有tenant1的对象列表
+// 如索引器为租户, object的租户为tenant1, 则返回所有tenant1的对象列表.
 func (c *threadSafeMap) Index(indexName string, obj interface{}) ([]interface{}, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -178,12 +178,12 @@ func (c *threadSafeMap) Index(indexName string, obj interface{}) ([]interface{},
 }
 
 // ByIndex returns a list of the items whose indexed values in the given index include the given indexed value
-// 如索引器为租户，索引值为tenant1, 返回tenant1相关所有对象列表
+// 如索引器为租户，索引值为tenant1, 返回tenant1相关所有对象列表.
 func (c *threadSafeMap) ByIndex(indexName, indexedValue string) ([]interface{}, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	//找到指定的索引器
+	// 找到指定的索引器
 	indexFunc := c.indexers[indexName]
 	if indexFunc == nil {
 		return nil, fmt.Errorf("Index with name %s does not exist", indexName)
@@ -203,7 +203,7 @@ func (c *threadSafeMap) ByIndex(indexName, indexedValue string) ([]interface{}, 
 // IndexKeys returns a list of the Store keys of the objects whose indexed values in the given index include the given
 // indexed value.
 // IndexKeys is thread-safe so long as you treat all items as immutable.
-// 如索引器为租户，索引值为tenant1, 返回tenant1相关所有对象的ID
+// 如索引器为租户，索引值为tenant1, 返回tenant1相关所有对象的ID.
 func (c *threadSafeMap) IndexKeys(indexName, indexedValue string) ([]string, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -219,7 +219,7 @@ func (c *threadSafeMap) IndexKeys(indexName, indexedValue string) ([]string, err
 	return set.List(), nil
 }
 
-// 返回指定索引器中索引名
+// 返回指定索引器中索引名.
 func (c *threadSafeMap) ListIndexFuncValues(indexName string) []string {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -232,12 +232,12 @@ func (c *threadSafeMap) ListIndexFuncValues(indexName string) []string {
 	return names
 }
 
-// 提取缓存表之前所有的索引器
+// 提取缓存表之前所有的索引器.
 func (c *threadSafeMap) GetIndexers() Indexers {
 	return c.indexers
 }
 
-//增加一组新的索引器到缓存表中。 新的索引器如果之前存在则报错
+// 增加一组新的索引器到缓存表中。 新的索引器如果之前存在则报错.
 func (c *threadSafeMap) AddIndexers(newIndexers Indexers) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -246,12 +246,12 @@ func (c *threadSafeMap) AddIndexers(newIndexers Indexers) error {
 		return fmt.Errorf("cannot add indexers to running index")
 	}
 
-	//提取之前的索引器列表
+	// 提取之前的索引器列表
 	oldKeys := sets.StringKeySet(c.indexers)
-	//提取新的索引器表
+	// 提取新的索引器表
 	newKeys := sets.StringKeySet(newIndexers)
 
-	//如果新的索引器之前已经存在，则报错
+	// 如果新的索引器之前已经存在，则报错
 	if oldKeys.HasAny(newKeys.List()...) {
 		return fmt.Errorf("indexer conflict: %v", oldKeys.Intersection(newKeys))
 	}
@@ -263,7 +263,7 @@ func (c *threadSafeMap) AddIndexers(newIndexers Indexers) error {
 }
 
 // updateIndices modifies the objects location in the managed indexes, if this is an update, you must provide an oldObj
-// updateIndices must be called from a function that already has a lock on the cache
+// updateIndices must be called from a function that already has a lock on the cache.
 func (c *threadSafeMap) updateIndices(oldObj interface{}, newObj interface{}, key string) {
 	// if we got an old object, we need to remove it before we add it again
 	// 如果之前的对象已经存在,则先将老的索引移除掉
@@ -296,9 +296,9 @@ func (c *threadSafeMap) updateIndices(oldObj interface{}, newObj interface{}, ke
 
 // deleteFromIndices removes the object from each of the managed indexes
 // it is intended to be called from a function that already has a lock on the cache
-// 把指定对象从所有索引的表中移除
+// 把指定对象从所有索引的表中移除.
 func (c *threadSafeMap) deleteFromIndices(obj interface{}, key string) {
-	//遍历全部索引器
+	// 遍历全部索引器
 	for name, indexFunc := range c.indexers {
 		// 通过索引器函数计算出对象相关联索引的一系列相关值。
 		// 例如索引器为命名空间索引器, 索引器函数则为提取指定对象的命名空间，并返回记录在索引器表中该命名空间下的所有索引值。
@@ -318,7 +318,7 @@ func (c *threadSafeMap) deleteFromIndices(obj interface{}, key string) {
 			if set != nil {
 				set.Delete(key)
 
-				//如果索引表值已经空了，就清掉
+				// 如果索引表值已经空了，就清掉
 				if len(set) == 0 {
 					delete(index, indexValue)
 				}
