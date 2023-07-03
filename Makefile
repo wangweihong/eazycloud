@@ -15,6 +15,7 @@ include scripts/make-rules/common.mk # make sure include common.mk at the first 
 include scripts/make-rules/golang.mk
 include scripts/make-rules/tools.mk
 include scripts/make-rules/dependencies.mk
+include scripts/make-rules/swagger.mk
 
 # Usage
 
@@ -91,15 +92,20 @@ format: tools.verify.golines tools.verify.goimports
 	@$(GO) mod edit -fmt
 
 
-## gen: Generate all necessary files, such as error code files.
-#.PHONY: gen
-#:
-#	@$(MAKE) gen.run
+## swagger: Generate swagger document.
+.PHONY: swagger
+swagger:
+	@$(MAKE) swagger.run
 
-## ca: Generate CA files for all iam components.
-#.PHONY: ca
-#ca:
-#	@$(MAKE) gen.ca
+.PHONY: swagger.example
+swagger-example:
+	@$(MAKE) swagger.example
+	@$(MAKE) swagger.example.serve
+
+## serve-swagger: Serve swagger spec and docs.
+.PHONY: swagger.serve
+serve-swagger:
+	@$(MAKE) swagger.serve
 
 ## install: Install iam system with all its components.
 .PHONY: install

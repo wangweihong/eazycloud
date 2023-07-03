@@ -824,6 +824,13 @@ issues:
         - varcheck
         - forbidigo
 
+    - path: (cmd/gin-swagger-example/.*)\.go
+      linters:
+        - deadcode
+        - unused
+        - varcheck
+        - forbidigo
+        -
     # Exclude some staticcheck messages
     - linters:
         - staticcheck
