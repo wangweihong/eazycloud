@@ -13,6 +13,10 @@
 *.bash            text eol=lf
 *.sh              text eol=lf
 
+# Makefile
+*.mk              text eol=lf
+Makefile          text eol=lf
+
 # Declare files that will always have CRLF line endings on checkout.
 *.bat             text eol=crlf
 *.cmd             text eol=crlf
