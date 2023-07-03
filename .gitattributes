@@ -1,11 +1,18 @@
-# Auto detect
-##   Handle line endings automatically for files detected as
-##   text and leave all files detected as binary untouched.
-##   This will handle all files NOT defined below.
+#  Ref: https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings
+
+# Set the default behavior, in case people don't have core.autocrlf set
 *                 text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+*.c text
+*.h text
+*.go text  eol=lf
 
 # Source code
 *.bash            text eol=lf
+
+# Declare files that will always have CRLF line endings on checkout.
 *.bat             text eol=crlf
 *.cmd             text eol=crlf
 *.coffee          text
@@ -107,6 +114,7 @@ makefile          text
 Procfile          text
 
 # Graphics
+# Denote all files that are truly binary and should not be modified.
 *.ai              binary
 *.bmp             binary
 *.eps             binary
