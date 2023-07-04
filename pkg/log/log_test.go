@@ -113,7 +113,7 @@ func Test_ZapType(t *testing.T) {
 	log.Info("This is inline:object example", zap.Inline(req))
 	log.Info("This is Any:object example", log.Any("req", req))
 
-	zap.NewDevelopment()
+	_, _ = zap.NewDevelopment()
 }
 
 // Benchmark_ZapTypeAny-4           6664069               181.7 ns/op
@@ -154,4 +154,11 @@ func Benchmark_ZapTypeObject(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		log.Info("This is object example", log.Object("req", req))
 	}
+}
+
+func TestWithFieldPair(t *testing.T) {
+	defer log.Flush()
+	ctx := log.WithFieldPair(nil, "aaa", "bbb")
+	// test	{"aaa": "bbb"}
+	log.F(ctx).Info("test")
 }
