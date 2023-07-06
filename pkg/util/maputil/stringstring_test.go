@@ -1,9 +1,11 @@
 package maputil_test
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
-	"github.com/wangweihong/eazycloud/pkg/util/maputil"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/wangweihong/eazycloud/pkg/util/maputil"
 )
 
 func TestStringStringMap_Init(t *testing.T) {
@@ -69,6 +71,23 @@ func TestStringStringMap_Delete(t *testing.T) {
 
 			maputil.StringStringMap(d).Delete("a")
 			So(maputil.StringStringMap(d).Has("a"), ShouldBeFalse)
+		})
+	})
+}
+
+func TestStringStringMap_Get(t *testing.T) {
+	Convey("TestStringStringMap_Get", t, func() {
+		Convey("nil", func() {
+			var nilMap map[string]string
+
+			So(maputil.StringStringMap(nilMap).Get("notexist"), ShouldEqual, "")
+		})
+		Convey("not nil", func() {
+			d := make(map[string]string)
+			d["a"] = "b"
+
+			So(maputil.StringStringMap(d).Get("a"), ShouldEqual, "b")
+			So(maputil.StringStringMap(d).Get("notexist"), ShouldEqual, "")
 		})
 	})
 }

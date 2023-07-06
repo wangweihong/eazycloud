@@ -42,3 +42,11 @@ func (m StringStringMap) Set(key string, value string) StringStringMap {
 	m[key] = value
 	return m
 }
+
+func (m StringStringMap) Get(key string) string {
+	if m == nil {
+		return ""
+	}
+	v, _ := m[key]
+	return v
+}

@@ -42,3 +42,11 @@ func (m StringBoolMap) Set(key string, value bool) StringBoolMap {
 	m[key] = value
 	return m
 }
+
+func (m StringBoolMap) Get(key string) bool {
+	if m == nil {
+		return false
+	}
+	v, _ := m[key]
+	return v
+}

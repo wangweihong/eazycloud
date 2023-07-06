@@ -1,9 +1,11 @@
 package maputil_test
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
-	"github.com/wangweihong/eazycloud/pkg/util/maputil"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/wangweihong/eazycloud/pkg/util/maputil"
 )
 
 func TestStringBoolMap_Init(t *testing.T) {
@@ -69,6 +71,22 @@ func TestStringBoolMap_Delete(t *testing.T) {
 
 			maputil.StringBoolMap(d).Delete("a")
 			So(maputil.StringBoolMap(d).Has("a"), ShouldBeFalse)
+		})
+	})
+}
+
+func TestStringBoolMap_Get(t *testing.T) {
+	Convey("TestStringBoolMap_Get", t, func() {
+		Convey("nil", func() {
+			var nilMap map[string]bool
+			So(maputil.StringBoolMap(nilMap).Get("notexist"), ShouldBeFalse)
+		})
+		Convey("not nil", func() {
+			d := make(map[string]bool)
+			d["a"] = true
+
+			So(maputil.StringBoolMap(d).Get("a"), ShouldBeTrue)
+			So(maputil.StringBoolMap(d).Get("noexist"), ShouldBeFalse)
 		})
 	})
 }

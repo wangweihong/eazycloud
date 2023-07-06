@@ -42,3 +42,11 @@ func (m StringIntMap) Set(key string, value int) StringIntMap {
 	m[key] = value
 	return m
 }
+
+func (m StringIntMap) Get(key string) int {
+	if m == nil {
+		return 0
+	}
+	v, _ := m[key]
+	return v
+}
