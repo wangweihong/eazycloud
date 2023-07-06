@@ -328,6 +328,7 @@ linters-settings:
         - github.com
         - go.uber.org
         - go.etcd.io
+        - k8s.io
     blocked:
       modules:
         - github.com/pkg/errors:
