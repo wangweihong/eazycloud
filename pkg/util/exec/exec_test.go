@@ -2,13 +2,14 @@ package exec_test
 
 import (
 	"context"
-	"github.com/wangweihong/eazycloud/pkg/util/exec"
 	"io"
 	"io/ioutil"
 	"os"
 	osexec "os/exec"
 	"testing"
 	"time"
+
+	"github.com/wangweihong/eazycloud/pkg/util/exec"
 )
 
 func TestExecutorNoArgs(t *testing.T) {
