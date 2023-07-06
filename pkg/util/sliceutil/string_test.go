@@ -1,9 +1,11 @@
 package sliceutil_test
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
-	"github.com/wangweihong/eazycloud/pkg/util/sliceutil"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/wangweihong/eazycloud/pkg/util/sliceutil"
 )
 
 func TestStringSlice_DeepCopy(t *testing.T) {
