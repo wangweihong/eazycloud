@@ -12,6 +12,7 @@
 # Source code
 *.bash            text eol=lf
 *.sh              text eol=lf
+*.awk              text eol=lf
 
 # Makefile
 *.mk              text eol=lf
