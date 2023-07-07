@@ -65,17 +65,17 @@ lint:
 	@$(MAKE) go.lint
 
 ## test: Run unit test.
-#.PHONY: test
-#test:
-#	@$(MAKE) go.test
+.PHONY: test
+test:
+	@$(MAKE) go.test
 
 ## cover: Run unit test and get test coverage.
-#.PHONY: cover
-#cover:
-#	@$(MAKE) go.test.cover
+.PHONY: cover
+cover:
+	@$(MAKE) go.test.cover
 
 ## release: Release
-#.PHONY: release
+#.PHONY: releasecoverage.awk
 #release:
 #	@$(MAKE) release.run
 

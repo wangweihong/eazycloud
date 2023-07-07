@@ -97,5 +97,5 @@ CRITICAL_TOOLS ?= swagger mockgen gotests git-chglog  go-mod-outdated protoc-gen
 TRIVIAL_TOOLS ?= depth go-callvis  richgo rts kube-score
 
 COMMA := ,
-SPACE :=
-SPACE +=
+EMPTY :=
+SPACE := $(EMPTY) $(EMPTY)
