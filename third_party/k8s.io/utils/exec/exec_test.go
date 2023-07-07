@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/util/exec"
+	"github.com/wangweihong/eazycloud/third_party/k8s.io/utils/exec"
 )
 
 func TestExecutorNoArgs(t *testing.T) {
