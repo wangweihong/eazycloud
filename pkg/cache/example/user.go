@@ -255,6 +255,17 @@ func GetUMInstance() UserManagerInterface {
 	return umInstance
 }
 
+func NewUMInstance() UserManagerInterface {
+	userIndexers := make(map[string]cache.IndexFunc)
+	userIndexers[indexTypeTenantUser] = tenantUserIndexer
+	userIndexers[indexTypeGroupUser] = groupUserIndexer
+	userIndexers[indexTypeRoleUser] = roleUserIndexer
+
+	umInstance = &userManager{
+		Indexer: cache.NewIndexer(userKeyFunc, userIndexers),
+	}
+}
+
 type userManager struct {
 	cache.Indexer
 }

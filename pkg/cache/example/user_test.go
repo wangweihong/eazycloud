@@ -11,8 +11,9 @@ import (
 )
 
 func TestUserList(t *testing.T) {
+	um := example.NewUMInstance()
 	Convey("用户列表", t, func() {
-		_, err := example.GetUMInstance().Add(&example.User{
+		_, err := um.Add(&example.User{
 			Name:       "aaa",
 			UUID:       "user1",
 			Tenant:     "tenant1",
@@ -23,7 +24,7 @@ func TestUserList(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 
-		_, err2 := example.GetUMInstance().Add(&example.User{
+		_, err2 := um.Add(&example.User{
 			Name:       "aaa",
 			UUID:       "user2",
 			Tenant:     "tenant2",
@@ -36,25 +37,25 @@ func TestUserList(t *testing.T) {
 
 		Convey("查询某个组用户列表", func() {
 			Convey("不存在的用户组", func() {
-				So(len(example.GetUMInstance().ListInGroup("notexist")), ShouldEqual, 0)
+				So(len(um.ListInGroup("notexist")), ShouldEqual, 0)
 			})
 			Convey("存在的用户组", func() {
-				g1 := example.GetUMInstance().ListInGroup("group1")
+				g1 := um.ListInGroup("group1")
 				So(len(g1), ShouldEqual, 2)
 				for _, v := range g1 {
 					So(sets.NewString(v.Group...).Has("group1"), ShouldBeTrue)
 				}
 			})
 			Convey("ListInGroup应和ListInGroupIndex一致", func() {
-				us := example.GetUMInstance().ListInGroup("group1")
+				us := um.ListInGroup("group1")
 				So(len(us), ShouldNotEqual, 0)
 
-				usIndex := example.GetUMInstance().ListInGroupIndex("group1")
+				usIndex := um.ListInGroupIndex("group1")
 				So(len(usIndex), ShouldNotEqual, 0)
 			})
 		})
 		Convey("查询某个租户用户列表键", func() {
-			t1 := example.GetUMInstance().ListInTenantIndex("tenant1")
+			t1 := um.ListInTenantIndex("tenant1")
 			So(len(t1), ShouldEqual, 1)
 		})
 	})
@@ -62,6 +63,8 @@ func TestUserList(t *testing.T) {
 }
 
 func TestUserManager_Add(t *testing.T) {
+	um := example.NewUMInstance()
+
 	Convey("用户添加", t, func() {
 		u1 := &example.User{
 			Name:       "aaa",
@@ -71,14 +74,14 @@ func TestUserManager_Add(t *testing.T) {
 			CreateTime: time.Now(),
 			UpdateTime: time.Now(),
 		}
-		nu1, err := example.GetUMInstance().Add(u1)
+		nu1, err := um.Add(u1)
 		So(err, ShouldBeNil)
 		So(nu1.UUID, ShouldNotBeEmpty)
 
 		Convey("入参数据改变不影响缓存数据", func() {
 			u1.Name = "bbb"
 
-			nu2, exists, err := example.GetUMInstance().Get(nu1)
+			nu2, exists, err := um.Get(nu1)
 			So(err, ShouldBeNil)
 			So(exists, ShouldBeTrue)
 			So(nu2.Name, ShouldNotEqual, u1.Name)
@@ -87,7 +90,7 @@ func TestUserManager_Add(t *testing.T) {
 		Convey("添加返回数据改变不影响缓存数据", func() {
 			nu1.Name = "bbb"
 
-			nu2, exists, err := example.GetUMInstance().Get(nu1)
+			nu2, exists, err := um.Get(nu1)
 			So(err, ShouldBeNil)
 			So(exists, ShouldBeTrue)
 			So(nu2.Name, ShouldNotEqual, nu1.Name)
@@ -98,6 +101,8 @@ func TestUserManager_Add(t *testing.T) {
 }
 
 func TestUserManager_CleanGroup(t *testing.T) {
+	um := example.NewUMInstance()
+
 	Convey("清除用户中某个组的索引", t, func() {
 		u1 := &example.User{
 			Name:       "aaa",
@@ -107,23 +112,23 @@ func TestUserManager_CleanGroup(t *testing.T) {
 			CreateTime: time.Now(),
 			UpdateTime: time.Now(),
 		}
-		nu1, err := example.GetUMInstance().Add(u1)
+		nu1, err := um.Add(u1)
 		So(err, ShouldBeNil)
 		So(nu1.UUID, ShouldNotBeEmpty)
 
 		Convey("清除组group1", func() {
-			us := example.GetUMInstance().ListInGroup("group1")
+			us := um.ListInGroup("group1")
 			So(len(us), ShouldNotEqual, 0)
 
-			usIndex := example.GetUMInstance().ListInGroupIndex("group1")
+			usIndex := um.ListInGroupIndex("group1")
 			So(len(usIndex), ShouldNotEqual, 0)
 
 			So(len(us), ShouldEqual, len(usIndex))
 
-			err = example.GetUMInstance().CleanGroup("group1")
+			err = um.CleanGroup("group1")
 			So(err, ShouldBeNil)
 
-			us = example.GetUMInstance().ListInGroup("group1")
+			us = um.ListInGroup("group1")
 			So(len(us), ShouldEqual, 0)
 
 		})
@@ -132,6 +137,8 @@ func TestUserManager_CleanGroup(t *testing.T) {
 }
 
 func TestUserManager_CleanRole(t *testing.T) {
+	um := example.NewUMInstance()
+
 	Convey("清除用户中某个角色的索引", t, func() {
 		u1 := &example.User{
 			Name:       "aaa",
@@ -141,23 +148,23 @@ func TestUserManager_CleanRole(t *testing.T) {
 			CreateTime: time.Now(),
 			UpdateTime: time.Now(),
 		}
-		nu1, err := example.GetUMInstance().Add(u1)
+		nu1, err := um.Add(u1)
 		So(err, ShouldBeNil)
 		So(nu1.UUID, ShouldNotBeEmpty)
 
 		Convey("清除角色role1", func() {
-			us := example.GetUMInstance().ListInRole("role1")
+			us := um.ListInRole("role1")
 			So(len(us), ShouldNotEqual, 0)
 
-			usIndex := example.GetUMInstance().ListInRoleIndex("role1")
+			usIndex := um.ListInRoleIndex("role1")
 			So(len(usIndex), ShouldNotEqual, 0)
 
 			So(len(us), ShouldEqual, len(usIndex))
 
-			err = example.GetUMInstance().CleanRole("role1")
+			err = um.CleanRole("role1")
 			So(err, ShouldBeNil)
 
-			us = example.GetUMInstance().ListInRole("role1")
+			us = um.ListInRole("role1")
 			So(len(us), ShouldEqual, 0)
 
 		})
