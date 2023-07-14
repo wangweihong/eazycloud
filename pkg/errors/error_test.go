@@ -96,7 +96,7 @@ func TestFormat(t *testing.T) {
 			So(
 				fmt.Sprintf("%#v", e),
 				ShouldEqual,
-				"{\"code\":101,\"desc\":\"file not exist\",\"message\":{\"cn\":\"访问文件失败\",\"en\":\"OpenFileError\"}}",
+				"{\"code\":101,\"desc\":\"file not exist\",\"message\":{\"MessageCN\":\"访问文件失败\",\"MessageEN\":\"OpenFileError\"}}",
 			)
 			//So(
 			//	fmt.Sprintf("%+#v", e),
