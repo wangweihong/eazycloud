@@ -261,7 +261,7 @@ func NewUMInstance() UserManagerInterface {
 	userIndexers[indexTypeGroupUser] = groupUserIndexer
 	userIndexers[indexTypeRoleUser] = roleUserIndexer
 
-	umInstance = &userManager{
+	return &userManager{
 		Indexer: cache.NewIndexer(userKeyFunc, userIndexers),
 	}
 }

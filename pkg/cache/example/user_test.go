@@ -12,29 +12,27 @@ import (
 
 func TestUserList(t *testing.T) {
 	um := example.NewUMInstance()
+	um.Add(&example.User{
+		Name:       "aaa",
+		UUID:       "user1",
+		Tenant:     "tenant1",
+		Group:      []string{"group1", "group2"},
+		Roles:      []string{"role1", "role2"},
+		CreateTime: time.Now(),
+		UpdateTime: time.Now(),
+	})
+
+	um.Add(&example.User{
+		Name:       "aaa",
+		UUID:       "user2",
+		Tenant:     "tenant2",
+		Group:      []string{"group1", "group3"},
+		Roles:      []string{"role1", "role2"},
+		CreateTime: time.Now(),
+		UpdateTime: time.Now(),
+	})
+
 	Convey("用户列表", t, func() {
-		_, err := um.Add(&example.User{
-			Name:       "aaa",
-			UUID:       "user1",
-			Tenant:     "tenant1",
-			Group:      []string{"group1", "group2"},
-			Roles:      []string{"role1", "role2"},
-			CreateTime: time.Now(),
-			UpdateTime: time.Now(),
-		})
-		So(err, ShouldBeNil)
-
-		_, err2 := um.Add(&example.User{
-			Name:       "aaa",
-			UUID:       "user2",
-			Tenant:     "tenant2",
-			Group:      []string{"group1", "group3"},
-			Roles:      []string{"role1", "role2"},
-			CreateTime: time.Now(),
-			UpdateTime: time.Now(),
-		})
-		So(err2, ShouldBeNil)
-
 		Convey("查询某个组用户列表", func() {
 			Convey("不存在的用户组", func() {
 				So(len(um.ListInGroup("notexist")), ShouldEqual, 0)
@@ -78,24 +76,20 @@ func TestUserManager_Add(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(nu1.UUID, ShouldNotBeEmpty)
 
-		Convey("入参数据改变不影响缓存数据", func() {
-			u1.Name = "bbb"
+		//"入参数据改变不影响缓存数据"
+		u1.Name = "bbb"
 
-			nu2, exists, err := um.Get(nu1)
-			So(err, ShouldBeNil)
-			So(exists, ShouldBeTrue)
-			So(nu2.Name, ShouldNotEqual, u1.Name)
-		})
+		nu2, exists, err := um.Get(nu1)
+		So(err, ShouldBeNil)
+		So(exists, ShouldBeTrue)
+		So(nu2.Name, ShouldNotEqual, u1.Name)
 
-		Convey("添加返回数据改变不影响缓存数据", func() {
-			nu1.Name = "bbb"
-
-			nu2, exists, err := um.Get(nu1)
-			So(err, ShouldBeNil)
-			So(exists, ShouldBeTrue)
-			So(nu2.Name, ShouldNotEqual, nu1.Name)
-		})
-
+		//"添加返回数据改变不影响缓存数据"
+		nu1.Name = "bbb"
+		nu3, exists, err := um.Get(nu1)
+		So(err, ShouldBeNil)
+		So(exists, ShouldBeTrue)
+		So(nu3.Name, ShouldNotEqual, nu1.Name)
 	})
 
 }
@@ -138,7 +132,6 @@ func TestUserManager_CleanGroup(t *testing.T) {
 
 func TestUserManager_CleanRole(t *testing.T) {
 	um := example.NewUMInstance()
-
 	Convey("清除用户中某个角色的索引", t, func() {
 		u1 := &example.User{
 			Name:       "aaa",
