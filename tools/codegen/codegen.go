@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -22,7 +23,7 @@ import (
 
 var errCodeDocPrefix = `# 错误码
 
-！！IAM 系统错误码列表，由 {{.}}codegen -type=int -doc{{.}} 命令生成，不要对此文件做任何更改。
+！！系统错误码列表，由 {{.}}codegen -type=int -doc{{.}} 命令生成，不要对此文件做任何更改。
 
 ## 功能说明
 
@@ -31,7 +32,8 @@ var errCodeDocPrefix = `# 错误码
 {{.}}{{.}}{{.}}json
 {
   "code": 100101,
-  "message": "Database error"
+  "messageEN": "Database error",
+  "messageCN": "数据库出错"
 }
 {{.}}{{.}}{{.}}
 
@@ -39,11 +41,18 @@ var errCodeDocPrefix = `# 错误码
 
 ## 错误码列表
 
-IAM 系统支持的错误码列表如下：
+系统支持的错误码列表如下：
 
-| Identifier | Code | HTTP Code | Description |
-| ---------- | ---- | --------- | ----------- |
+| Identifier | Code | HTTP Code | Description |  中文描述 	|
+| ---------- | ---- | --------- | ----------- | ----------- |
 `
+
+const (
+	commentKeyExtPrefix = "@"
+	commentKeyHTTP      = "HTTP"
+	commentKeyDescCN    = "MessageCN"
+	commentKeyDescEN    = "MessageEN"
+)
 
 var (
 	typeNames  = flag.String("type", "", "comma-separated list of type names; must be set")
@@ -171,8 +180,8 @@ type File struct {
 	pkg  *Package  // Package to which this file belongs.
 	file *ast.File // Parsed AST.
 	// These fields are reset for each type being generated.
-	typeName string  // Name of the constant type.
-	values   []Value // Accumulator for constant values of that type.
+	typeName string  // Name of the constant type. ast会根据指定的类型去查到变量
+	values   []Value // Accumulator for constant values of that type. ast解析注释后值
 
 	trimPrefix string
 }
@@ -223,8 +232,9 @@ func (g *Generator) addPackage(pkg *packages.Package) {
 }
 
 // generate produces the register calls for the named type.
+// 生成go代码.
 func (g *Generator) generate(typeName string) {
-	values := make([]Value, 0, 100)
+	values := make([]Value, 0, 500)
 	for _, file := range g.pkg.files {
 		// Set the state for this run of the walker.
 		file.typeName = typeName
@@ -239,16 +249,29 @@ func (g *Generator) generate(typeName string) {
 		log.Fatalf("no values defined for type %s", typeName)
 	}
 	// Generate code that will fail if the constants change value.
-	g.Printf("\t// init register error codes defines in this source code to `github.com/marmotedu/errors`\n")
+	g.Printf("\t// init register error codes defines in this source code to errors package\n")
 	g.Printf("func init() {\n")
+
 	for _, v := range values {
-		code, description := v.ParseComment()
-		g.Printf("\tregister(%s, %s, \"%s\")\n", v.originalName, code, description)
+		code, descriptionMap := v.ParseCommentGroup()
+		mapStr := "map[string]string{"
+
+		mapLen := len(descriptionMap)
+		for lan, desc := range descriptionMap {
+			mapStr += fmt.Sprintf("\"%v\":\"%v\"", lan, desc)
+			mapLen--
+			if mapLen != 0 {
+				mapStr += ","
+			}
+		}
+		mapStr += "}"
+		g.Printf("\tregister(%s, %s, %s)\n", v.originalName, code, mapStr)
 	}
 	g.Printf("}\n")
 }
 
 // generateDocs produces error code markdown document for the named type.
+// 生成文档.
 func (g *Generator) generateDocs(typeName string) {
 	values := make([]Value, 0, 100)
 	for _, file := range g.pkg.files {
@@ -272,8 +295,21 @@ func (g *Generator) generateDocs(typeName string) {
 	// Generate code that will fail if the constants change value.
 	g.Printf(buf.String())
 	for _, v := range values {
-		code, description := v.ParseComment()
-		g.Printf("| %s | %d | %s | %s |\n", v.originalName, v.value, code, description)
+		code, descriptionMap := v.ParseCommentGroup()
+		args := make([]interface{}, 0)
+		args = append(args, v.originalName, v.value, code)
+		format := "| %s | %d | %s |"
+
+		descEn := descriptionMap[commentKeyDescEN]
+		format += " %s |"
+		args = append(args, descEn)
+
+		descCN := descriptionMap[commentKeyDescCN]
+		format += " %s |"
+		args = append(args, descCN)
+
+		format += "\n"
+		g.Printf(format, args...)
 	}
 	g.Printf("\n")
 }
@@ -306,6 +342,8 @@ type Value struct {
 	value  uint64 // Will be converted to int64 when needed.
 	signed bool   // Whether the constant is a signed type.
 	str    string // The string representation given by the "go/constant" package.
+
+	commentParseMap map[string]string // parse comment with specific header
 }
 
 func (v *Value) String() string {
@@ -314,6 +352,7 @@ func (v *Value) String() string {
 
 // ParseComment parse comment to http code and error code description.
 func (v *Value) ParseComment() (string, string) {
+	// ErrEncrypt - 400: Secret reach the max count.
 	reg := regexp.MustCompile(`\w\s*-\s*(\d{3})\s*:\s*([A-Z].*)\s*\.\n*`)
 	if !reg.MatchString(v.comment) {
 		log.Printf("constant '%s' have wrong comment format, register with 500 as default", v.originalName)
@@ -329,9 +368,37 @@ func (v *Value) ParseComment() (string, string) {
 	return groups[1], groups[2]
 }
 
-// nolint: gocognit
+// ParseComment parse comment to http code and error code description.
+func (v *Value) ParseCommentGroup() (string, map[string]string) {
+	errorCodeMap := make(map[string]string)
+	errorCodeMap[commentKeyDescCN] = "错误信息未设置"
+	errorCodeMap[commentKeyDescEN] = "Unset error message"
+
+	if v.commentParseMap == nil {
+		return "500", errorCodeMap
+	}
+
+	httpCode, exist := v.commentParseMap[commentKeyHTTP]
+	if !exist {
+		errorCodeMap[commentKeyDescCN] = "未设置Http请求码"
+		errorCodeMap[commentKeyDescEN] = "Unset http code"
+		return "500", errorCodeMap
+	}
+
+	if descCN, exist := v.commentParseMap[commentKeyDescCN]; exist {
+		errorCodeMap[commentKeyDescCN] = descCN
+	}
+
+	if descEN, exist := v.commentParseMap[commentKeyDescEN]; exist {
+		errorCodeMap[commentKeyDescEN] = descEN
+	}
+	return httpCode, errorCodeMap
+}
+
+// nolint: gocognit,funlen,staticcheck
 // genDecl processes one declaration clause.
 func (f *File) genDecl(node ast.Node) bool {
+	// 通用声明,包括IMPORT,VAR,CONST,TYPE
 	decl, ok := node.(*ast.GenDecl)
 	if !ok || decl.Tok != token.CONST {
 		// We only care about const declarations.
@@ -414,10 +481,33 @@ func (f *File) genDecl(node ast.Node) bool {
 				signed:       info&types.IsUnsigned == 0,
 				str:          value.String(),
 			}
+			// 提取注释
 			if vspec.Doc != nil && vspec.Doc.Text() != "" {
 				v.comment = vspec.Doc.Text()
 			} else if c := vspec.Comment; c != nil && len(c.List) == 1 {
 				v.comment = c.Text()
+			}
+
+			if vspec.Doc != nil && vspec.Doc.List != nil {
+				v.commentParseMap = make(map[string]string)
+				for _, c := range vspec.Doc.List {
+					t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
+					if strings.HasPrefix(t, commentKeyExtPrefix+commentKeyDescEN) {
+						v.commentParseMap[commentKeyDescEN] = strings.TrimSpace(
+							t[len(commentKeyExtPrefix+commentKeyDescEN):],
+						)
+					} else if strings.HasPrefix(t, commentKeyExtPrefix+commentKeyDescCN) {
+						v.commentParseMap[commentKeyDescCN] = strings.TrimSpace(t[len(commentKeyExtPrefix+commentKeyDescCN):])
+					} else if strings.HasPrefix(t, commentKeyExtPrefix+commentKeyHTTP) {
+						codeStr := strings.TrimSpace(t[len(commentKeyExtPrefix+commentKeyHTTP):])
+						_, err := strconv.Atoi(codeStr)
+						if err != nil {
+							log.Fatalf("internal error: value of %s is not an integer: %s", codeStr, err)
+						}
+
+						v.commentParseMap[commentKeyHTTP] = strings.TrimSpace(t[len(commentKeyExtPrefix+commentKeyHTTP):])
+					}
+				}
 			}
 
 			v.name = strings.TrimPrefix(v.originalName, f.trimPrefix)

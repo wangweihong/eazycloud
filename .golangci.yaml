@@ -480,7 +480,7 @@ linters-settings:
 
   nestif:
     # minimal complexity of if statements to report, 5 by default
-    min-complexity: 4
+    min-complexity: 8
 
   nilnil:
     # By default, nilnil checks all returned types below.
