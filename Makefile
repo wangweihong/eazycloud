@@ -1,5 +1,3 @@
-
-
 # .DEFAULT_GOAL为makefile自带变量, 用于设置默认目标
 # https://www.gnu.org/software/make/manual/html_node/Special-Variables.html
 .DEFAULT_GOAL := all
@@ -8,13 +6,13 @@
 ROOT_PACKAGE=github.com/wangweihong/eazycloud
 
 .PHONY: all
-#all: tidy gen add-copyright format lint cover build
 all: tidy format lint cover build
 
 include scripts/make-rules/common.mk # make sure include common.mk at the first include line
 include scripts/make-rules/golang.mk
 include scripts/make-rules/tools.mk
 include scripts/make-rules/dependencies.mk
+include scripts/make-rules/swagger.mk
 
 # Usage
 
@@ -51,9 +49,9 @@ build.multiarch:
 
 
 ## deploy: Deploy updated components to development env.
-.PHONY: deploy
-deploy:
-	@$(MAKE) deploy.run
+#.PHONY: deploy
+#deploy:
+#	@$(MAKE) deploy.run
 
 ## clean: Remove all files that are created by building.
 .PHONY: clean
@@ -77,9 +75,9 @@ cover:
 	@$(MAKE) go.test.cover
 
 ## release: Release
-.PHONY: release
-release:
-	@$(MAKE) release.run
+#.PHONY: releasecoverage.awk
+#release:
+#	@$(MAKE) release.run
 
 ## format: Gofmt (reformat) package sources (exclude vendor dir if existed).
 .PHONY: format
@@ -91,27 +89,28 @@ format: tools.verify.golines tools.verify.goimports
 	@$(GO) mod edit -fmt
 
 
-## gen: Generate all necessary files, such as error code files.
-#.PHONY: gen
-#:
-#	@$(MAKE) gen.run
+## swagger: Generate swagger document.
+#.PHONY: swagger
+#swagger:
+#	@$(MAKE) swagger.run
 
-## ca: Generate CA files for all iam components.
-#.PHONY: ca
-#ca:
-#	@$(MAKE) gen.ca
+## serve-swagger: Serve swagger spec and docs.
+#.PHONY: swagger.serve
+#serve-swagger:
+#	@$(MAKE) swagger.serve
 
-## install: Install iam system with all its components.
-.PHONY: install
-install:
-	@$(MAKE) install.install
+## swagger-example: Generate example swagger and serve.
+.PHONY: swagger.example
+swagger-example:
+	@$(MAKE) swagger.example
+	@$(MAKE) swagger.example.serve
 
 ## dependencies: Install necessary dependencies.
 .PHONY: dependencies
 dependencies:
 	@$(MAKE) dependencies.run
 
-## tools: install dependent tools.
+## tools: Install dependent tools.
 .PHONY: tools
 tools:
 	@$(MAKE) tools.install
@@ -121,16 +120,30 @@ tools:
 check-updates:
 	@$(MAKE) go.updates
 
+## tidy: Go mod tidy
 .PHONY: tidy
 tidy:
 	@$(GO) mod tidy
 
+## gen: Generate all necessary files, such as error code files.
+.PHONY: gen
+gen:
+	@$(MAKE) gen.run
 
-.PHONY: example
-example: tools.verify.deepcopy-gen
+## deecopy-gen-example: Run deepcopy-gen example
+.PHONY: deecopy-gen-example
+deecopy-gen-example: tools.verify.deepcopy-gen
 	@deepcopy-gen --input-dirs=./tools/deepcopy-gen/example --output-base=../
 
+code-gen-example: tools.verify.codegen
+	@echo "===========> Generating error code go source files to path:${ROOT_DIR}/tools/codegen/example"
+	@codegen -type=int ${ROOT_DIR}/tools/codegen/example
+	@echo "===========> Generating error code markdown documentation to path:${ROOT_DIR}/tools/codegen/example/error_code_generated.md"
+	@codegen -type=int -doc \
+		-output ${ROOT_DIR}/tools/codegen/example/error_code_generated.md ${ROOT_DIR}/tools/codegen/example
+
 ## help: Show this help info.
+# 这里会提取target上一行的\#\#注释并生成到Makefile help文档中
 .PHONY: help
 help: Makefile
 	@echo -e "\nUsage: make <TARGETS> <OPTIONS> ...\n\nTargets:"

@@ -21,6 +21,7 @@ tools.verify.%:
 .PHONY: install.swagger
 install.swagger:
 	@$(GO) install github.com/go-swagger/go-swagger/cmd/swagger@latest
+	@$(GO) install github.com/swaggo/swag/cmd/swag@latest
 
 .PHONY: install.golangci-lint
 install.golangci-lint:

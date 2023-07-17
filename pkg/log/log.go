@@ -3,9 +3,10 @@ package log
 import (
 	"context"
 	"fmt"
-	"github.com/wangweihong/eazycloud/pkg/log/klog"
 	"log"
 	"sync"
+
+	"github.com/wangweihong/eazycloud/pkg/log/klog"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -314,7 +315,7 @@ func WithValuesM(fields map[string]interface{}) Logger {
 	return std.WithValuesM(fields)
 }
 
-// NOTE 这里会创建一个新的 zapLogger copy,不影响原来的
+// NOTE 这里会创建一个新的 zapLogger copy,不影响原来的.
 func (l *zapLogger) WithValuesM(fields map[string]interface{}) Logger {
 	keysAndValues := make([]interface{}, 0, len(fields)*2)
 	for k, v := range fields {
@@ -344,7 +345,7 @@ func (l *zapLogger) WithName(name string) Logger {
 // Flush calls the underlying Core's Sync method, flushing any buffered
 // log entries. Applications should take care to call Sync before exiting.
 // NOTE: 即使通过WithValues拷贝得到新的zap.Logger,使用的仍然是同一个zapcore.Core,因此flush只需要执行一次即可!
-// 除非是通过New()生成新的zapcore.Core的logger
+// 除非是通过New()生成新的zapcore.Core的logger.
 func Flush() { std.Flush() }
 
 func (l *zapLogger) Flush() {
@@ -583,7 +584,6 @@ func (l *zapLogger) F(ctx context.Context) *zapLogger {
 	return lg
 }
 
-//nolint:predeclared
 func (l *zapLogger) clone() *zapLogger {
 	copyL := *l
 

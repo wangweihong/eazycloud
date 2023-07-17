@@ -1,10 +1,12 @@
 package main
 
 import (
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"time"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"time"
+
+	"github.com/wangweihong/eazycloud/pkg/log"
 )
 
 func main() {
@@ -62,7 +64,7 @@ type requestArray []*request
 
 func (rs requestArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
 	for _, r := range rs {
-		enc.AppendObject(r)
+		_ = enc.AppendObject(r)
 	}
 	return nil
 }
