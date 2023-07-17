@@ -22,15 +22,15 @@ Options:
   DEBUG            Whether to generate debug symbols. Default is 0.
   BINS             The binaries to build. Default is all of cmd.
                    This option is available when using: make build/build.multiarch
-                   Example: make build BINS="iam-apiserver iam-authz-server"
+                   Example: make build BINS="eazycloud-apiserver hubctl"
   IMAGES           Backend images to make. Default is all of cmd starting with iam-.
                    This option is available when using: make image/image.multiarch/push/push.multiarch
-                   Example: make image.multiarch IMAGES="iam-apiserver iam-authz-server"
+                   Example: make image.multiarch IMAGES="eazycloud-apiserver hubctl"
   REGISTRY_PREFIX  Docker registry prefix. Default is marmotedu.
-                   Example: make push REGISTRY_PREFIX=ccr.ccs.tencentyun.com/marmotedu VERSION=v1.6.2
+                   Example: make push REGISTRY_PREFIX=harbor.registry.wang/exampled VERSION=v1.6.2
   PLATFORMS        The multiple platforms to build. Default is linux_amd64 and linux_arm64.
                    This option is available when using: make build.multiarch/image.multiarch/push.multiarch
-                   Example: make image.multiarch IMAGES="iam-apiserver iam-pump" PLATFORMS="linux_amd64 linux_arm64"
+                   Example: make image.multiarch IMAGES="eazycloud-apiserver hubctl" PLATFORMS="linux_amd64 linux_arm64"
   VERSION          The version information compiled into binaries.
                    The default is obtained from gsemver or git.
   V                Set to 1 enable verbose build. Default is 0.
@@ -46,12 +46,6 @@ build:
 .PHONY: build.multiarch
 build.multiarch:
 	@$(MAKE) go.build.multiarch
-
-
-## deploy: Deploy updated components to development env.
-#.PHONY: deploy
-#deploy:
-#	@$(MAKE) deploy.run
 
 ## clean: Remove all files that are created by building.
 .PHONY: clean
@@ -74,11 +68,6 @@ test:
 cover:
 	@$(MAKE) go.test.cover
 
-## release: Release
-#.PHONY: releasecoverage.awk
-#release:
-#	@$(MAKE) release.run
-
 ## format: Gofmt (reformat) package sources (exclude vendor dir if existed).
 .PHONY: format
 format: tools.verify.golines tools.verify.goimports
@@ -87,17 +76,6 @@ format: tools.verify.golines tools.verify.goimports
 	@$(FIND) -type f -name '*.go' | $(XARGS) goimports -w -local $(ROOT_PACKAGE)
 	@$(FIND) -type f -name '*.go' | $(XARGS) golines -w --max-len=120 --reformat-tags --shorten-comments --ignore-generated .
 	@$(GO) mod edit -fmt
-
-
-## swagger: Generate swagger document.
-#.PHONY: swagger
-#swagger:
-#	@$(MAKE) swagger.run
-
-## serve-swagger: Serve swagger spec and docs.
-#.PHONY: swagger.serve
-#serve-swagger:
-#	@$(MAKE) swagger.serve
 
 ## swagger-example: Generate example swagger and serve.
 .PHONY: swagger.example
@@ -130,11 +108,12 @@ tidy:
 gen:
 	@$(MAKE) gen.run
 
-## deecopy-gen-example: Run deepcopy-gen example
+## deecopy-gen-example: Run an example show how deepcopy auto generate api type's DeepCopy function.
 .PHONY: deecopy-gen-example
 deecopy-gen-example: tools.verify.deepcopy-gen
 	@deepcopy-gen --input-dirs=./tools/deepcopy-gen/example --output-base=../
 
+## code-gen-example: Run an example show how codegen auto generate error code .go definition file and .md file
 code-gen-example: tools.verify.codegen
 	@echo "===========> Generating error code go source files to path:${ROOT_DIR}/tools/codegen/example"
 	@codegen -type=int ${ROOT_DIR}/tools/codegen/example
