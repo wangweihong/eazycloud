@@ -3,7 +3,10 @@
 .DEFAULT_GOAL := all
 
 # Build options
+# 代码根目录
 ROOT_PACKAGE=github.com/wangweihong/eazycloud
+# 程序版本代码所在目录
+VERSION_PACKAGE=github.com/wangweihong/eazycloud/pkg/version
 
 .PHONY: all
 all: tidy format lint cover build

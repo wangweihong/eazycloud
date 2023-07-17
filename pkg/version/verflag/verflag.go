@@ -82,6 +82,7 @@ func AddFlags(fs *flag.FlagSet) {
 	fs.AddFlag(flag.Lookup(versionFlagName))
 }
 
+// nolint: forbidigo
 // PrintAndExitIfRequested will check if the -version flag was passed
 // and, if so, print the version and exit.
 func PrintAndExitIfRequested() {
