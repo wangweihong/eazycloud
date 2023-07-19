@@ -1,8 +1,9 @@
 package maputil_test
 
 import (
-	"github.com/wangweihong/eazycloud/pkg/sets"
 	"testing"
+
+	"github.com/wangweihong/eazycloud/pkg/sets"
 
 	. "github.com/smartystreets/goconvey/convey"
 
