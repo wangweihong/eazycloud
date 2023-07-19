@@ -155,10 +155,3 @@ func Benchmark_ZapTypeObject(b *testing.B) {
 		log.Info("This is object example", log.Object("req", req))
 	}
 }
-
-func TestWithFieldPair(t *testing.T) {
-	defer log.Flush()
-	ctx := log.WithFieldPair(nil, "aaa", "bbb")
-	// test	{"aaa": "bbb"}
-	log.F(ctx).Info("test")
-}

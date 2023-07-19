@@ -555,17 +555,15 @@ func (l *zapLogger) L(ctx context.Context) *zapLogger {
 	if requestID := ctx.Value(KeyRequestID); requestID != nil {
 		lg.zapLogger = lg.zapLogger.With(zap.Any(KeyRequestID, requestID))
 	}
+
 	if username := ctx.Value(KeyUsername); username != nil {
 		lg.zapLogger = lg.zapLogger.With(zap.Any(KeyUsername, username))
-	}
-	if watcherName := ctx.Value(KeyWatcherName); watcherName != nil {
-		lg.zapLogger = lg.zapLogger.With(zap.Any(KeyWatcherName, watcherName))
 	}
 
 	return lg
 }
 
-// L method output with specified context value.
+// F method output with specified context value.
 func F(ctx context.Context) *zapLogger {
 	return std.F(ctx)
 }
@@ -573,7 +571,15 @@ func F(ctx context.Context) *zapLogger {
 func (l *zapLogger) F(ctx context.Context) *zapLogger {
 	lg := l.clone()
 
-	if fields := ctx.Value(fieldKeyCtx{}); fields != nil {
+	if fields := ctx.Value(FieldKeyCtx{}); fields != nil {
+		if fieldMap, ok := fields.(map[string]interface{}); ok {
+			for k, v := range fieldMap {
+				lg.zapLogger = lg.zapLogger.With(zap.Any(k, v))
+			}
+		}
+	}
+
+	if fields := ctx.Value(FieldKeyCtx{}.String()); fields != nil {
 		if fieldMap, ok := fields.(map[string]interface{}); ok {
 			for k, v := range fieldMap {
 				lg.zapLogger = lg.zapLogger.With(zap.Any(k, v))
