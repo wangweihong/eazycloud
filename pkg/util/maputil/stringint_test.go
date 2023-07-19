@@ -1,6 +1,7 @@
 package maputil_test
 
 import (
+	"github.com/wangweihong/eazycloud/pkg/sets"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -88,6 +89,26 @@ func TestStringIntMap_Get(t *testing.T) {
 
 			So(maputil.StringIntMap(d).Get("a"), ShouldEqual, 2)
 			So(maputil.StringIntMap(d).Get("notexist"), ShouldEqual, 0)
+		})
+	})
+}
+
+func TestStringIntMap_Keys(t *testing.T) {
+	Convey("TestStringIntMap_Keys", t, func() {
+		Convey("nil", func() {
+			var nilMap map[string]int
+			keys := maputil.StringIntMap(nilMap).Keys()
+
+			So(len(keys), ShouldEqual, 0)
+		})
+		Convey("not nil", func() {
+			d := make(map[string]int)
+			d["a"] = 1
+			d["b"] = 2
+
+			keys := maputil.StringIntMap(d).Keys()
+			So(len(keys), ShouldEqual, 2)
+			So(sets.NewString(keys...).Equal(sets.NewString("a", "b")), ShouldBeTrue)
 		})
 	})
 }
