@@ -4,6 +4,6 @@ package example
 
 // init register error codes defines in this source code to errors package
 func init() {
-	register(ErrPolicyNotFound, 404, map[string]string{"MessageCN": "策略未找到", "MessageEN": "Policy not found"})
-	register(ErrUserNotFound, 404, map[string]string{"MessageCN": "用户未找到", "MessageEN": "User not found"})
+	register(ErrPolicyNotFound, 404, map[string]string{"MessageCN": "策略未找到", "MessageEN": "Policy not found."})
+	register(ErrUserNotFound, 404, map[string]string{"MessageCN": "用户未找到", "MessageEN": "User not found."})
 }
