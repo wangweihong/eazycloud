@@ -9,11 +9,12 @@ ROOT_PACKAGE=github.com/wangweihong/eazycloud
 VERSION_PACKAGE=github.com/wangweihong/eazycloud/pkg/version
 
 .PHONY: all
-all: tidy format lint cover build
+all: tidy gen format lint cover build
 
 include scripts/make-rules/common.mk # make sure include common.mk at the first include line
 include scripts/make-rules/golang.mk
 include scripts/make-rules/tools.mk
+include scripts/make-rules/gen.mk
 include scripts/make-rules/dependencies.mk
 include scripts/make-rules/swagger.mk
 
@@ -74,7 +75,7 @@ cover:
 ## format: Gofmt (reformat) package sources (exclude vendor dir if existed).
 .PHONY: format
 format: tools.verify.golines tools.verify.goimports
-	@echo "===========> Formating codes"
+	@echo "===========> Formatting codes"
 	@$(FIND) -type f -name '*.go' | $(XARGS) gofmt -s -w
 	@$(FIND) -type f -name '*.go' | $(XARGS) goimports -w -local $(ROOT_PACKAGE)
 	@$(FIND) -type f -name '*.go' | $(XARGS) golines -w --max-len=120 --reformat-tags --shorten-comments --ignore-generated .
@@ -104,16 +105,25 @@ check-updates:
 ## tidy: Go mod tidy
 .PHONY: tidy
 tidy:
+	@echo "===========> Run go mod tidy"
 	@$(GO) mod tidy
 
 ## gen: Generate all necessary files, such as error code files.
 .PHONY: gen
 gen:
+	@echo "===========> Run gen"
 	@$(MAKE) gen.run
 
+## ca: Generate CA files for all components.
+# 可以通过make ca CERTIFICATES_SUBJECT=192.168.134.139,127.0.0.1来覆写证书主体
+# 可以通过make ca CERTIFICATES=apiserver来覆写证书对象
+.PHONY: ca
+ca:
+	@$(MAKE) gen.ca
+
 ## deecopy-gen-example: Run an example show how deepcopy auto generate api type's DeepCopy function.
-.PHONY: deecopy-gen-example
-deecopy-gen-example: tools.verify.deepcopy-gen
+.PHONY: deepcopy-gen-example
+deepcopy-gen-example: tools.verify.deepcopy-gen
 	@deepcopy-gen --input-dirs=./tools/deepcopy-gen/example --output-base=../
 
 ## code-gen-example: Run an example show how codegen auto generate error code .go definition file and .md file

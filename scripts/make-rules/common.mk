@@ -4,9 +4,12 @@ SHELL := /bin/bash
 # MAKEFILE_LIST: makefile自带的环境变量，包含所有的makefile文件
 COMMON_SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 
+# 代码目录
 ifeq ($(origin ROOT_DIR),undefined)
 ROOT_DIR := $(abspath $(shell cd $(COMMON_SELF_DIR)/../.. && pwd -P))
 endif
+
+# 输出目录, 包括制品, 测试覆盖率报告等
 ifeq ($(origin OUTPUT_DIR),undefined)
 OUTPUT_DIR := $(ROOT_DIR)/_output
 $(shell mkdir -p $(OUTPUT_DIR))
@@ -79,23 +82,33 @@ ifeq ($(origin CHANGE_HOOK_LINE_SPERATOR), undefined)
     COPY_GITHOOK:=$(shell cp -f ./scripts/githooks/* .git/hooks/)
 endif
 
-#endif
-# Specify components which need certificate
-#ifeq ($(origin CERTIFICATES),undefined)
-#CERTIFICATES=iam-apiserver iam-authz-server admin
-#endif
-
 # Specify tools severity, include: BLOCKER_TOOLS, CRITICAL_TOOLS, TRIVIAL_TOOLS.
 # Missing BLOCKER_TOOLS can cause the CI flow execution failed, i.e. `make all` failed.
 # Missing CRITICAL_TOOLS can lead to some necessary operations failed. i.e. `make release` failed.
 # TRIVIAL_TOOLS are Optional tools, missing these tool have no affect.
-#BLOCKER_TOOLS ?= gsemver golines go-junit-report golangci-lint addlicense goimports codegen
 BLOCKER_TOOLS ?= gsemver golines go-junit-report golangci-lint goimports codegen deepcopy-gen
-#CRITICAL_TOOLS ?= swagger mockgen gotests git-chglog github-release go-mod-outdated protoc-gen-go cfssl
 CRITICAL_TOOLS ?= swagger mockgen gotests git-chglog  go-mod-outdated protoc-gen-go go-gitlint
-#TRIVIAL_TOOLS ?= depth go-callvis gothanks richgo rts kube-score
 TRIVIAL_TOOLS ?= depth go-callvis  richgo rts kube-score
 
 COMMA := ,
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
+
+COMPONENTS ?= example-server
+
+# Specify components which need certificate
+ifeq ($(origin CERTIFICATES),undefined)
+	CERTIFICATES= example-server
+endif
+
+# 这种写法的目的是如果发现未定义才进行赋值
+# `$(origin CERTIFICATES)` 表示获取变量 CERTIFICATES 的来源,取值有以下几种。
+# 	undefined：表示变量未定义，即没有被赋值；
+#	environment：表示变量来自环境变量；
+#	default：表示变量来自于 Makefile 中的默认值；
+#	file：表示变量来自于文件中的赋值；
+#	command line：表示变量来自于命令行的赋值。
+#  这意味着我们可以通过include *.mk, 或者直接make CERTIFICATES_SUBJECT=xxx来设置CERTIFICATES_SUBJECT变量
+ifeq ($(origin CERTIFICATES_SUBJECT),undefined)
+	CERTIFICATES_SUBJECT= 127.0.0.1,example.com,192.168.134.139
+endif
