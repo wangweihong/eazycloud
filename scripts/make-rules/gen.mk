@@ -34,11 +34,18 @@ gen.docgo.check: gen.docgo.doc
 		false ; \
 	fi
 
-# 根据configs/*.yaml中的模板,
+# 生成COMPONENTS中的组件的默认配置
 .PHONY: gen.defaultconfigs
-gen.defaultconfigs:
-	@${ROOT_DIR}/scripts/gen_default_config.sh ${COMPONENTS}
+gen.defaultconfigs: $(addprefix gen.defaultconfigs., $(COMPONENTS))
 
+# 生成指定组件的默认配置
+.PHONY: gen.defaultconfigs.%
+gen.defaultconfigs.%:
+	$(eval Component := $(word 1,$(subst ., ,$*)))
+	@echo "===========> Generating Default Configs files for $(Component)"
+	@${ROOT_DIR}/scripts/gen_default_config.sh ${Component}
+
+# 可以直接make gen.ca.example生成特定组件example的证书，而不影响其他组件
 .PHONY: gen.ca.%
 gen.ca.%:
 	$(eval Certifcate := $(word 1,$(subst ., ,$*)))
@@ -46,9 +53,13 @@ gen.ca.%:
 	@echo "===========> OUTPUT_DIR:$(OUTPUT_DIR)/cert"
 	@${ROOT_DIR}/scripts/gencerts.sh generate_certificate $(OUTPUT_DIR)/cert $(Certifcate) $(CERTIFICATES_SUBJECT)
 
+# 生成组件的证书
+# make CERTIFICATES=xxx gen.ca
+# make gen.ca
 .PHONY: gen.ca
 gen.ca: $(addprefix gen.ca., $(CERTIFICATES))
 
 .PHONY: gen.clean
 gen.clean:
+	@echo "===========> Clean gen files in wildcards '*_generated.go' in ${ROOT_DIR}/internal/pkg/code"
 	@$(FIND) -path ${ROOT_DIR}/internal/pkg/code -type f -name '*_generated.go' -delete
