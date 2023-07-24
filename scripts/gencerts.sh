@@ -13,12 +13,14 @@ readonly CERT_HOSTNAME="${CERT_HOSTNAME:-example-server.exzycloud.com},127.0.0.1
 # Args:
 #   $1 (the directory that certificate files to save)
 #   $2 (the prefix of the certificate filename)
-#   $3 (cert hostname)
+#   $3 (cert alert name)
+#   $4 (cert subject)
 function generate_certificate()
 {
  local cert_dir=${1}
  local prefix=${2}
  local cert_hostname=${3}
+ local cert_subject=${4}
 
  mkdir -p "${cert_dir}"
 
@@ -31,7 +33,7 @@ function generate_certificate()
    lib::log::info "ca.crt not exist, trying to generate ca.art"
    ${OPENSSL_BIN} genrsa -out ca.key 4096
    ${OPENSSL_BIN} req -x509 -new -nodes -sha512 -days 3650 \
-      -subj "/C=CN/ST=Guangdong/L=Shenzhen/O=EazyCloud/OU=Develop" \
+      -subj "$cert_subject" \
       -key ca.key \
       -out ca.crt
  fi
@@ -40,11 +42,13 @@ function generate_certificate()
  # server cert
  ${OPENSSL_BIN} genrsa -out ${prefix}.key 4096
  ${OPENSSL_BIN} req -sha512 -new \
-     -subj "/C=CN/ST=Guangdong/L=Shenzhen/O=EazyCloud/OU=Develop" \
+     -subj "$cert_subject" \
      -key ${prefix}.key \
      -out ${prefix}.csr
 
-cat > v3.ext <<-EOF
+ v3ExtFILE=${prefix}_v3.ext
+
+cat > ${v3ExtFILE} <<-EOF
 authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
@@ -63,7 +67,7 @@ IFS=',' read -ra elements <<< "${cert_hostname}"
   element="${elements[$i]}"
   if [[ $element =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     # 如果是IP地址，则给 IP.* 赋值
-    echo "IP.$((j=j+1)) = $element" >> v3.ext
+    echo "IP.$((j=j+1)) = $element" >> ${v3ExtFILE}
   fi
  done
 
@@ -72,12 +76,12 @@ IFS=',' read -ra elements <<< "${cert_hostname}"
   element="${elements[$i]}"
   if [[ ! $element =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     # 否则，给 DNS.* 赋值
-    echo "DNS.$((j=j+1)) = $element" >> v3.ext
+    echo "DNS.$((j=j+1)) = $element" >> ${v3ExtFILE}
   fi
  done
 
  ${OPENSSL_BIN} x509 -req -sha512 -days 3650 \
-     -extfile v3.ext \
+     -extfile ${v3ExtFILE}  \
      -CA ca.crt -CAkey ca.key -CAcreateserial \
      -in ${prefix}.csr \
      -out ${prefix}.crt

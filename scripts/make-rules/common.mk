@@ -94,10 +94,15 @@ COMMA := ,
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 
-COMPONENTS ?= example-server
+ifeq ($(origin COMPONENTS),undefined)
+	# COMPONENTS ?= example1 example2
+	COMPONENTS= example-server
+endif
+
 
 # Specify components which need certificate
 ifeq ($(origin CERTIFICATES),undefined)
+	# CERTIFICATES ?= example1 example2
 	CERTIFICATES= example-server
 endif
 
@@ -110,5 +115,9 @@ endif
 #	command line：表示变量来自于命令行的赋值。
 #  这意味着我们可以通过include *.mk, 或者直接make CERTIFICATES_SUBJECT=xxx来设置CERTIFICATES_SUBJECT变量
 ifeq ($(origin CERTIFICATES_SUBJECT),undefined)
-	CERTIFICATES_SUBJECT= 127.0.0.1,example.com,192.168.134.139
+	CERTIFICATES_SUBJECT= /C=CN/ST=Guangdong/L=Shenzhen/O=EazyCloud/OU=Develop
+endif
+
+ifeq ($(origin CERTIFICATES_ALT_NAME),undefined)
+	CERTIFICATES_ALT_NAME= 127.0.0.1,example.com,192.168.134.139
 endif

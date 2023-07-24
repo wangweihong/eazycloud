@@ -49,9 +49,9 @@ gen.defaultconfigs.%:
 .PHONY: gen.ca.%
 gen.ca.%:
 	$(eval Certifcate := $(word 1,$(subst ., ,$*)))
-	@echo "===========> Generating Certifcate files for $(Certifcate),Subjects:$(CERTIFICATES_SUBJECT)"
+	@echo "===========> Generating Certifcate files for $(Certifcate),Subjects:$(CERTIFICATES_SUBJECT),ALT_NAME:$(CERTIFICATES_ALT_NAME)"
 	@echo "===========> OUTPUT_DIR:$(OUTPUT_DIR)/cert"
-	@${ROOT_DIR}/scripts/gencerts.sh generate_certificate $(OUTPUT_DIR)/cert $(Certifcate) $(CERTIFICATES_SUBJECT)
+	@${ROOT_DIR}/scripts/gencerts.sh generate_certificate $(OUTPUT_DIR)/cert $(Certifcate) $(CERTIFICATES_ALT_NAME) $(CERTIFICATES_SUBJECT)
 
 # 生成组件的证书
 # make CERTIFICATES=xxx gen.ca
