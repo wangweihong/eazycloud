@@ -14,10 +14,10 @@ import (
 
 // ServerRunOptions contains the options while running a generic api server.
 type ServerRunOptions struct {
-	Mode        string   `json:"mode"`        // GIN服务模式
-	Version     bool     `json:"version"`     // 开启版本模式
-	Healthz     bool     `json:"healthz"`     // 开启healthz服务
-	Middlewares []string `json:"middlewares"` // 安装的通用中间件
+	Mode        string   `json:"mode"        mapstructure:"mode"`        // GIN服务模式
+	Version     bool     `json:"version"     mapstructure:"version"`     // 开启版本模式
+	Healthz     bool     `json:"healthz"     mapstructure:"healthz"`     // 开启healthz服务
+	Middlewares []string `json:"middlewares" mapstructure:"middlewares"` // 安装的通用中间件
 }
 
 // NewServerRunOptions creates a new ServerRunOptions object with default parameters.

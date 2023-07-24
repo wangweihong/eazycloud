@@ -244,6 +244,7 @@ func (a *App) buildCommand() {
 
 // Run is used to launch the application.
 func (a *App) Run() {
+	// 包括1. 解析标志位 2. 执行初始化函数(如cobra的配置加载)等动作
 	if err := a.cmd.Execute(); err != nil {
 		fmt.Printf("%v %v\n", color.RedString("Error:"), err)
 		os.Exit(1)
@@ -271,9 +272,18 @@ func (a *App) runCommand(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		// 解析配置到选项
+		// 注意:options中的字段必须要带有`mapstructure` tag才能正确解析!
 		if err := viper.Unmarshal(a.options); err != nil {
 			return err
 		}
+
+		// 调试用,用于打印viper加载的配置项，以及解析后的option结构
+		// 在出现配置文件中的值没有作用于应用的选项时,移除注释进行调试
+		//viper.Debug()
+		//if printableOptions, ok := a.options.(PrintableOptions); ok && !a.silence {
+		//	log.Infof("viper ----> %v Config: `%s`", progressMessage, printableOptions.String())
+		//}
 	}
 
 	if !a.silence {
@@ -289,6 +299,7 @@ func (a *App) runCommand(cmd *cobra.Command, args []string) error {
 			log.Infof("%v Version: `%s`", progressMessage, version.Get().ToJSON())
 		}
 
+		// 如果没有指定无配置, 则打印所用的配置文件路径
 		if !a.noConfig {
 			log.Infof("%v Config file used: `%s`", progressMessage, viper.ConfigFileUsed())
 		}
@@ -322,7 +333,7 @@ func (a *App) applyOptionRules() error {
 		return errors.NewAggregate(errs...)
 	}
 
-	// 如果选项参数支持打印, 则打印选项参数
+	// 如果选项参数支持打印, 则打印应用最终的运行选项参数(命令行、配置等作用后的最终选项)
 	if printableOptions, ok := a.options.(PrintableOptions); ok && !a.silence {
 		log.Infof("%v Config: `%s`", progressMessage, printableOptions.String())
 	}

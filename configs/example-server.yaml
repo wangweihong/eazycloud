@@ -8,19 +8,21 @@ server:
 
 # HTTP 配置
 insecure:
-  bind-address: ${EAZYCLOUD_EXAMPLE_SERVER_INSECURE_BIND_ADDRESS} # 绑定的不安全 IP 地址，设置为 0.0.0.0 表示使用全部网络接口，默认为 127.0.0.1
-  bind-port: ${EAZYCLOUD_EXAMPLE_SERVER_INSECURE_BIND_PORT} # 提供非安全认证的监听端口，默认为 8080
+  bind-address: ${EXAMPLE_SERVER_INSECURE_BIND_ADDRESS} # 绑定的不安全 IP 地址，设置为 0.0.0.0 表示使用全部网络接口，默认为 127.0.0.1
+  bind-port: ${EXAMPLE_SERVER_INSECURE_BIND_PORT} # 提供非安全认证的监听端口，默认为 8080
+  required: true
 
 # HTTPS 配置
 secure:
-  bind-address: ${EAZYCLOUD_EXAMPLE_SERVER_SECURE_BIND_ADDRESS} # HTTPS 安全模式的 IP 地址，默认为 0.0.0.0
-  bind-port: ${EAZYCLOUD_EXAMPLE_SERVER_SECURE_BIND_PORT} # 使用 HTTPS 安全模式的端口号，设置为 0 表示不启用 HTTPS，默认为 8443
+  bind-address: ${EXAMPLE_SERVER_SECURE_BIND_ADDRESS} # HTTPS 安全模式的 IP 地址，默认为 0.0.0.0
+  bind-port: ${EXAMPLE_SERVER_SECURE_BIND_PORT} # 使用 HTTPS 安全模式的端口号默认为 8443
+  required: false
   tls:
     #cert-dir:  # TLS 证书所在的目录
     #pair-name:  # TLS 私钥对名称
     cert-key:
-      cert-file: ${EAZYCLOUD_EXAMPLE_SERVER_SECURE_TLS_CERT_KEY_CERT_FILE} # 包含 x509 证书的文件路径，用 HTTPS 认证
-      private-key-file: ${EAZYCLOUD_EXAMPLE_SERVER_SECURE_TLS_CERT_KEY_PRIVATE_KEY_FILE} # TLS 私钥
+      cert-file: ${EXAMPLE_SERVER_SECURE_TLS_CERT_FILE} # 包含 x509 证书的文件路径，用 HTTPS 认证
+      private-key-file: ${EXAMPLE_SERVER_SECURE_TLS_CERT_KEY} # TLS 私钥
 
 # JWT 配置
 jwt:
@@ -30,7 +32,7 @@ jwt:
   max-refresh: 24h # token 更新时间(小时)
 
 log:
-  name: apiserver # Logger的名字
+  name: example-server # Logger的名字
   development: true # 是否是开发模式。如果是开发模式，会对DPanicLevel进行堆栈跟踪。
   level: debug # 日志级别，优先级从低到高依次为：debug, info, warn, error, dpanic, panic, fatal。
   format: console # 支持的日志输出格式，目前支持console和json两种。console其实就是text格式。

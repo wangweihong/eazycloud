@@ -14,17 +14,15 @@ var (
 	_ app.CompleteableOptions = &Options{}
 )
 
-// var _ app.ConfigurableOptions = &Options{}
-
 // Options runs a http server.
 type Options struct {
 	Name string `json:"name"`
 
-	GenericServerRunOptions *genericoptions.ServerRunOptions       `json:"server"`
-	Log                     *log.Options                           `json:"log"`
-	FeatureOptions          *genericoptions.FeatureOptions         `json:"feature"`
-	InsecureServing         *genericoptions.InsecureServingOptions `json:"insecure"`
-	SecureServing           *genericoptions.SecureServingOptions   `json:"secure"`
+	GenericServerRunOptions *genericoptions.ServerRunOptions       `json:"server"   mapstructure:"server"`
+	Log                     *log.Options                           `json:"log"      mapstructure:"log"`
+	FeatureOptions          *genericoptions.FeatureOptions         `json:"feature"  mapstructure:"feature"`
+	InsecureServing         *genericoptions.InsecureServingOptions `json:"insecure" mapstructure:"insecure"`
+	SecureServing           *genericoptions.SecureServingOptions   `json:"secure"   mapstructure:"secure"`
 }
 
 // NewOptions creates a new Options object with default parameters.

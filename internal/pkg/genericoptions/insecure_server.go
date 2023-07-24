@@ -12,9 +12,9 @@ import (
 
 // InsecureServingOptions are for creating an unauthenticated, unauthorized, insecure port.
 type InsecureServingOptions struct {
-	BindAddress string `json:"bind-address"`
-	BindPort    int    `json:"bind-port"`
-	Required    bool   `json:"required"`
+	BindAddress string `json:"bind-address" mapstructure:"bind-address"`
+	BindPort    int    `json:"bind-port"    mapstructure:"bind-port"`
+	Required    bool   `json:"required"     mapstructure:"required"`
 }
 
 // NewInsecureServingOptions is for creating an unauthenticated, unauthorized, insecure port.

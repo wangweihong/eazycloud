@@ -16,12 +16,12 @@ func NewApp(basename string) *app.App {
 
 	// 初始化应用实例, 解析参数、绑定标志等
 	application := app.NewApp("http server",
-		basename,                         // 应用名
+		basename,                         // 应用名, 该名字将在未指定配置文件名时,作为默认配置文件名
 		app.WithOptions(opts),            // 设置应用参数
 		app.WithDescription(commandDesc), // 设置应用描述
 		app.WithDefaultValidArgs(),       // 设置应用命令检测参数. 默认是应用不能带有命令
 		app.WithRunFunc(run(opts)),       // 设置应用运行方法
-		app.WithNoConfig(),               // 指明应用不需要配置文件
+		// app.WithNoConfig(),               // 指明应用不需要配置文件
 	)
 
 	return application
