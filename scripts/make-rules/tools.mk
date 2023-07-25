@@ -41,11 +41,6 @@ install.gsemver:
 install.git-chglog:
 	@$(GO) install github.com/git-chglog/git-chglog/cmd/git-chglog@latest
 
-#.PHONY: install.github-release
-#install.github-release:
-#	@$(GO) install github.com/github-release/github-release@latest
-
-
 .PHONY: install.golines
 install.golines:
 	@$(GO) install github.com/segmentio/golines@v0.9.0
@@ -67,9 +62,15 @@ install.gotests:
 install.protoc-gen-go:
 	@$(GO) install github.com/golang/protobuf/protoc-gen-go@latest
 
-#.PHONY: install.cfssl
-#install.cfssl:
-#	@$(ROOT_DIR)/scripts/install/install.sh iam::install::install_cfssl
+.PHONY: install.protoc
+install.protoc:
+	#@apt install -y protobuf-compiler
+	@curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.15.8/protoc-3.15.8-linux-x86_64.zip
+	@unzip protoc-3.15.8-linux-x86_64.zip -d /usr/bin
+
+.PHONY: install.grpcurl
+install.grpcurl:
+	@$(GO) install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
 
 .PHONY: install.goimports
 install.goimports:

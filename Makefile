@@ -9,7 +9,7 @@ ROOT_PACKAGE=github.com/wangweihong/eazycloud
 VERSION_PACKAGE=github.com/wangweihong/eazycloud/pkg/version
 
 .PHONY: all
-all: tidy gen format lint cover build
+all: tidy gen proto format lint cover build
 
 include scripts/make-rules/common.mk # make sure include common.mk at the first include line
 include scripts/make-rules/golang.mk
@@ -17,6 +17,7 @@ include scripts/make-rules/tools.mk
 include scripts/make-rules/gen.mk
 include scripts/make-rules/dependencies.mk
 include scripts/make-rules/swagger.mk
+include scripts/make-rules/proto.mk
 
 # Usage
 
@@ -81,11 +82,6 @@ format: tools.verify.golines tools.verify.goimports
 	@$(FIND) -type f -name '*.go' | $(XARGS) golines -w --max-len=120 --reformat-tags --shorten-comments --ignore-generated .
 	@$(GO) mod edit -fmt
 
-## swagger-example: Generate example swagger and serve.
-.PHONY: swagger.example
-swagger-example:
-	@$(MAKE) swagger.example
-	@$(MAKE) swagger.example.serve
 
 ## dependencies: Install necessary dependencies.
 .PHONY: dependencies
@@ -120,6 +116,22 @@ gen:
 .PHONY: ca
 ca:
 	@$(MAKE) gen.ca
+
+## proto: Generate Proto file for gRPC service
+.PHONY: proto
+proto:
+	@$(MAKE) proto.gen
+
+## configs: Generate application configs  files
+.PHONY: configs
+configs:
+	@$(MAKE) gen.defaultconfigs
+
+## swagger-example: Generate example swagger and serve.
+.PHONY: swagger-example
+swagger-example:
+	@$(MAKE) swagger.example
+	@$(MAKE) swagger.example.serve
 
 ## deecopy-gen-example: Run an example show how deepcopy auto generate api type's DeepCopy function.
 .PHONY: deepcopy-gen-example

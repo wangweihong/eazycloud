@@ -87,13 +87,15 @@ endif
 # Missing CRITICAL_TOOLS can lead to some necessary operations failed. i.e. `make release` failed.
 # TRIVIAL_TOOLS are Optional tools, missing these tool have no affect.
 BLOCKER_TOOLS ?= gsemver golines go-junit-report golangci-lint goimports codegen deepcopy-gen
-CRITICAL_TOOLS ?= swagger mockgen gotests git-chglog  go-mod-outdated protoc-gen-go go-gitlint
-TRIVIAL_TOOLS ?= depth go-callvis  richgo rts kube-score
+CRITICAL_TOOLS ?= swagger mockgen gotests git-chglog  go-mod-outdated protoc-gen-go protoc go-gitlint
+# 可选工具集，缺少不影响
+TRIVIAL_TOOLS ?= depth go-callvis  richgo rts kube-score  grpcurl
 
 COMMA := ,
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 
+# Specify components which need generate config from template
 ifeq ($(origin COMPONENTS),undefined)
 	# COMPONENTS ?= example1 example2
 	COMPONENTS= example-server
