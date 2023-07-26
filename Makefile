@@ -122,7 +122,7 @@ ca:
 proto:
 	@$(MAKE) proto.gen
 
-## configs: Generate application configs files.
+## configs: Generate application default configs files.
 .PHONY: configs
 configs:
 	@$(MAKE) gen.defaultconfigs
@@ -153,7 +153,3 @@ help: Makefile
 	@echo -e "\nUsage: make <TARGETS> <OPTIONS> ...\n\nTargets:"
 	@sed -n 's/^##//p' $< | column -t -s ':' | sed -e 's/^/ /'
 	@echo "$$USAGE_OPTIONS"
-
-.PHONY: aaa
-aaa:
-	@./scripts/common.sh
