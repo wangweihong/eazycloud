@@ -31,7 +31,7 @@ Options:
   IMAGES           Backend images to make. Default is all of cmd starting with iam-.
                    This option is available when using: make image/image.multiarch/push/push.multiarch
                    Example: make image.multiarch IMAGES="eazycloud-apiserver hubctl"
-  REGISTRY_PREFIX  Docker registry prefix. Default is marmotedu.
+  REGISTRY_PREFIX  Docker registry prefix. Default is "".
                    Example: make push REGISTRY_PREFIX=harbor.registry.wang/exampled VERSION=v1.6.2
   PLATFORMS        The multiple platforms to build. Default is linux_amd64 and linux_arm64.
                    This option is available when using: make build.multiarch/image.multiarch/push.multiarch
@@ -117,12 +117,12 @@ gen:
 ca:
 	@$(MAKE) gen.ca
 
-## proto: Generate Proto file for gRPC service
+## proto: Generate Proto file for gRPC service.
 .PHONY: proto
 proto:
 	@$(MAKE) proto.gen
 
-## configs: Generate application configs  files
+## configs: Generate application configs files.
 .PHONY: configs
 configs:
 	@$(MAKE) gen.defaultconfigs
@@ -153,3 +153,7 @@ help: Makefile
 	@echo -e "\nUsage: make <TARGETS> <OPTIONS> ...\n\nTargets:"
 	@sed -n 's/^##//p' $< | column -t -s ':' | sed -e 's/^/ /'
 	@echo "$$USAGE_OPTIONS"
+
+.PHONY: aaa
+aaa:
+	@./scripts/common.sh

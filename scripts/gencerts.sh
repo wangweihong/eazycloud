@@ -4,6 +4,7 @@ SOURCE_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 source "${SOURCE_ROOT}/scripts/lib/init.sh"
 
 # OUT_DIR can come in from the Makefile, so honor it.
+# 即可以通过make OUT_DIR=xxx 的方式设置OUT_DIR的值,而不是用默认值
 readonly LOCAL_OUTPUT_ROOT="${SOURCE_ROOT}/${OUT_DIR:-_output}"
 readonly LOCAL_OUTPUT_CAPATH="${LOCAL_OUTPUT_ROOT}/cert"
 
@@ -22,6 +23,11 @@ function generate_certificate()
  local cert_hostname=${3}
  local cert_subject=${4}
 
+ if [ $# -ne 4 ];then
+    lib::log::error "Usage: generate_certificate ./_output/certs server1 127.0.0.1,localhost /C=CN/ST=Guangdong/L=Shenzhen/O=EazyCloud/OU=Develop"
+    exit 1
+ fi
+
  mkdir -p "${cert_dir}"
 
  # 确认openssl是否安装
@@ -30,7 +36,7 @@ function generate_certificate()
  pushd "${cert_dir}"
 
  if [ ! -r "ca.crt" ]; then
-   lib::log::info "ca.crt not exist, trying to generate ca.art"
+   lib::log::info "ca.crt not exist, trying to generate ca.art in ${cert_dir} "
    ${OPENSSL_BIN} genrsa -out ca.key 4096
    ${OPENSSL_BIN} req -x509 -new -nodes -sha512 -days 3650 \
       -subj "$cert_subject" \
@@ -38,7 +44,7 @@ function generate_certificate()
       -out ca.crt
  fi
 
- lib::log::info "Generate "${prefix}" certificates...."
+ lib::log::info "Generate "${prefix}" certificates in ${cert_dir}"
  # server cert
  ${OPENSSL_BIN} genrsa -out ${prefix}.key 4096
  ${OPENSSL_BIN} req -sha512 -new \

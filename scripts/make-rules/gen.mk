@@ -34,24 +34,26 @@ gen.docgo.check: gen.docgo.doc
 		false ; \
 	fi
 
-# 生成COMPONENTS中的组件的默认配置
-.PHONY: gen.defaultconfigs
-gen.defaultconfigs: $(addprefix gen.defaultconfigs., $(COMPONENTS))
 
 # 生成指定组件的默认配置
 .PHONY: gen.defaultconfigs.%
 gen.defaultconfigs.%:
 	$(eval Component := $(word 1,$(subst ., ,$*)))
-	@echo "===========> Generating Default Configs files for $(Component)"
-	@${ROOT_DIR}/scripts/gen_default_config.sh ${Component}
+	@echo "===========> Generating Default Configs files for \"$(Component)\" "
+	@echo "===========> CONFIG_DIR:$(CONFIG_DIR)"
+	${ROOT_DIR}/scripts/gen_default_config.sh $(CONFIG_DIR) "${Component}"
+
+# 生成COMPONENTS中的组件的默认配置
+.PHONY: gen.defaultconfigs
+gen.defaultconfigs: $(addprefix gen.defaultconfigs., $(COMPONENTS))
 
 # 可以直接make gen.ca.example生成特定组件example的证书，而不影响其他组件
 .PHONY: gen.ca.%
 gen.ca.%:
-	$(eval Certifcate := $(word 1,$(subst ., ,$*)))
-	@echo "===========> Generating Certifcate files for $(Certifcate),Subjects:$(CERTIFICATES_SUBJECT),ALT_NAME:$(CERTIFICATES_ALT_NAME)"
-	@echo "===========> OUTPUT_DIR:$(OUTPUT_DIR)/cert"
-	@${ROOT_DIR}/scripts/gencerts.sh generate_certificate $(OUTPUT_DIR)/cert $(Certifcate) $(CERTIFICATES_ALT_NAME) $(CERTIFICATES_SUBJECT)
+	$(eval Component := $(word 1,$(subst ., ,$*)))
+	@echo "===========> Generating Certifcate files for \"$(Component)\",Subjects:$(CERTIFICATES_SUBJECT),ALT_NAME:$(CERTIFICATES_ALT_NAME)"
+	@echo "===========> CERTIFICATE_DIR:$(CERTIFICATE_DIR)"
+	@${ROOT_DIR}/scripts/gencerts.sh generate_certificate $(CERTIFICATE_DIR) $(Component) $(CERTIFICATES_ALT_NAME) $(CERTIFICATES_SUBJECT)
 
 # 生成组件的证书
 # make CERTIFICATES=xxx gen.ca

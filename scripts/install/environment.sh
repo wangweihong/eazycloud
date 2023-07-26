@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 
+# 可以通过make INSTALL_DIR=xxx的方式设置INSTALL_DIR的值, 其他变量同理。
+
 # 项目源码根目录
 SOURCE_ROOT=$(dirname "${BASH_SOURCE[0]}")/../..
-
 # 生成文件存放目录
+# 如果未指定变量OUT_DIR, 则采用默认值_output
 LOCAL_OUTPUT_ROOT="${SOURCE_ROOT}/${OUT_DIR:-_output}"
 
 
 # 设置安装目录
+# 如果未指定变量INSTALL_DIR, 则采用默认值/tmp/installation
 readonly INSTALL_DIR=${INSTALL_DIR:-/tmp/installation}
 mkdir -p ${INSTALL_DIR}
 readonly ENV_FILE=${SOURCE_ROOT}/scripts/install/environment.sh
@@ -30,3 +33,8 @@ readonly EXAMPLE_SERVER_SECURE_BIND_PORT=${EXAMPLE_SERVER_SECURE_BIND_PORT:-8443
 readonly EXAMPLE_SERVER_SECURE_TLS_CERT_FILE=${EXAMPLE_SERVER_SECURE_TLS_CERT_FILE:-${EAZYCLOUD_CONFIG_DIR}/cert/example-server.crt}
 readonly EXAMPLE_SERVER_SECURE_TLS_CERT_KEY=${EXAMPLE_SERVER_SECURE_TLS_CERT_KEY:-${EAZYCLOUD_CONFIG_DIR}/cert/example-server.key}
 
+# example-grpc配置
+readonly EXAMPLE_GRPC_BIND_ADDRESS=${EXAMPLE_GRPC_BIND_ADDRESS:-0.0.0.0}
+readonly EXAMPLE_GRPC_BIND_PORT=${EXAMPLE_GRPC_BIND_PORT:-8081}
+readonly EXAMPLE_GRPC_TLS_CERT_FILE=${EXAMPLE_GRPC_TLS_CERT_FILE:-${EAZYCLOUD_CONFIG_DIR}/cert/example-grpc.crt}
+readonly EXAMPLE_GRPC_TLS_CERT_KEY=${EXAMPLE_GRPC_TLS_CERT_KEY:-${EAZYCLOUD_CONFIG_DIR}/cert/example-grpc.key}

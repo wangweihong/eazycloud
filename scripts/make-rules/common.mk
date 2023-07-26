@@ -23,6 +23,17 @@ TMP_DIR := $(OUTPUT_DIR)/tmp
 $(shell mkdir -p $(TMP_DIR))
 endif
 
+ifeq ($(origin CONFIG_DIR),undefined)
+CONFIG_DIR := $(OUTPUT_DIR)/configs
+$(shell mkdir -p $(CONFIG_DIR))
+endif
+
+ifeq ($(origin CERTIFICATE_DIR),undefined)
+CERTIFICATE_DIR := $(OUTPUT_DIR)/cert
+$(shell mkdir -p $(CERTIFICATE_DIR))
+endif
+
+
 # set the version number. you should not need to do this
 # for the majority of scenarios.
 ifeq ($(origin VERSION), undefined)
@@ -98,14 +109,14 @@ SPACE := $(EMPTY) $(EMPTY)
 # Specify components which need generate config from template
 ifeq ($(origin COMPONENTS),undefined)
 	# COMPONENTS ?= example1 example2
-	COMPONENTS= example-server
+	COMPONENTS?= example-server example-grpc
 endif
 
 
 # Specify components which need certificate
 ifeq ($(origin CERTIFICATES),undefined)
 	# CERTIFICATES ?= example1 example2
-	CERTIFICATES= example-server
+	CERTIFICATES?= example-server
 endif
 
 # 这种写法的目的是如果发现未定义才进行赋值
@@ -116,10 +127,12 @@ endif
 #	file：表示变量来自于文件中的赋值；
 #	command line：表示变量来自于命令行的赋值。
 #  这意味着我们可以通过include *.mk, 或者直接make CERTIFICATES_SUBJECT=xxx来设置CERTIFICATES_SUBJECT变量
+# # 证书主体信息
 ifeq ($(origin CERTIFICATES_SUBJECT),undefined)
 	CERTIFICATES_SUBJECT= /C=CN/ST=Guangdong/L=Shenzhen/O=EazyCloud/OU=Develop
 endif
 
+# 证书主体可选名称
 ifeq ($(origin CERTIFICATES_ALT_NAME),undefined)
 	CERTIFICATES_ALT_NAME= 127.0.0.1,example.com,192.168.134.139
 endif
