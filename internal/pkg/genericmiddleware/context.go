@@ -9,7 +9,7 @@ import (
 // Context is a middleware that injects common prefix fields to gin.Context.
 func Context() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set(log.KeyRequestID, c.GetString(XRequestIDKey))
+		c.Set(string(log.KeyRequestID), c.GetString(XRequestIDKey))
 		c.Next()
 	}
 }

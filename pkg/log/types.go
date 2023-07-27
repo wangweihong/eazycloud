@@ -7,9 +7,11 @@ import (
 
 // Defines common log fields.
 const (
-	KeyRequestID string = "requestID"
-	KeyUsername  string = "username"
+	KeyRequestID ContextKey = "requestID"
+	KeyUsername  ContextKey = "username"
 )
+
+type ContextKey string
 
 // Field is an alias for the field structure in the underlying log frame.
 type Field = zapcore.Field

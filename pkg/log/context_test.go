@@ -24,7 +24,5 @@ func TestWithFieldPair(t *testing.T) {
 			d := fields["aaa"].(string)
 			So(d, ShouldEqual, "bbb")
 		})
-
 	})
-
 }

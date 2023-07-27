@@ -5,8 +5,8 @@ import (
 )
 
 type (
-	LogKeyCtx   struct{} // store logger in context
-	FieldKeyCtx struct{} // store fields in context
+	LoggerKeyCtx struct{} // store logger in context
+	FieldKeyCtx  struct{} // store fields in context
 )
 
 // WithContext returns a copy of context in which the log value is set.
@@ -20,13 +20,13 @@ func (l *zapLogger) WithContext(ctx context.Context) context.Context {
 		ctx = context.Background()
 	}
 
-	return context.WithValue(ctx, LogKeyCtx{}, l)
+	return context.WithValue(ctx, LoggerKeyCtx{}, l)
 }
 
 // FromContext returns the value of the log key on the ctx.
 func FromContext(ctx context.Context) Logger {
 	if ctx != nil {
-		logger := ctx.Value(LogKeyCtx{})
+		logger := ctx.Value(LoggerKeyCtx{})
 		if logger != nil {
 			return logger.(Logger)
 		}
@@ -41,6 +41,18 @@ func WithFields(ctx context.Context, fields map[string]interface{}) context.Cont
 		ctx = context.Background()
 	}
 
+	if originFields := ctx.Value(FieldKeyCtx{}); originFields != nil {
+		if fieldMap, ok := originFields.(map[string]interface{}); ok {
+			if fieldMap == nil {
+				fieldMap = make(map[string]interface{})
+			}
+
+			for k, v := range fields {
+				fieldMap[k] = v
+			}
+			return context.WithValue(ctx, FieldKeyCtx{}, fieldMap)
+		}
+	}
 	return context.WithValue(ctx, FieldKeyCtx{}, fields)
 }
 
