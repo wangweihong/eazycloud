@@ -11,6 +11,18 @@ import (
 	"github.com/wangweihong/eazycloud/pkg/sets"
 )
 
+const (
+	MWNameContext   = "context"
+	MWNameRequestID = "requestid"
+	MWNameRecovery  = "recovery"
+	MWNameSecure    = "secure"
+	MWNameOptions   = "options"
+	MWNameNoCache   = "nocache"
+	MWNameCORS      = "cors"
+	MWNameLogger    = "logger"
+	MWNameDump      = "dump"
+)
+
 type SkipperFunc func(*gin.Context) bool
 
 func AllowPathPrefixSkipper(prefixes ...string) SkipperFunc {
@@ -83,15 +95,15 @@ func Secure(c *gin.Context) {
 
 func defaultMiddlewareList() map[string]gin.HandlerFunc {
 	return map[string]gin.HandlerFunc{
-		"context":   Context(),
-		"requestid": RequestID(),
-		"recovery":  gin.Recovery(),
-		"secure":    Secure,
-		"options":   Options,
-		"nocache":   NoCache,
-		"cors":      Cors(),
-		"logger":    Logger(),
-		"dump":      gindump.Dump(),
+		MWNameContext:   Context(),
+		MWNameRequestID: RequestID(),
+		MWNameRecovery:  gin.Recovery(),
+		MWNameSecure:    Secure,
+		MWNameOptions:   Options,
+		MWNameNoCache:   NoCache,
+		MWNameCORS:      Cors(),
+		MWNameLogger:    Logger(),
+		MWNameDump:      gindump.Dump(),
 	}
 }
 

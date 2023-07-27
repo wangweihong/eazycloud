@@ -1,6 +1,7 @@
 package genericserver
 
 import (
+	"github.com/wangweihong/eazycloud/internal/pkg/genericmiddleware"
 	"net"
 	"strconv"
 	"time"
@@ -73,10 +74,13 @@ type FeatureProfilingInfo struct {
 // NewConfig returns a Config struct with the default values.
 func NewConfig() *Config {
 	return &Config{
-		Version:       true,
-		Healthz:       true,
-		Mode:          gin.ReleaseMode,
-		Middlewares:   []string{"requestid", "context"},
+		Version: true,
+		Healthz: true,
+		Mode:    gin.ReleaseMode,
+		Middlewares: []string{
+			genericmiddleware.MWNameRequestID,
+			genericmiddleware.MWNameContext,
+		},
 		EnableMetrics: true,
 		Jwt: &JwtInfo{
 			Realm:      "jwt",
