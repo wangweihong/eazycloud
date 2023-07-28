@@ -50,3 +50,14 @@ func (m StringStringMap) Get(key string) string {
 	v, _ := m[key]
 	return v
 }
+
+func (m StringStringMap) Keys() []string {
+	if m == nil {
+		return []string{}
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}

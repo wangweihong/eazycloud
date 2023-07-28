@@ -1,5 +1,4 @@
 // Package verflag defines utility functions to handle command line flags
-// related to version of IAM.
 package verflag
 
 import (
@@ -9,7 +8,7 @@ import (
 
 	"github.com/wangweihong/eazycloud/pkg/version"
 
-	flag "github.com/spf13/pflag"
+	"github.com/spf13/pflag"
 )
 
 type versionValue int
@@ -60,9 +59,9 @@ func (v *versionValue) Type() string {
 // VersionVar defines a flag with the specified name and usage string.
 func VersionVar(p *versionValue, name string, value versionValue, usage string) {
 	*p = value
-	flag.Var(p, name, usage)
+	pflag.Var(p, name, usage)
 	// "--version" will be treated as "--version=true"
-	flag.Lookup(name).NoOptDefVal = "true"
+	pflag.Lookup(name).NoOptDefVal = "true"
 }
 
 // Version wraps the VersionVar function.
@@ -78,10 +77,11 @@ var versionFlag = Version(versionFlagName, VersionFalse, "Print version informat
 
 // AddFlags registers this package's flags on arbitrary FlagSets, such that they point to the
 // same value as the global flags.
-func AddFlags(fs *flag.FlagSet) {
-	fs.AddFlag(flag.Lookup(versionFlagName))
+func AddFlags(fs *pflag.FlagSet) {
+	fs.AddFlag(pflag.Lookup(versionFlagName))
 }
 
+// nolint: forbidigo
 // PrintAndExitIfRequested will check if the -version flag was passed
 // and, if so, print the version and exit.
 func PrintAndExitIfRequested() {

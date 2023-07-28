@@ -1,16 +1,19 @@
 package log
 
 import (
+	"fmt"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 // Defines common log fields.
 const (
-	KeyRequestID   string = "requestID"
-	KeyUsername    string = "username"
-	KeyWatcherName string = "watcher"
+	KeyRequestID ContextKey = "requestID"
+	KeyUsername  ContextKey = "username"
 )
+
+type ContextKey string
 
 // Field is an alias for the field structure in the underlying log frame.
 type Field = zapcore.Field
@@ -92,3 +95,9 @@ var (
 	Uintptr     = zap.Uintptr
 	Uintptrs    = zap.Uintptrs
 )
+
+// Every constructs a field that carries a pretty string.
+func Every(key string, val interface{}) Field {
+	str := fmt.Sprintf("%#v", val)
+	return Field{Key: key, Type: zapcore.StringType, String: str}
+}

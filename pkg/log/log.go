@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"sync"
 
 	"github.com/wangweihong/eazycloud/pkg/log/klog"
@@ -553,19 +554,17 @@ func (l *zapLogger) L(ctx context.Context) *zapLogger {
 	lg := l.clone()
 
 	if requestID := ctx.Value(KeyRequestID); requestID != nil {
-		lg.zapLogger = lg.zapLogger.With(zap.Any(KeyRequestID, requestID))
+		lg.zapLogger = lg.zapLogger.With(zap.Any(string(KeyRequestID), requestID))
 	}
+
 	if username := ctx.Value(KeyUsername); username != nil {
-		lg.zapLogger = lg.zapLogger.With(zap.Any(KeyUsername, username))
-	}
-	if watcherName := ctx.Value(KeyWatcherName); watcherName != nil {
-		lg.zapLogger = lg.zapLogger.With(zap.Any(KeyWatcherName, watcherName))
+		lg.zapLogger = lg.zapLogger.With(zap.Any(string(KeyUsername), username))
 	}
 
 	return lg
 }
 
-// L method output with specified context value.
+// F method output with specified context value.
 func F(ctx context.Context) *zapLogger {
 	return std.F(ctx)
 }
@@ -573,15 +572,33 @@ func F(ctx context.Context) *zapLogger {
 func (l *zapLogger) F(ctx context.Context) *zapLogger {
 	lg := l.clone()
 
-	if fields := ctx.Value(fieldKeyCtx{}); fields != nil {
+	if fields := ctx.Value(FieldKeyCtx{}); fields != nil {
 		if fieldMap, ok := fields.(map[string]interface{}); ok {
-			for k, v := range fieldMap {
-				lg.zapLogger = lg.zapLogger.With(zap.Any(k, v))
-			}
+			lg.addLoggerField(fieldMap)
+		}
+	}
+
+	// 兼容gin.Context
+	if fields := ctx.Value(FieldKeyCtx{}.String()); fields != nil {
+		if fieldMap, ok := fields.(map[string]interface{}); ok {
+			lg.addLoggerField(fieldMap)
 		}
 	}
 
 	return lg
+}
+
+func (l *zapLogger) addLoggerField(fieldMap map[string]interface{}) {
+	// 支持 field key排序
+	keys := make([]string, 0, len(fieldMap))
+	for k := range fieldMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		l.zapLogger = l.zapLogger.With(zap.Any(k, fieldMap[k]))
+	}
 }
 
 func (l *zapLogger) clone() *zapLogger {

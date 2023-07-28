@@ -3,7 +3,8 @@
 #
 
 .PHONY: gen.run
-gen.run: gen.clean gen.errcode gen.docgo.doc
+gen.run: gen.clean gen.errcode
+# gen.run: gen.clean gen.errcode gen.docgo.doc
 
 .PHONY: gen.errcode
 gen.errcode: gen.errcode.code gen.errcode.doc
@@ -15,7 +16,7 @@ gen.errcode.code: tools.verify.codegen
 
 .PHONY: gen.errcode.doc
 gen.errcode.doc: tools.verify.codegen
-	@echo "===========> Generating error code markdown documentation"
+	@echo "===========> Generating error code markdown documentation:${ROOT_DIR}/docs/guide/zh-CN/api/error_code_generated.md"
 	@codegen -type=int -doc \
 		-output ${ROOT_DIR}/docs/guide/zh-CN/api/error_code_generated.md ${ROOT_DIR}/internal/pkg/code
 
@@ -32,3 +33,35 @@ gen.docgo.check: gen.docgo.doc
 		echo "$@: untracked doc.go file(s) exist in working directory" >&2 ; \
 		false ; \
 	fi
+
+
+# 生成指定组件的默认配置
+.PHONY: gen.defaultconfigs.%
+gen.defaultconfigs.%:
+	$(eval Component := $(word 1,$(subst ., ,$*)))
+	@echo "===========> Generating Default Configs files for \"$(Component)\" "
+	@echo "===========> CONFIG_DIR:$(CONFIG_DIR)"
+	${ROOT_DIR}/scripts/gen_default_config.sh $(CONFIG_DIR) "${Component}"
+
+# 生成COMPONENTS中的组件的默认配置
+.PHONY: gen.defaultconfigs
+gen.defaultconfigs: $(addprefix gen.defaultconfigs., $(COMPONENTS))
+
+# 可以直接make gen.ca.example生成特定组件example的证书，而不影响其他组件
+.PHONY: gen.ca.%
+gen.ca.%:
+	$(eval Component := $(word 1,$(subst ., ,$*)))
+	@echo "===========> Generating Certifcate files for \"$(Component)\",Subjects:$(CERTIFICATES_SUBJECT),ALT_NAME:$(CERTIFICATES_ALT_NAME)"
+	@echo "===========> CERTIFICATE_DIR:$(CERTIFICATE_DIR)"
+	@${ROOT_DIR}/scripts/gencerts.sh generate_certificate $(CERTIFICATE_DIR) $(Component) $(CERTIFICATES_ALT_NAME) $(CERTIFICATES_SUBJECT)
+
+# 生成组件的证书
+# make CERTIFICATES=xxx gen.ca
+# make gen.ca
+.PHONY: gen.ca
+gen.ca: $(addprefix gen.ca., $(CERTIFICATES))
+
+.PHONY: gen.clean
+gen.clean:
+	@echo "===========> Clean gen files in wildcards '*_generated.go' in ${ROOT_DIR}/internal/pkg/code"
+	@$(FIND) -path ${ROOT_DIR}/internal/pkg/code -type f -name '*_generated.go' -delete

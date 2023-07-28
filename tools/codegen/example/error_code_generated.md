@@ -10,7 +10,7 @@
 {
   "code": 100101,
   "messageEN": "Database error",
-  "messageEN": "数据库出错"
+  "messageCN": "数据库出错"
 }
 ```
 
@@ -22,6 +22,6 @@
 
 | Identifier | Code | HTTP Code | Description |  中文描述 	|
 | ---------- | ---- | --------- | ----------- | ----------- |
-| ErrPolicyNotFound | 110201 | 404 | Policy not found | 策略未找到 |
-| ErrUserNotFound | 110202 | 404 | User not found | 用户未找到 |
+| ErrPolicyNotFound | 110201 | 404 | Policy not found. | 策略未找到 |
+| ErrUserNotFound | 110202 | 404 | User not found. | 用户未找到 |
 

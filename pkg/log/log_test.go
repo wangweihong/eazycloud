@@ -59,7 +59,31 @@ func Test_F(t *testing.T) {
 	fields["traceID"] = "12345678"
 	fields["name"] = "libai"
 	ctx := log.WithFields(context.Background(), fields)
+
 	// Log with fields	{"name": "libai", "traceID": "12345678"}
+	log.F(ctx).Info("Log with fields")
+
+	field2 := make(map[string]interface{}, 0)
+	field2["other"] = "aaa"
+	ctx = log.WithFields(ctx, field2)
+	d := ctx.Value(log.FieldKeyCtx{})
+	if d == nil {
+		t.Log("field is nil")
+		t.Fail()
+	}
+
+	dm := d.(map[string]interface{})
+	if _, ok := dm["name"]; !ok {
+		t.Log("name not exist")
+		t.Fail()
+	}
+
+	if len(dm) != 3 {
+		t.Log("len not match")
+		t.Fail()
+	}
+
+	// Log with fields	{"name": "libai", "other": "aaa", "traceID": "12345678"}
 	log.F(ctx).Info("Log with fields")
 }
 
@@ -154,11 +178,4 @@ func Benchmark_ZapTypeObject(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		log.Info("This is object example", log.Object("req", req))
 	}
-}
-
-func TestWithFieldPair(t *testing.T) {
-	defer log.Flush()
-	ctx := log.WithFieldPair(nil, "aaa", "bbb")
-	// test	{"aaa": "bbb"}
-	log.F(ctx).Info("test")
 }

@@ -3,6 +3,8 @@ package maputil_test
 import (
 	"testing"
 
+	"github.com/wangweihong/eazycloud/pkg/sets"
+
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/wangweihong/eazycloud/pkg/util/maputil"
@@ -87,6 +89,26 @@ func TestStringBoolMap_Get(t *testing.T) {
 
 			So(maputil.StringBoolMap(d).Get("a"), ShouldBeTrue)
 			So(maputil.StringBoolMap(d).Get("noexist"), ShouldBeFalse)
+		})
+	})
+}
+
+func TestStringBoolMap_Keys(t *testing.T) {
+	Convey("TestStringBoolMap_Keys", t, func() {
+		Convey("nil", func() {
+			var nilMap map[string]bool
+			keys := maputil.StringBoolMap(nilMap).Keys()
+
+			So(len(keys), ShouldEqual, 0)
+		})
+		Convey("not nil", func() {
+			d := make(map[string]bool)
+			d["a"] = true
+			d["b"] = true
+
+			keys := maputil.StringBoolMap(d).Keys()
+			So(len(keys), ShouldEqual, 2)
+			So(sets.NewString(keys...).Equal(sets.NewString("a", "b")), ShouldBeTrue)
 		})
 	})
 }

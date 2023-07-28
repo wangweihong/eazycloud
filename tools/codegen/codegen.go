@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -255,10 +256,16 @@ func (g *Generator) generate(typeName string) {
 	for _, v := range values {
 		code, descriptionMap := v.ParseCommentGroup()
 		mapStr := "map[string]string{"
-
 		mapLen := len(descriptionMap)
-		for lan, desc := range descriptionMap {
-			mapStr += fmt.Sprintf("\"%v\":\"%v\"", lan, desc)
+		keys := make([]string, 0, len(descriptionMap))
+		for k := range descriptionMap {
+			keys = append(keys, k)
+		}
+		// 对键（key）排序
+		sort.Strings(keys)
+		// 对显示的描述进行排序
+		for _, lan := range keys {
+			mapStr += fmt.Sprintf("\"%v\":\"%v\"", lan, descriptionMap[lan])
 			mapLen--
 			if mapLen != 0 {
 				mapStr += ","
