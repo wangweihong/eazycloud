@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/wangweihong/eazycloud/pkg/util/maputil"
+
+	"github.com/wangweihong/eazycloud/pkg/util/sliceutil"
+
 	"github.com/spf13/pflag"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericmiddleware"
@@ -48,6 +52,11 @@ func (s *ServerRunOptions) Validate() []error {
 
 	if !sets.NewString("debug", "test", "release").Has(s.Mode) {
 		errors = append(errors, fmt.Errorf("server.mode must be `debug`,`test` or `release`"))
+	}
+
+	rm, repeated := sliceutil.StringSlice(s.Middlewares).GetRepeat()
+	if repeated {
+		errors = append(errors, fmt.Errorf("middleware `%v` is repeated", maputil.StringIntMap(rm).Keys()))
 	}
 
 	supportedMiddleware := sets.NewString(genericmiddleware.MiddlewareNames...)
