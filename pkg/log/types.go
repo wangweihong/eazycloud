@@ -1,6 +1,8 @@
 package log
 
 import (
+	"fmt"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -93,3 +95,9 @@ var (
 	Uintptr     = zap.Uintptr
 	Uintptrs    = zap.Uintptrs
 )
+
+// Every constructs a field that carries a pretty string.
+func Every(key string, val interface{}) Field {
+	str := fmt.Sprintf("%#v", val)
+	return Field{Key: key, Type: zapcore.StringType, String: str}
+}
