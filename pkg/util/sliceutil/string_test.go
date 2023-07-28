@@ -37,3 +37,39 @@ func TestStringSlice_HasRepeat(t *testing.T) {
 		So(sliceutil.StringSlice([]string{"b", "a"}).HasRepeat(), ShouldBeFalse)
 	})
 }
+
+func TestStringSlice_GetRepeat(t *testing.T) {
+	Convey("TestStringSlice_GetRepeat", t, func() {
+		var nilS []string
+		var rm map[string]int
+		var repeated bool
+
+		rm, repeated = sliceutil.StringSlice(nilS).GetRepeat()
+		So(rm, ShouldBeNil)
+		So(repeated, ShouldBeFalse)
+
+		rm, repeated = sliceutil.StringSlice([]string{"a", "a", "a", "b"}).GetRepeat()
+		So(rm, ShouldNotBeNil)
+		So(repeated, ShouldBeTrue)
+		d, _ := rm["a"]
+		So(d, ShouldEqual, 3)
+
+		rm, repeated = sliceutil.StringSlice([]string{"b", "a"}).GetRepeat()
+		So(rm, ShouldBeNil)
+		So(repeated, ShouldBeFalse)
+	})
+}
+
+func TestStringSlice_Sort(t *testing.T) {
+	Convey("TestStringSlice_Sort", t, func() {
+		var nilS []string
+		So(sliceutil.StringSlice(nilS).SortAsc(), ShouldBeNil)
+		So(sliceutil.StringSlice([]string{"a", "c", "b"}).SortAsc(), ShouldResemble, []string{"a", "b", "c"})
+		So(sliceutil.StringSlice([]string{"a", "c", "b"}).SortAsc(), ShouldNotResemble, []string{"a", "c", "b"})
+
+		So(sliceutil.StringSlice(nilS).SortDesc(), ShouldBeNil)
+		So(sliceutil.StringSlice([]string{"a", "c", "b"}).SortDesc(), ShouldResemble, []string{"c", "b", "a"})
+		So(sliceutil.StringSlice([]string{"a", "c", "b"}).SortDesc(), ShouldNotResemble, []string{"a", "c", "b"})
+
+	})
+}
