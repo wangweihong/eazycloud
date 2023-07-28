@@ -16,3 +16,18 @@ func (m StringSlice) Append(target ...string) StringSlice {
 
 	return append(m, target...)
 }
+
+//HasRepeat slice has repeated data
+func (m StringSlice) HasRepeat() bool {
+	if m != nil {
+		s := make(map[string]struct{})
+		for _, v := range m {
+			if _, exist := s[v]; exist {
+				return true
+			}
+			s[v] = struct{}{}
+		}
+	}
+
+	return false
+}

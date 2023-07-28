@@ -28,3 +28,12 @@ func TestIntSlice_DeepCopy(t *testing.T) {
 		})
 	})
 }
+
+func TestIntSlice_HasRepeat(t *testing.T) {
+	Convey("TestIntSlice_HasRepeat", t, func() {
+		var nilS []int
+		So(sliceutil.IntSlice(nilS).HasRepeat(), ShouldBeFalse)
+		So(sliceutil.IntSlice([]int{123, 123}).HasRepeat(), ShouldBeTrue)
+		So(sliceutil.IntSlice([]int{123, 245}).HasRepeat(), ShouldBeFalse)
+	})
+}

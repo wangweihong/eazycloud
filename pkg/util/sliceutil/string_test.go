@@ -28,3 +28,12 @@ func TestStringSlice_DeepCopy(t *testing.T) {
 		})
 	})
 }
+
+func TestStringSlice_HasRepeat(t *testing.T) {
+	Convey("TestStringSlice_HasRepeat", t, func() {
+		var nilS []string
+		So(sliceutil.StringSlice(nilS).HasRepeat(), ShouldBeFalse)
+		So(sliceutil.StringSlice([]string{"a", "a"}).HasRepeat(), ShouldBeTrue)
+		So(sliceutil.StringSlice([]string{"b", "a"}).HasRepeat(), ShouldBeFalse)
+	})
+}
