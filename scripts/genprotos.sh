@@ -19,8 +19,8 @@ function generate_protos()
    echo $pbfile
    # 注意生成的pb包路径为 --go_out路径+.pb包中go_package变量指定的路径
    # 如version.pb文件中go_package值为`option go_package = "apis/version";`
-   # 其生成的version.pb.go路径为./apis/version/version.pb.go
-   protoc --go_out=plugins=grpc:./ $pbfile
+   # 其生成的version.pb.go路径为../apis/version/version.pb.go
+   protoc --go_out=plugins=grpc:../ $pbfile
  done
 
  popd
