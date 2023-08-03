@@ -43,6 +43,7 @@ func (s *GRPCServer) Run() {
 				log.Fatalf("failed to listen on tcp://%s : %v", s.Address, err)
 			}
 
+			log.Infof("gRPC Listen at %v", listen.Addr())
 			if err := s.Serve(listen); err != nil {
 				log.Fatalf("failed to serve grpc server tcp://%v : %v", s.Address, err)
 			}
@@ -56,11 +57,11 @@ func (s *GRPCServer) Run() {
 			if err := os.Remove(s.UnixSocket); err != nil && !os.IsNotExist(err) {
 				log.Fatalf("unix socket file %v already in use, remove fail:%v", s.UnixSocket, err)
 			}
-			log.Infof("start gRPC server at unx://%s", s.UnixSocket)
+			log.Infof("start gRPC server at unix://%s", s.UnixSocket)
 
-			listen, err := net.Listen("unix", s.UnixSocket)
+			listen, err := s.buildUnixListen()
 			if err != nil {
-				log.Fatalf("failed to listen on unix://%s : %v", s.UnixSocket, err)
+				log.Fatalf("fail to build unix listen unix://%s: %v", s.UnixSocket, err)
 			}
 
 			if err := s.Serve(listen); err != nil {

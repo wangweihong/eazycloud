@@ -40,6 +40,7 @@ func (s *TCPOptions) Validate() []error {
 		errors = append(errors, fmt.Errorf("gRPC bind address `--tcp.bind-address` is empty"))
 	}
 
+	// BindPort = 0 means random port. maybe should support it ??
 	if s.BindPort < 1 || s.BindPort > 65535 {
 		errors = append(
 			errors,
