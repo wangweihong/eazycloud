@@ -73,3 +73,24 @@ func TestStringSlice_Sort(t *testing.T) {
 
 	})
 }
+
+func TestStringSlice_HasEmpty(t *testing.T) {
+	Convey("TestStringSlice_HasEmpty", t, func() {
+		var nilS []string
+		num, hasEmpty := sliceutil.StringSlice(nilS).HasEmpty()
+		So(num, ShouldEqual, 0)
+		So(hasEmpty, ShouldBeFalse)
+
+		num, hasEmpty = sliceutil.StringSlice([]string{"", ""}).HasEmpty()
+		So(num, ShouldEqual, 2)
+		So(hasEmpty, ShouldBeTrue)
+
+		num, hasEmpty = sliceutil.StringSlice([]string{"a", "b"}).HasEmpty()
+		So(num, ShouldEqual, 0)
+		So(hasEmpty, ShouldBeFalse)
+
+		num, hasEmpty = sliceutil.StringSlice([]string{"", "b"}).HasEmpty()
+		So(num, ShouldEqual, 1)
+		So(hasEmpty, ShouldBeTrue)
+	})
+}
