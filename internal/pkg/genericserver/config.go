@@ -1,10 +1,11 @@
 package genericserver
 
 import (
-	"github.com/wangweihong/eazycloud/internal/pkg/genericmiddleware"
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/wangweihong/eazycloud/internal/pkg/genericmiddleware"
 
 	"github.com/gin-gonic/gin"
 )
