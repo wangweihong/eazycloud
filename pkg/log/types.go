@@ -1,8 +1,11 @@
 package log
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/kr/pretty"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -97,7 +100,22 @@ var (
 )
 
 // Every constructs a field that carries a pretty string.
+// 5 times performance compared with "Any".
 func Every(key string, val interface{}) Field {
-	str := fmt.Sprintf("%#v", val)
-	return Field{Key: key, Type: zapcore.StringType, String: str}
+	byteData, err := json.Marshal(val)
+	if err != nil {
+		return Any(key, val)
+	}
+
+	return Field{Key: key, Type: zapcore.StringType, String: string(byteData)}
+}
+
+// Pretty log data with reflect type. It can log which type data (and object field' type) is.
+// but **50** times performance compared with "Any".
+func Pretty(key string, val interface{}) Field {
+	s := fmt.Sprintf("%# v", pretty.Formatter(val))
+	s = strings.Replace(s, "\n", "", -1)
+	s = strings.Replace(s, "\t", "", -1)
+	s = strings.Replace(s, " ", "", -1)
+	return Field{Key: key, Type: zapcore.StringType, String: s}
 }
