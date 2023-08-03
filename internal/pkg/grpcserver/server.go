@@ -1,8 +1,8 @@
 package grpcserver
 
 import (
-	"fmt"
 	"net"
+	"os"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor"
 
@@ -20,7 +20,8 @@ import (
 
 type GRPCServer struct {
 	*grpc.Server
-	address string
+	UnixSocket string
+	Address    string
 	// install services
 	Version bool
 	Reflect bool
@@ -32,19 +33,46 @@ type GRPCServer struct {
 
 func (s *GRPCServer) Run() {
 	var eg errgroup.Group
-	eg.Go(func() error {
-		listen, err := net.Listen("tcp", s.address)
-		if err != nil {
-			return fmt.Errorf("failed to listen: %w", err)
-		}
-		log.Infof("start gRPC server at %s", s.address)
 
-		if err := s.Serve(listen); err != nil {
-			return fmt.Errorf("failed to start grpc server: %w", err)
-		}
-		return nil
-	})
+	if s.Address != "" {
+		eg.Go(func() error {
+			log.Infof("start gRPC server at tcp://%s", s.Address)
 
+			listen, err := net.Listen("tcp", s.Address)
+			if err != nil {
+				log.Fatalf("failed to listen on tcp://%s : %v", s.Address, err)
+			}
+
+			if err := s.Serve(listen); err != nil {
+				log.Fatalf("failed to serve grpc server tcp://%v : %v", s.Address, err)
+			}
+			return nil
+		})
+	}
+
+	if s.UnixSocket != "" {
+		eg.Go(func() error {
+			// If s.UnixSocket file exist before `Listen`, net Listen will fail with `bind: address already in use`
+			if err := os.Remove(s.UnixSocket); err != nil && !os.IsNotExist(err) {
+				log.Fatalf("unix socket file %v already in use, remove fail:%v", s.UnixSocket, err)
+			}
+			log.Infof("start gRPC server at unx://%s", s.UnixSocket)
+
+			listen, err := net.Listen("unix", s.UnixSocket)
+			if err != nil {
+				log.Fatalf("failed to listen on unix://%s : %v", s.UnixSocket, err)
+			}
+
+			if err := s.Serve(listen); err != nil {
+				log.Fatalf("failed to serve grpc server unix://%s: %v", s.UnixSocket, err)
+			}
+			return nil
+		})
+	}
+
+	// eg的机制是只有全部的eg goroutine执行完才回去处理错误
+	// 这意味着只有有一个服务正常(goroutine阻塞),这里就一直阻塞!
+	// 因此不能依赖于eg的错误处理进行异常退出。
 	if err := eg.Wait(); err != nil {
 		log.Fatal(err.Error())
 	}
@@ -52,7 +80,14 @@ func (s *GRPCServer) Run() {
 
 func (s *GRPCServer) Close() {
 	s.GracefulStop()
-	log.Infof("gRPC server on %s stopped", s.address)
+	if s.Address != "" {
+		log.Infof("gRPC server on tcp://%s stopped", s.Address)
+	}
+
+	if s.UnixSocket != "" {
+		_ = os.Remove(s.UnixSocket)
+		log.Infof("gRPC server on unix://%s stopped", s.UnixSocket)
+	}
 }
 
 // 安装通用服务的中间件和api

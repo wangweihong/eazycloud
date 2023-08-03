@@ -116,7 +116,7 @@ endif
 # Specify components which need certificate
 ifeq ($(origin CERTIFICATES),undefined)
 	# CERTIFICATES ?= example1 example2
-	CERTIFICATES?= example-server
+	CERTIFICATES?= example-server example-grpc
 endif
 
 # 这种写法的目的是如果发现未定义才进行赋值

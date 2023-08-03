@@ -17,6 +17,7 @@ import (
 
 // ServerRunOptions contains the options while running a generic gRPC server.
 type ServerRunOptions struct {
+	MaxMsgSize         int      `json:"max-msg-size"        mapstructure:"max-msg-size"`
 	Version            bool     `json:"version"             mapstructure:"version"`             // 开启版本服务
 	Reflect            bool     `json:"reflect"             mapstructure:"reflect"`             // 是否开启gRPC反射服务。开启反射服务后, grpcurl工具才能获取gRPC服务接口
 	Debug              bool     `json:"debug"               mapstructure:"debug"`               // 是否开启调试服务
@@ -29,6 +30,7 @@ func NewServerRunOptions() *ServerRunOptions {
 	defaults := grpcserver.NewConfig()
 
 	return &ServerRunOptions{
+		MaxMsgSize:         4 * 1024 * 1024,
 		Version:            defaults.Version,
 		Reflect:            defaults.Reflect,
 		Debug:              defaults.Debug,
@@ -39,6 +41,7 @@ func NewServerRunOptions() *ServerRunOptions {
 
 // ApplyTo applies the run options to the method receiver and returns self.
 func (s *ServerRunOptions) ApplyTo(c *grpcserver.GRPCConfig) error {
+	c.MaxMsgSize = s.MaxMsgSize
 	c.Version = s.Version
 	c.Reflect = s.Reflect
 	c.Debug = s.Debug
@@ -88,4 +91,5 @@ func (s *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 			",",
 		),
 	)
+	fs.IntVar(&s.MaxMsgSize, "server.max-msg-size", s.MaxMsgSize, "gRPC max message size.")
 }

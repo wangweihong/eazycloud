@@ -1,5 +1,6 @@
 
 # GRPC 服务
+GRPC服务同时支持tcp和unix两种协议，可以同时启用
 
 ## 添加服务
 1. internal/pkg/proto目录

@@ -5,10 +5,13 @@ server:
   reflect: false # 是否安装反射服务。如果开启, 则可以通过反射获取gRPC服务信息。默认 false
   version: true # 是否安装版本服务，默认 true
   debug: false # 是否安装调试服务，默认 false
+  max-msg-size:   4194304 # 消息最多字节数, 默认4M
   unary-interceptors: requestid,context,logger,recovery # unary拦截器
-# GRPC 配置
-grpc:
-  bind-address: ${EXAMPLE_GRPC_BIND_ADDRESS} #gRPC IP 地址，默认为 0.0.0.0
+
+# gRPC TCP服务器配置
+tcp:
+  required: true
+  bind-address: ${EXAMPLE_GRPC_BIND_ADDRESS} #gRPC 监听地址，如果是tcp协议,默认为 0.0.0.0; 如果是UDP协议默认是/var/run/example-grpc.socket
   bind-port: ${EXAMPLE_GRPC_BIND_PORT} # 使用 gRPC 端口号默认为 8081
   tls-enable: false # 是否开启TLS服务
   tls:
@@ -17,6 +20,9 @@ grpc:
     cert-key:
       cert-file: ${EXAMPLE_GRPC_TLS_CERT_FILE} # 包含 x509 证书的文件路径，用于 TLS 认证
       private-key-file: ${EXAMPLE_GRPC_TLS_CERT_KEY} # TLS 私钥
+
+unix:
+  socket: ${EXAMPLE_GRPC_UNIX_SOCKET}
 
 # 日志配置
 log:

@@ -15,6 +15,7 @@ import (
 type GRPCConfig struct {
 	TlsEnable          bool
 	Addr               string
+	UnixSocket         string
 	MaxMsgSize         int
 	ServerCert         genericoptions.GeneratableKeyCert
 	Version            bool
@@ -45,10 +46,6 @@ type CompletedGRPCConfig struct {
 
 // Complete fills in any fields not set that are required to have valid data and can be derived from other fields.
 func (c *GRPCConfig) Complete() *CompletedGRPCConfig {
-	if c.Addr == "" {
-		c.Addr = "127.0.0.1:8081"
-	}
-
 	return &CompletedGRPCConfig{c}
 }
 
@@ -70,7 +67,8 @@ func (c *CompletedGRPCConfig) New() (*GRPCServer, error) {
 
 	gRPCServer := &GRPCServer{
 		Server:             grpc.NewServer(opts...),
-		address:            c.Addr,
+		UnixSocket:         c.UnixSocket,
+		Address:            c.Addr,
 		Version:            c.Version,
 		Reflect:            c.Reflect,
 		Debug:              c.Debug,

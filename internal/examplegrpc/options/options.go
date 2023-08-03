@@ -15,10 +15,11 @@ var (
 
 // Options runs a http server.
 type Options struct {
-	Name             string                        `json:"name"`
-	Log              *log.Options                  `json:"log"    mapstructure:"log"`
-	GRPC             *grpcoptions.GRPCOptions      `json:"grpc"   mapstructure:"grpc"`
-	ServerRunOptions *grpcoptions.ServerRunOptions `json:"server" mapstructure:"server"`
+	Name             string                         `json:"name"`
+	Log              *log.Options                   `json:"log"    mapstructure:"log"`
+	TCP              *grpcoptions.TCPOptions        `json:"tcp"    mapstructure:"tcp"`
+	UnixSocket       *grpcoptions.UnixSocketOptions `json:"unix"   mapstructure:"unix"`
+	ServerRunOptions *grpcoptions.ServerRunOptions  `json:"server" mapstructure:"server"`
 }
 
 // NewOptions creates a new Options object with default parameters.
@@ -27,7 +28,8 @@ func NewOptions() *Options {
 		Name: "example-gRPC",
 
 		Log:              log.NewOptions(),
-		GRPC:             grpcoptions.NewGRPCOptions(),
+		TCP:              grpcoptions.NewTCPOptions(),
+		UnixSocket:       grpcoptions.NewUnixSocketOptions(),
 		ServerRunOptions: grpcoptions.NewServerRunOptions(),
 	}
 
@@ -37,7 +39,8 @@ func NewOptions() *Options {
 // Flags returns flags for a specific server by section name.
 func (o *Options) Flags() (fss cliflag.NamedFlagSets) {
 	o.Log.AddFlags(fss.FlagSet("logs"))
-	o.GRPC.AddFlags(fss.FlagSet("grpc"))
+	o.TCP.AddFlags(fss.FlagSet("tcp"))
+	o.UnixSocket.AddFlags(fss.FlagSet("unix"))
 	o.ServerRunOptions.AddFlags(fss.FlagSet("server"))
 	return fss
 }
@@ -51,7 +54,7 @@ func (o *Options) String() string {
 // Complete fills in any fields not set that are required to have valid data.
 // 补全指定的选项.
 func (o *Options) Complete() error {
-	if err := o.GRPC.Complete(); err != nil {
+	if err := o.TCP.Complete(); err != nil {
 		return err
 	}
 	return nil
