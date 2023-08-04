@@ -16,9 +16,14 @@ tcp:
   bind-address: ${EXAMPLE_GRPC_BIND_ADDRESS} #gRPC 监听地址，如果是tcp协议,默认为 0.0.0.0; 如果是UDP协议默认是/var/run/example-grpc.socket
   bind-port: ${EXAMPLE_GRPC_BIND_PORT} # 使用 gRPC 端口号默认为 8081
   tls-enable: false # 是否开启TLS服务
+  # TLS证书配置,其中cert-data/cert-key/cert-dir,pair-name 三种方式选择其一即可。
+  # 优先级最高为cert-data,其次为cert-key,最后为cert-dir,pair-name
   tls:
-    #cert-dir:  # TLS 证书所在的目录
-    #pair-name:  # TLS 私钥对名称
+    cert-dir:  # TLS 证书所在的目录
+    pair-name:  # TLS 证书私钥对名称
+    cert-data:
+      cert: # TLS 证书PEM数据
+      key:  # TLS 私钥PEM数据
     cert-key:
       cert-file: ${EXAMPLE_GRPC_TLS_CERT_FILE} # 包含 x509 证书的文件路径，用于 TLS 认证
       private-key-file: ${EXAMPLE_GRPC_TLS_CERT_KEY} # TLS 私钥

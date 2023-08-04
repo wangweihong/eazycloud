@@ -46,7 +46,10 @@ func (o *Options) Flags() (fss cliflag.NamedFlagSets) {
 }
 
 func (o *Options) String() string {
+	// hide annoying cert data in log
+	cert := o.TCP.ServerCert.CopyAndHide()
 	data, _ := json.Marshal(o)
+	o.TCP.ServerCert = *cert
 
 	return string(data)
 }

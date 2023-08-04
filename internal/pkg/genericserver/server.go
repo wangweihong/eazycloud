@@ -2,7 +2,6 @@ package genericserver
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -16,12 +15,14 @@ import (
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericserver/profiling"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericmiddleware"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericserver/genericmiddleware"
 
 	ginprometheus "github.com/zsais/go-gin-prometheus"
 
 	"github.com/wangweihong/eazycloud/pkg/log"
 	"github.com/wangweihong/eazycloud/pkg/version"
+
+	cryptotls "crypto/tls"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -154,10 +155,20 @@ func (s *GenericHTTPServer) Run() error {
 		// MaxHeaderBytes: 1 << 20,
 	}
 
+	cert, err := cryptotls.X509KeyPair(
+		[]byte(s.SecureServingInfo.CertKey.Cert),
+		[]byte(s.SecureServingInfo.CertKey.Key),
+	)
+	if err != nil {
+		log.Fatalf("Failed to generate credentials %s", err.Error())
+	}
 	// For scalability, use custom HTTP configuration mode here
 	s.secureServer = &http.Server{
 		Addr:    s.SecureServingInfo.Address(),
 		Handler: s,
+		TLSConfig: &cryptotls.Config{
+			Certificates: []cryptotls.Certificate{cert},
+		},
 		// ReadTimeout:    10 * time.Second,
 		// WriteTimeout:   10 * time.Second,
 		// MaxHeaderBytes: 1 << 20,
@@ -185,11 +196,9 @@ func (s *GenericHTTPServer) Run() error {
 
 	if s.SecureServingInfo.Required {
 		eg.Go(func() error {
-			key, cert := s.SecureServingInfo.CertKey.KeyFile, s.SecureServingInfo.CertKey.CertFile
-
 			log.Infof("Start to listening the incoming requests on https address: %s", s.SecureServingInfo.Address())
 
-			if err := s.secureServer.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			if err := s.secureServer.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.Fatal(err.Error())
 
 				return err
@@ -281,7 +290,7 @@ func (s *GenericHTTPServer) ping(ctx context.Context, url string) error {
 		}
 		// Ping the server by sending a GET request to `/healthz`.
 		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &cryptotls.Config{InsecureSkipVerify: true},
 		}
 		client := http.Client{Transport: tr}
 		resp, err := client.Do(req)

@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/wangweihong/eazycloud/internal/pkg/tls"
+
 	"github.com/spf13/pflag"
-
-	"github.com/wangweihong/eazycloud/pkg/util/stringutil"
-
-	"github.com/wangweihong/eazycloud/internal/pkg/genericoptions"
 )
 
 // TCPOptions are for creating an generic gRPC server.
@@ -18,7 +16,7 @@ type TCPOptions struct {
 	BindPort    int    `json:"bind-port"    mapstructure:"bind-port"`
 	TlsEnable   bool   `json:"tls-enable"   mapstructure:"tls-enable"`
 	// ServerCert is the TLS cert info for serving secure traffic
-	ServerCert genericoptions.GeneratableKeyCert `json:"tls"          mapstructure:"tls"`
+	ServerCert tls.GeneratableKeyCert `json:"tls"          mapstructure:"tls"`
 }
 
 // NewTCPOptions is for creating an generic tcp listen gRPC server.
@@ -52,29 +50,9 @@ func (s *TCPOptions) Validate() []error {
 	}
 
 	if s.TlsEnable {
-		if !stringutil.BothEmptyOrNone(s.ServerCert.CertKey.KeyFile, s.ServerCert.CertKey.CertFile) {
-			errors = append(
-				errors,
-				fmt.Errorf(
-					" --tcp.tls.cert-key.cert-file and --tcp.tls.cert-key.private-key-file must provided together",
-				),
-			)
-			return errors
+		if err := s.ServerCert.Validate(); err != nil {
+			errors = append(errors, err)
 		}
-
-		if !stringutil.BothEmptyOrNone(s.ServerCert.CertDirectory, s.ServerCert.PairName) {
-			errors = append(
-				errors,
-				fmt.Errorf(" --grpc.tls.cert-dir and --grpc.tls.pair-name must provided together"),
-			)
-			return errors
-		}
-
-		errors = append(
-			errors, fmt.Errorf(
-				"if required tls server, you should set --tcp.tls.cert-key.cert-file "+
-					"and --tcp.tls.cert-key.key-file to real Tls Certs or set --tcp.tls.cert-dir and --tcp.tls.pair-name "),
-		)
 	}
 
 	return errors
@@ -109,9 +87,16 @@ func (s *TCPOptions) AddFlags(fs *pflag.FlagSet) {
 		"File containing the default x509 Certificate for gRPC server. (CA cert, if any, concatenated "+
 		"after server cert).")
 
-	fs.StringVar(&s.ServerCert.CertKey.KeyFile, "tcp.tls.cert-key.",
+	fs.StringVar(&s.ServerCert.CertKey.KeyFile, "tcp.tls.cert-key",
 		s.ServerCert.CertKey.KeyFile, ""+
 			"File containing the default x509 private key matching --tcp.tls.cert-file.")
+
+	fs.StringVar(&s.ServerCert.CertData.Cert, "tcp.tls.cert-data", s.ServerCert.CertData.Cert, ""+
+		"Data of default x509 Certificate for gRPC server.")
+
+	fs.StringVar(&s.ServerCert.CertData.Key, "tcp.tls.key-data",
+		s.ServerCert.CertData.Key, ""+
+			"Data of default x509 private key matching --tcp.tls.cert-data.")
 }
 
 // Complete fills in any fields not set that are required to have valid data.
@@ -120,17 +105,35 @@ func (s *TCPOptions) Complete() error {
 		return nil
 	}
 
-	keyCert := &s.ServerCert.CertKey
-	if len(keyCert.CertFile) != 0 || len(keyCert.KeyFile) != 0 {
+	if len(s.ServerCert.CertData.Cert) != 0 || len(s.ServerCert.CertData.Key) != 0 {
 		return nil
+	}
+
+	keyCert := &s.ServerCert.CertKey
+	var err error
+	if len(keyCert.CertFile) != 0 || len(keyCert.KeyFile) != 0 {
+		s.ServerCert.CertData.Cert, s.ServerCert.CertData.Key, err = tls.LoadDataFromFile(
+			keyCert.CertFile,
+			keyCert.KeyFile,
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(s.ServerCert.CertDirectory) > 0 {
 		if len(s.ServerCert.PairName) == 0 {
-			return fmt.Errorf("--tcp.tls.pair-name is required if --tcp.tls.cert-dir is set")
+			return fmt.Errorf("pair-name is required if cert-dir is set")
 		}
 		keyCert.CertFile = path.Join(s.ServerCert.CertDirectory, s.ServerCert.PairName+".crt")
 		keyCert.KeyFile = path.Join(s.ServerCert.CertDirectory, s.ServerCert.PairName+".key")
+		s.ServerCert.CertData.Cert, s.ServerCert.CertData.Key, err = tls.LoadDataFromFile(
+			keyCert.CertFile,
+			keyCert.KeyFile,
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

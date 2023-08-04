@@ -55,7 +55,7 @@ func buildGenericGRPCServerConfig(cfg *config.Config) (genericConfig *grpcserver
 	genericConfig = &grpcserver.GRPCConfig{
 		UnixSocket: cfg.UnixSocket.Socket,
 		Addr:       addr,
-		ServerCert: cfg.TCP.ServerCert,
+		ServerCert: cfg.TCP.ServerCert.CertData,
 		TlsEnable:  cfg.TCP.TlsEnable,
 		MaxMsgSize: cfg.ServerRunOptions.MaxMsgSize,
 	}

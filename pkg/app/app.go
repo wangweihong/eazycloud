@@ -275,15 +275,15 @@ func (a *App) runCommand(cmd *cobra.Command, args []string) error {
 		// 解析配置到选项
 		// 注意:options中的字段必须要带有`mapstructure` tag才能正确解析!
 		if err := viper.Unmarshal(a.options); err != nil {
-			return err
+			return fmt.Errorf("unmarshal config to options fail:%w", err)
 		}
 
 		// 调试用,用于打印viper加载的配置项，以及解析后的option结构
 		// 在出现配置文件中的值没有作用于应用的选项时,移除注释进行调试
-		//viper.Debug()
-		//if printableOptions, ok := a.options.(PrintableOptions); ok && !a.silence {
-		//	log.Infof("viper ----> %v Config: `%s`", progressMessage, printableOptions.String())
-		//}
+		// viper.Debug()
+		if printableOptions, ok := a.options.(PrintableOptions); ok && !a.silence {
+			log.Infof("viper ----> %v Config: `%s`", progressMessage, printableOptions.String())
+		}
 	}
 
 	if !a.silence {

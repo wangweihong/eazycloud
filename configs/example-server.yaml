@@ -22,6 +22,9 @@ secure:
   tls:
     #cert-dir:  # TLS 证书所在的目录
     #pair-name:  # TLS 私钥对名称
+    cert-data:
+      cert: # TLS 证书PEM数据
+      key:  # TLS 私钥PEM数据
     cert-key:
       cert-file: ${EXAMPLE_SERVER_SECURE_TLS_CERT_FILE} # 包含 x509 证书的文件路径，用 HTTPS 认证
       private-key-file: ${EXAMPLE_SERVER_SECURE_TLS_CERT_KEY} # TLS 私钥

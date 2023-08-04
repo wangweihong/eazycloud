@@ -108,14 +108,12 @@ SPACE := $(EMPTY) $(EMPTY)
 
 # Specify components which need generate config from template
 ifeq ($(origin COMPONENTS),undefined)
-	# COMPONENTS ?= example1 example2
 	COMPONENTS?= example-server example-grpc
 endif
 
 
 # Specify components which need certificate
 ifeq ($(origin CERTIFICATES),undefined)
-	# CERTIFICATES ?= example1 example2
 	CERTIFICATES?= example-server example-grpc
 endif
 
@@ -134,5 +132,5 @@ endif
 
 # 证书主体可选名称
 ifeq ($(origin CERTIFICATES_ALT_NAME),undefined)
-	CERTIFICATES_ALT_NAME= 127.0.0.1,example.com,192.168.134.139
+	CERTIFICATES_ALT_NAME= 0.0.0.0
 endif

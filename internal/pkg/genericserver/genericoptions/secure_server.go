@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/wangweihong/eazycloud/internal/pkg/tls"
+
 	"github.com/wangweihong/eazycloud/pkg/app"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericserver"
@@ -21,29 +23,7 @@ type SecureServingOptions struct {
 	// Required set to true means that BindPort cannot be zero.
 	Required bool `json:"required"     mapstructure:"required"`
 	// ServerCert is the TLS cert info for serving secure t`raffic
-	ServerCert GeneratableKeyCert `json:"tls"          mapstructure:"tls"`
-}
-
-// CertKey contains configuration items related to certificate.
-type CertKey struct {
-	// CertFile is a file containing a PEM-encoded certificate, and possibly the complete certificate chain
-	CertFile string `json:"cert-file"        mapstructure:"cert-file"`
-	// KeyFile is a file containing a PEM-encoded private key for the certificate specified by CertFile
-	KeyFile string `json:"private-key-file" mapstructure:"private-key-file"`
-}
-
-// GeneratableKeyCert contains configuration items related to certificate.
-type GeneratableKeyCert struct {
-	// CertKey allows setting an explicit cert/key file to use.
-	CertKey CertKey `json:"cert-key" mapstructure:"cert-key"`
-
-	// CertDirectory specifies a directory to write generated certificates to if CertFile/KeyFile aren't explicitly set.
-	// PairName is used to determine the filenames within CertDirectory.
-	// If CertDirectory and PairName are not set, an in-memory certificate will be generated.
-	CertDirectory string `json:"cert-dir"  mapstructure:"cert-dir"`
-	// PairName is the name which will be used with CertDirectory to make a cert and key filenames.
-	// It becomes CertDirectory/PairName.crt and CertDirectory/PairName.key
-	PairName string `json:"pair-name" mapstructure:"pair-name"`
+	ServerCert tls.GeneratableKeyCert `json:"tls"          mapstructure:"tls"`
 }
 
 // NewSecureServingOptions creates a SecureServingOptions object with default parameters.
@@ -61,11 +41,8 @@ func (s *SecureServingOptions) ApplyTo(c *genericserver.Config) error {
 	c.SecureServing = &genericserver.SecureServingInfo{
 		BindAddress: s.BindAddress,
 		BindPort:    s.BindPort,
-		CertKey: genericserver.CertKey{
-			CertFile: s.ServerCert.CertKey.CertFile,
-			KeyFile:  s.ServerCert.CertKey.KeyFile,
-		},
-		Required: s.Required,
+		CertKey:     s.ServerCert.CertData,
+		Required:    s.Required,
 	}
 
 	return nil
@@ -90,34 +67,10 @@ func (s *SecureServingOptions) Validate() []error {
 				),
 			)
 		}
-		if s.ServerCert.CertKey.KeyFile != "" || s.ServerCert.CertKey.CertFile != "" {
-			if s.ServerCert.CertKey.KeyFile == "" || s.ServerCert.CertKey.CertFile == "" {
-				errors = append(
-					errors,
-					fmt.Errorf(
-						" --secure.tls.cert-key.cert-file and --secure.tls.cert-key.private-key-file must provided together",
-					),
-				)
-			}
-			return errors
-		}
 
-		if s.ServerCert.CertDirectory != "" || s.ServerCert.PairName != "" {
-			if s.ServerCert.CertDirectory == "" || s.ServerCert.PairName == "" {
-				errors = append(
-					errors,
-					fmt.Errorf("  --secure.tls.cert-dir and --secure.tls.pair-name must provided together"),
-				)
-				return errors
-			}
-			return errors
+		if err := s.ServerCert.Validate(); err != nil {
+			errors = append(errors, err)
 		}
-
-		errors = append(
-			errors, fmt.Errorf(
-				"if required tls server, you should set --secure.tls.cert-key.cert-file "+
-					"and --secure.tls.cert-key.key-file to real Tls Certs or set --secure.tls.cert-dir and --secure.tls.pair-name "),
-		)
 	}
 
 	return errors
@@ -153,26 +106,51 @@ func (s *SecureServingOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ServerCert.CertKey.KeyFile, "secure.tls.cert-key.private-key-file",
 		s.ServerCert.CertKey.KeyFile, ""+
 			"File containing the default x509 private key matching --secure.tls.cert-key.cert-file.")
+
+	fs.StringVar(&s.ServerCert.CertData.Cert, "secure.tls.cert-data", s.ServerCert.CertData.Cert, ""+
+		"Data of default x509 Certificate for gRPC server.")
+
+	fs.StringVar(&s.ServerCert.CertData.Key, "secure.tls.key-data",
+		s.ServerCert.CertData.Key, ""+
+			"Data of default x509 private key matching --secure.tls.cert-data.")
 }
 
 // Complete fills in any fields not set that are required to have valid data.
+// Complete fills in any fields not set that are required to have valid data.
 func (s *SecureServingOptions) Complete() error {
-	if s == nil || !s.Required {
+	if s == nil {
+		return nil
+	}
+
+	if len(s.ServerCert.CertData.Cert) != 0 || len(s.ServerCert.CertData.Key) != 0 {
 		return nil
 	}
 
 	keyCert := &s.ServerCert.CertKey
+	var err error
 	if len(keyCert.CertFile) != 0 || len(keyCert.KeyFile) != 0 {
-		return nil
+		s.ServerCert.CertData.Cert, s.ServerCert.CertData.Key, err = tls.LoadDataFromFile(
+			keyCert.CertFile,
+			keyCert.KeyFile,
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(s.ServerCert.CertDirectory) > 0 {
 		if len(s.ServerCert.PairName) == 0 {
-			return fmt.Errorf("--secure.tls.pair-name is required if --secure.tls.cert-dir is set")
+			return fmt.Errorf("pair-name is required if cert-dir is set")
 		}
-
 		keyCert.CertFile = path.Join(s.ServerCert.CertDirectory, s.ServerCert.PairName+".crt")
 		keyCert.KeyFile = path.Join(s.ServerCert.CertDirectory, s.ServerCert.PairName+".key")
+		s.ServerCert.CertData.Cert, s.ServerCert.CertData.Key, err = tls.LoadDataFromFile(
+			keyCert.CertFile,
+			keyCert.KeyFile,
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

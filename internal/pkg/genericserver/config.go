@@ -5,9 +5,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/wangweihong/eazycloud/internal/pkg/tls"
+
 	"github.com/wangweihong/eazycloud/internal/pkg/debug"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericmiddleware"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericserver/genericmiddleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,19 +30,11 @@ type Config struct {
 	RuntimeDebug  *debug.RuntimeDebugInfo
 }
 
-// CertKey contains configuration items related to certificate.
-type CertKey struct {
-	// CertFile is a file containing a PEM-encoded certificate, and possibly the complete certificate chain
-	CertFile string
-	// KeyFile is a file containing a PEM-encoded private key for the certificate specified by CertFile
-	KeyFile string
-}
-
 // SecureServingInfo holds configuration of the TLS server.
 type SecureServingInfo struct {
 	BindAddress string
 	BindPort    int
-	CertKey     CertKey
+	CertKey     tls.CertData
 	Required    bool
 }
 
@@ -100,6 +94,8 @@ func NewConfig() *Config {
 			Enable:    false,
 			OutputDir: "",
 		},
+		InsecureServing: &InsecureServingInfo{},
+		SecureServing:   &SecureServingInfo{},
 	}
 }
 

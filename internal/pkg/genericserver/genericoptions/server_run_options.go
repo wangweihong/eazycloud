@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericmiddleware"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericserver/genericmiddleware"
 	"github.com/wangweihong/eazycloud/pkg/sets"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericserver"

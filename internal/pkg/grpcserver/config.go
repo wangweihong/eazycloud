@@ -1,14 +1,17 @@
 package grpcserver
 
 import (
+	cryptotls "crypto/tls"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/wangweihong/eazycloud/internal/pkg/tls"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/debug"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericoptions"
 	"github.com/wangweihong/eazycloud/pkg/log"
 	//"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc".
 )
@@ -19,7 +22,7 @@ type GRPCConfig struct {
 	Addr               string
 	UnixSocket         string
 	MaxMsgSize         int
-	ServerCert         genericoptions.GeneratableKeyCert
+	ServerCert         tls.CertData
 	Version            bool
 	Reflect            bool
 	Debug              bool
@@ -61,10 +64,13 @@ func (c *CompletedGRPCConfig) New() (*GRPCServer, error) {
 	opts := []grpc.ServerOption{grpc.MaxRecvMsgSize(c.MaxMsgSize)}
 
 	if c.TlsEnable {
-		creds, err := credentials.NewServerTLSFromFile(c.ServerCert.CertKey.CertFile, c.ServerCert.CertKey.KeyFile)
+		cert, err := cryptotls.X509KeyPair([]byte(c.ServerCert.Cert), []byte(c.ServerCert.Key))
 		if err != nil {
 			log.Fatalf("Failed to generate credentials %s", err.Error())
 		}
+
+		creds := credentials.NewTLS(&cryptotls.Config{Certificates: []cryptotls.Certificate{cert}})
+
 		log.Info("gRPC service run with TLS")
 		opts = append(opts, grpc.Creds(creds))
 	}

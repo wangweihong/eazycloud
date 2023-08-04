@@ -2,7 +2,7 @@
 package options
 
 import (
-	"github.com/wangweihong/eazycloud/internal/pkg/genericoptions"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericserver/genericoptions"
 	"github.com/wangweihong/eazycloud/pkg/app"
 	cliflag "github.com/wangweihong/eazycloud/pkg/cli/flag"
 	"github.com/wangweihong/eazycloud/pkg/json"
@@ -55,7 +55,10 @@ func (o *Options) Flags() (fss cliflag.NamedFlagSets) {
 }
 
 func (o *Options) String() string {
+	// hide annoying cert data in log
+	cert := o.SecureServing.ServerCert.CopyAndHide()
 	data, _ := json.Marshal(o)
+	o.SecureServing.ServerCert = *cert
 
 	return string(data)
 }
