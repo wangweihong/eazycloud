@@ -4,6 +4,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/wangweihong/eazycloud/internal/pkg/debug"
+
 	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericoptions"
@@ -23,6 +25,7 @@ type GRPCConfig struct {
 	Debug              bool
 	UnaryInterceptors  []string
 	StreamInterceptors []string
+	RuntimeDebug       *debug.RuntimeDebugInfo
 }
 
 // NewConfig returns a Config struct with the default values.
@@ -36,6 +39,10 @@ func NewConfig() *GRPCConfig {
 			interceptor.InterceptorNameContext,
 			interceptor.InterceptorNameLogger,
 			interceptor.InterceptorNameRecovery,
+		},
+		RuntimeDebug: &debug.RuntimeDebugInfo{
+			Enable:    false,
+			OutputDir: "",
 		},
 	}
 }
@@ -74,9 +81,9 @@ func (c *CompletedGRPCConfig) New() (*GRPCServer, error) {
 		Debug:              c.Debug,
 		UnaryInterceptors:  c.UnaryInterceptors,
 		StreamInterceptors: c.StreamInterceptors,
+		runtimeDebug:       c.RuntimeDebug,
 	}
 
 	initGenericGRPCServer(gRPCServer)
-
 	return gRPCServer, nil
 }

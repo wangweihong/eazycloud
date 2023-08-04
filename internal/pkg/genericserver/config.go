@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/wangweihong/eazycloud/internal/pkg/debug"
+
 	"github.com/wangweihong/eazycloud/internal/pkg/genericmiddleware"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +25,7 @@ type Config struct {
 
 	EnableMetrics bool
 	Profiling     *FeatureProfilingInfo
+	RuntimeDebug  *debug.RuntimeDebugInfo
 }
 
 // CertKey contains configuration items related to certificate.
@@ -93,6 +96,10 @@ func NewConfig() *Config {
 			StandAloneProfiling: false,
 			ProfileAddress:      "127.0.0.1:6060",
 		},
+		RuntimeDebug: &debug.RuntimeDebugInfo{
+			Enable:    false,
+			OutputDir: "",
+		},
 	}
 }
 
@@ -120,6 +127,7 @@ func (c CompletedConfig) New() (*GenericHTTPServer, error) {
 		profiling:           c.Profiling,
 		middlewares:         c.Middlewares,
 		Engine:              gin.New(),
+		runtimeDebug:        c.RuntimeDebug,
 	}
 
 	// 初始化http server配置

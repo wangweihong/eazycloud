@@ -16,13 +16,16 @@ mkdir -p ${INSTALL_DIR}
 readonly ENV_FILE=${SOURCE_ROOT}/scripts/install/environment.sh
 
 # eazycloud 配置
-readonly EAZYCLOUD_DATA_DIR=${EAZYCLOUD_DATA_DIR:-/var/lib/eazycloud/data} # eazycloud 各组件数据目录
-readonly EAZYCLOUD_INSTALL_DIR=${EAZYCLOUD_INSTALL_DIR:-/var/lib/eazycloud/bin} # eazycloud 安装文件存放目录
-readonly EAZYCLOUD_CONFIG_DIR=${EAZYCLOUD_CONFIG_DIR:-/var/lib/eazycloud/conf} # eazycloud 配置文件存放目录
+readonly EAZYCLOUD_ROOT_DIR=${EAZYCLOUD_ROOT_DIR:-/var/lib/eazycloud}
+readonly EAZYCLOUD_DATA_DIR=${EAZYCLOUD_DATA_DIR:-${EAZYCLOUD_ROOT_DIR}/data} # eazycloud 各组件数据目录
+readonly EAZYCLOUD_INSTALL_DIR=${EAZYCLOUD_INSTALL_DIR:-${EAZYCLOUD_ROOT_DIR}/bin} # eazycloud 安装文件存放目录
+readonly EAZYCLOUD_CONFIG_DIR=${EAZYCLOUD_CONFIG_DIR:-${EAZYCLOUD_ROOT_DIR}/conf} # eazycloud 配置文件存放目录
 readonly EAZYCLOUD_LOG_DIR=${EAZYCLOUD_LOG_DIR:-/var/log/eazycloud} # eazycloud 日志文件存放目录
+readonly EAZYCLOUD_DEBUG_DIR=${EAZYCLOUD_DEBUG_DIR:-${EAZYCLOUD_ROOT_DIR}/debug} # eazycloud 调试信息文件存放目录
 readonly CA_FILE=${CA_FILE:-${EAZYCLOUD_CONFIG_DIR}/cert/ca.pem} # ca
 
 # example-server 配置
+readonly EXAMPLE_SERVER_RUNTIME_DEBUG_OUTPUT_DIR=${EXAMPLE_SERVER_RUNTIME_DEBUG_OUTPUT_DIR:-${EAZYCLOUD_DEBUG_DIR}/example-server}
 readonly EXAMPLE_SERVER_HOST=${EXAMPLE_SERVER_HOST:-127.0.0.1} # eazycloud-apiserver 部署机器 IP 地址
 readonly EXAMPLE_SERVER_GRPC_BIND_ADDRESS=${EXAMPLE_SERVER_GRPC_BIND_ADDRESS:-0.0.0.0}
 readonly EXAMPLE_SERVER_GRPC_BIND_PORT=${EXAMPLE_SERVER_GRPC_BIND_PORT:-8081}
@@ -34,6 +37,7 @@ readonly EXAMPLE_SERVER_SECURE_TLS_CERT_FILE=${EXAMPLE_SERVER_SECURE_TLS_CERT_FI
 readonly EXAMPLE_SERVER_SECURE_TLS_CERT_KEY=${EXAMPLE_SERVER_SECURE_TLS_CERT_KEY:-${EAZYCLOUD_CONFIG_DIR}/cert/example-server.key}
 
 # example-grpc配置
+readonly EXAMPLE_GRPC_RUNTIME_DEBUG_OUTPUT_DIR=${EXAMPLE_GRPC_RUNTIME_DEBUG_OUTPUT_DIR:-${EAZYCLOUD_DEBUG_DIR}/example-grpc}
 ## TCP
 readonly EXAMPLE_GRPC_BIND_ADDRESS=${EXAMPLE_GRPC_BIND_ADDRESS:-0.0.0.0}
 readonly EXAMPLE_GRPC_BIND_PORT=${EXAMPLE_GRPC_BIND_PORT:-8081}

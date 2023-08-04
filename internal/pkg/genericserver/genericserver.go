@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/wangweihong/eazycloud/internal/pkg/debug"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericserver/profiling"
 
@@ -46,6 +49,8 @@ type GenericHTTPServer struct {
 	version       bool
 
 	insecureServer, secureServer *http.Server
+
+	runtimeDebug *debug.RuntimeDebugInfo
 }
 
 // 安装通用服务的中间件和api
@@ -56,6 +61,7 @@ func initGenericHTTPServer(s *GenericHTTPServer) {
 	s.InstallMiddlewares()
 	// 注意, 这里的API仅会被上面安装的中间件影响。
 	s.InstallAPIs()
+	s.InstallRuntimeDebug()
 }
 
 // InstallAPIs install generic apis.
@@ -113,6 +119,26 @@ func (s *GenericHTTPServer) InstallMiddlewares() {
 
 		log.Infof("install middleware: %s", m)
 		s.Use(mw)
+	}
+}
+
+func (s *GenericHTTPServer) InstallRuntimeDebug() {
+	if s.runtimeDebug == nil {
+		return
+	}
+
+	if s.runtimeDebug.Enable {
+		if s.runtimeDebug.OutputDir == "" {
+			log.Warn("runtime debug output is empty")
+			return
+		}
+
+		if err := os.MkdirAll(s.runtimeDebug.OutputDir, 0o755); err != nil {
+			log.Warnf("mkdir runtime debug output dir `%s` err:%w", s.runtimeDebug.OutputDir, err)
+			return
+		}
+		debug.SetupRuntimeDebugSignalHandler(s.runtimeDebug.OutputDir)
+		log.Info("runtime debug start")
 	}
 }
 

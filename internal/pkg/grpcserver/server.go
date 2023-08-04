@@ -4,6 +4,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/wangweihong/eazycloud/internal/pkg/debug"
+
 	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor"
 
 	"google.golang.org/grpc/reflection"
@@ -29,6 +31,8 @@ type GRPCServer struct {
 	// install interceptors
 	UnaryInterceptors  []string
 	StreamInterceptors []string
+
+	runtimeDebug *debug.RuntimeDebugInfo
 }
 
 func (s *GRPCServer) Run() {
@@ -96,6 +100,7 @@ func (s *GRPCServer) Close() {
 // 2. 这里安装的中间件会影响后续所有的接口。如果不希望这里有影响, 可以将中间件和通用路由特性等选项关闭。
 func initGenericGRPCServer(s *GRPCServer) {
 	s.InstallAPIs()
+	s.InstallRuntimeDebug()
 }
 
 func (s *GRPCServer) InstallAPIs() {
@@ -155,4 +160,24 @@ func installInterceptors(interceptors []string, opt []grpc.ServerOption) []grpc.
 	//	recovery.StreamServerInterceptor(recoveryOptions...),
 	//)
 	return opt
+}
+
+func (s *GRPCServer) InstallRuntimeDebug() {
+	if s.runtimeDebug == nil {
+		return
+	}
+
+	if s.runtimeDebug.Enable {
+		if s.runtimeDebug.OutputDir == "" {
+			log.Warn("runtime debug output is empty")
+			return
+		}
+
+		if err := os.MkdirAll(s.runtimeDebug.OutputDir, 0o755); err != nil {
+			log.Warnf("mkdir runtime debug output dir `%s` err:%w", s.runtimeDebug.OutputDir, err)
+			return
+		}
+		debug.SetupRuntimeDebugSignalHandler(s.runtimeDebug.OutputDir)
+		log.Info("runtime debug start")
+	}
 }

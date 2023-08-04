@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/wangweihong/eazycloud/internal/pkg/debug"
+
 	"github.com/wangweihong/eazycloud/pkg/util/maputil"
 	"github.com/wangweihong/eazycloud/pkg/util/sliceutil"
 
@@ -23,6 +25,9 @@ type ServerRunOptions struct {
 	Debug              bool     `json:"debug"               mapstructure:"debug"`               // 是否开启调试服务
 	UnaryInterceptors  []string `json:"unary-interceptors"  mapstructure:"unary-interceptors"`  // 启动拦截器列表
 	StreamInterceptors []string `json:"stream-interceptors" mapstructure:"stream-interceptors"` // 启动拦截器列表
+
+	RuntimeDebug    bool   `json:"runtime-debug"     mapstructure:"runtime-debug"`     // 开启运行时调试
+	RuntimeDebugDir string `json:"runtime-debug-dir" mapstructure:"runtime-debug-dir"` // 调试输出目录
 }
 
 // NewServerRunOptions creates a new ServerRunOptions object with default parameters.
@@ -36,6 +41,8 @@ func NewServerRunOptions() *ServerRunOptions {
 		Debug:              defaults.Debug,
 		UnaryInterceptors:  defaults.UnaryInterceptors,
 		StreamInterceptors: defaults.StreamInterceptors,
+		RuntimeDebug:       defaults.RuntimeDebug.Enable,
+		RuntimeDebugDir:    defaults.RuntimeDebug.OutputDir,
 	}
 }
 
@@ -47,6 +54,10 @@ func (s *ServerRunOptions) ApplyTo(c *grpcserver.GRPCConfig) error {
 	c.Debug = s.Debug
 	c.UnaryInterceptors = s.UnaryInterceptors
 	c.StreamInterceptors = s.StreamInterceptors
+	c.RuntimeDebug = &debug.RuntimeDebugInfo{
+		Enable:    s.RuntimeDebug,
+		OutputDir: s.RuntimeDebugDir,
+	}
 	return nil
 }
 
@@ -63,6 +74,12 @@ func (s *ServerRunOptions) Validate() []error {
 	if !supportedUnaryInterceptor.HasAll(s.UnaryInterceptors...) {
 		invalidInterceptors := sets.NewString(s.UnaryInterceptors...).Difference(supportedUnaryInterceptor)
 		errors = append(errors, fmt.Errorf("unary intercerptor `%v` is not supported", invalidInterceptors.List()))
+	}
+
+	if s.RuntimeDebug {
+		if s.RuntimeDebugDir == "" {
+			errors = append(errors, fmt.Errorf("set `RuntimeDebugDir` when enable runtime debug"))
+		}
 	}
 	return errors
 }
@@ -92,4 +109,10 @@ func (s *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 		),
 	)
 	fs.IntVar(&s.MaxMsgSize, "server.max-msg-size", s.MaxMsgSize, "gRPC max message size.")
+
+	fs.BoolVar(&s.RuntimeDebug, "server.runtime-debug", s.RuntimeDebug, ""+
+		"Enable debugging during runtime.")
+
+	fs.StringVar(&s.RuntimeDebugDir, "server.runtime-debug-dir", s.RuntimeDebugDir, ""+
+		"Directory runtime debug data saved")
 }

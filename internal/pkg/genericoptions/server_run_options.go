@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/wangweihong/eazycloud/internal/pkg/debug"
+
 	"github.com/wangweihong/eazycloud/pkg/util/maputil"
 
 	"github.com/wangweihong/eazycloud/pkg/util/sliceutil"
@@ -22,6 +24,9 @@ type ServerRunOptions struct {
 	Version     bool     `json:"version"     mapstructure:"version"`     // 开启版本模式
 	Healthz     bool     `json:"healthz"     mapstructure:"healthz"`     // 开启healthz服务
 	Middlewares []string `json:"middlewares" mapstructure:"middlewares"` // 安装的通用中间件
+
+	RuntimeDebug    bool   `json:"runtime-debug"     mapstructure:"runtime-debug"`     // 开启运行时调试
+	RuntimeDebugDir string `json:"runtime-debug-dir" mapstructure:"runtime-debug-dir"` // 调试输出目录
 }
 
 // NewServerRunOptions creates a new ServerRunOptions object with default parameters.
@@ -29,10 +34,12 @@ func NewServerRunOptions() *ServerRunOptions {
 	defaults := genericserver.NewConfig()
 
 	return &ServerRunOptions{
-		Mode:        defaults.Mode,
-		Healthz:     defaults.Healthz,
-		Middlewares: defaults.Middlewares,
-		Version:     defaults.Version,
+		Mode:            defaults.Mode,
+		Healthz:         defaults.Healthz,
+		Middlewares:     defaults.Middlewares,
+		Version:         defaults.Version,
+		RuntimeDebug:    defaults.RuntimeDebug.Enable,
+		RuntimeDebugDir: defaults.RuntimeDebug.OutputDir,
 	}
 }
 
@@ -42,6 +49,10 @@ func (s *ServerRunOptions) ApplyTo(c *genericserver.Config) error {
 	c.Healthz = s.Healthz
 	c.Middlewares = s.Middlewares
 	c.Version = s.Version
+	c.RuntimeDebug = &debug.RuntimeDebugInfo{
+		Enable:    s.RuntimeDebug,
+		OutputDir: s.RuntimeDebugDir,
+	}
 
 	return nil
 }
@@ -65,6 +76,12 @@ func (s *ServerRunOptions) Validate() []error {
 		errors = append(errors, fmt.Errorf("middleware `%v` is not supported", invalidMiddleware.List()))
 	}
 
+	if s.RuntimeDebug {
+		if s.RuntimeDebugDir == "" {
+			errors = append(errors, fmt.Errorf("set `RuntimeDebugDir` when enable runtime debug"))
+		}
+	}
+
 	return errors
 }
 
@@ -84,4 +101,10 @@ func (s *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&s.Middlewares, "server.middlewares", s.Middlewares, ""+
 		"List of allowed middleware for server, comma separated. If this list is empty,no middlewares will be used."+
 		"Support middleware: "+strings.Join(genericmiddleware.MiddlewareNames, ","))
+
+	fs.BoolVar(&s.RuntimeDebug, "server.runtime-debug", s.RuntimeDebug, ""+
+		"Enable debugging during runtime.")
+
+	fs.StringVar(&s.RuntimeDebugDir, "server.runtime-debug-dir", s.RuntimeDebugDir, ""+
+		"Directory runtime debug data saved")
 }

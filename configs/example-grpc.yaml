@@ -7,6 +7,8 @@ server:
   debug: false # 是否安装调试服务，默认 false
   max-msg-size:   4194304 # 消息最多字节数, 默认4M
   unary-interceptors: requestid,context,logger,recovery # unary拦截器
+  runtime-debug: true # 启动运行时调试, 可通过Linux信号触发进行程序性能采集等。
+  runtime-debug-dir: ${EXAMPLE_GRPC_RUNTIME_DEBUG_OUTPUT_DIR} # 运行时调试时采集的数据存放目录
 
 # gRPC TCP服务器配置
 tcp:
