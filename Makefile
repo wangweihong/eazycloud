@@ -18,6 +18,7 @@ include scripts/make-rules/gen.mk
 include scripts/make-rules/dependencies.mk
 include scripts/make-rules/swagger.mk
 include scripts/make-rules/proto.mk
+include scripts/make-rules/certs.mk
 
 # Usage
 

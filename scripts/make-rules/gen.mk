@@ -47,19 +47,7 @@ gen.defaultconfigs.%:
 .PHONY: gen.defaultconfigs
 gen.defaultconfigs: $(addprefix gen.defaultconfigs., $(COMPONENTS))
 
-# 可以直接make gen.ca.example生成特定组件example的证书，而不影响其他组件
-.PHONY: gen.ca.%
-gen.ca.%:
-	$(eval Component := $(word 1,$(subst ., ,$*)))
-	@echo "===========> Generating Certifcate files for \"$(Component)\",Subjects:$(CERTIFICATES_SUBJECT),ALT_NAME:$(CERTIFICATES_ALT_NAME)"
-	@echo "===========> CERTIFICATE_DIR:$(CERTIFICATE_DIR)"
-	@${ROOT_DIR}/scripts/gencerts.sh generate_certificate $(CERTIFICATE_DIR) $(Component) $(CERTIFICATES_ALT_NAME) $(CERTIFICATES_SUBJECT)
 
-# 生成组件的证书
-# make CERTIFICATES=xxx gen.ca
-# make gen.ca
-.PHONY: gen.ca
-gen.ca: $(addprefix gen.ca., $(CERTIFICATES))
 
 .PHONY: gen.clean
 gen.clean:

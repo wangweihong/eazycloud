@@ -127,10 +127,15 @@ endif
 #  这意味着我们可以通过include *.mk, 或者直接make CERTIFICATES_SUBJECT=xxx来设置CERTIFICATES_SUBJECT变量
 # # 证书主体信息
 ifeq ($(origin CERTIFICATES_SUBJECT),undefined)
-	CERTIFICATES_SUBJECT= /C=CN/ST=Guangdong/L=Shenzhen/O=EazyCloud/OU=Develop
+	CERTIFICATES_SUBJECT= /CN=eazycloud
 endif
 
-# 证书主体可选名称
-ifeq ($(origin CERTIFICATES_ALT_NAME),undefined)
-	CERTIFICATES_ALT_NAME= 0.0.0.0
+# 服务端证书主体可选名称
+ifeq ($(origin SERVER_CERTIFICATES_ALT_NAME),undefined)
+	SERVER_CERTIFICATES_ALT_NAME= 0.0.0.0
+endif
+
+# 客户端证书主体可选名称
+ifeq ($(origin CLIENT_CERTIFICATES_ALT_NAME),undefined)
+	CLIENT_CERTIFICATES_ALT_NAME= ""
 endif
