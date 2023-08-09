@@ -58,6 +58,7 @@ func buildGenericGRPCServerConfig(cfg *config.Config) (genericConfig *grpcserver
 		ServerCert: cfg.TCP.ServerCert.CertData,
 		TlsEnable:  cfg.TCP.TlsEnable,
 		MaxMsgSize: cfg.ServerRunOptions.MaxMsgSize,
+		ClientCA:   cfg.TCP.ServerCert.ClientCAData,
 	}
 
 	if lastErr = cfg.ServerRunOptions.ApplyTo(genericConfig); lastErr != nil {

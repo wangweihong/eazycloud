@@ -1,23 +1,11 @@
-package grpcserver_test
+package grpctls_test
 
 import (
-	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"testing"
-	"time"
-
-	"google.golang.org/grpc/credentials"
-
-	"github.com/wangweihong/eazycloud/pkg/log"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver"
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/apis/debug"
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/apis/version"
+	"github.com/wangweihong/eazycloud/internal/pkg/tls/grpctls"
 )
 
 const (
@@ -30,244 +18,69 @@ const (
 	wrongCA   = "-----BEGIN CERTIFICATE-----\nMIIFCTCCAvGgAwIBAgIUKXAB9kIZyN0r8PhR+wbKo5aKraQwDQYJKoZIhvcNAQEN\nBQAwFDESMBAGA1UEAwwJZWF6eWNsb3VkMB4XDTIzMDgwOTAzMTYyMFoXDTMzMDgw\nNjAzMTYyMFowFDESMBAGA1UEAwwJZWF6eWNsb3VkMIICIjANBgkqhkiG9w0BAQEF\nAAOCAg8AMIICCgKCAgEA5PcNkVaOiGmbA30P0NvL2/9+wNrRJD4NdVeHucLQwZ+3\n8ErOA8oiexTExlUFlIzSmLKciLIrwanyMCE/r4/dUCs8pQl+E3jPjT6sKRF4BtbN\nQFBZhzPWa0Ia8FHZ0D7wM6D9duA63UlvyeqK25ChjZC1FX7vOIyyskZWZfP9I6jU\nSrE+B6tXkXUorgaQSz6bmqMBiUM+v8R52XFC/ucwWFFzmI52oG/utR104/a97t5s\n7OpobMlMz2Ll0tsxg0tKiU9nlwKIgMaHHP3R7MMusLDkcoLlzdQNGHXM+c3usShH\n9bipKVm7KbKiDqCuBm91aCTcd5sMDiS+oKyorgrGGDJNHUC6pNoFHNb/k5FOmiz6\n1lfmgSM9R7FrmnHr6bkahYOUClPsnd9IHzyzJmekncbJsx2mlNTZGXYe0SNzMUau\nKxZqNWZfEbVOo7i2IB/688XZMo7srkHeHn6Y67h9PPNB6oR0UPsk68ZImip4CrQG\n9sZkNX73Ujkxeq57xLNJaOqWvq8xfIBbNchGgEfPIalZ07ei5hjzX6pEOlrDWV0c\n2VOCPlTEypFr9rsqXw++zsTqVYiRLLG4cmRKEBHnaNeELU8IYpQuFsnqGWpCpwz3\noHmemW/EY25k0luk7KmaLI7cIH9XgGca9VfnsneSzi4XcnW+aYIWJoGcPVro2qkC\nAwEAAaNTMFEwHQYDVR0OBBYEFAzV6u2lJUEQ02P++kz9BYhl7vaiMB8GA1UdIwQY\nMBaAFAzV6u2lJUEQ02P++kz9BYhl7vaiMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZI\nhvcNAQENBQADggIBAC2XHwAjuU8sxqABduSfrhRwEfFDwqtMlOw8mtmLqkOI8w50\nEelIV2EfdVkpbU6wGEoLDFTJm17BrcR3SiJp194ZH6h3Qof1t/dlSFWssTGWdbFA\ncJaN9TWc5NzxXvCddV0clIzW8jZc5rRFgkAU+/+yvd17iStf7j20ON8qZ4JriRI3\neiXT/XOfz3sWf0qtqqLjJrbp4XSX60axxKPRiGq3G1UBI1WcRvdpmKYPjno5YS1Q\n4ND6WqjlNBGg0ANwthm7V7RQNgvGg45Jt/Lw1cjLPo4qvzC9c2b6Oo08AUleRV6q\nPFPgaC/lGyDRQcquQrZxuJxagO5EWyv3phTqKJLnpNEAcxdX4J70GP1Qu/WkCncT\nuaSL/j35dX11HXCiDeUTOx6VGCKGtQ7FBu+sm4TEK2BAgfskm8DAJYeIp+vQ7Hmp\n7y60zNxT+pg7eydZx5FSmeyyMD6g67sDQ7zb9XDjDpPOsN1uOhOcF0PsiSZuvnGn\nxKvzfkn9tTA5W46RMIjj3PFqkIMKbY9KxzzM2aw0CTsvAGbB6Sj1y1dYHurEfea4\nkg8javdyIuNZZklTQfjoviDrpum0zxh7NcHAkkWgRCyVkiwBsiBm5BlMxxdnmg3l\nTG13I5JG3WS+qTvaKwOd5fYB+JyJqyyAYvociyKykj/dAQ5w7dlWCwAJqdnW\n-----END CERTIFICATE-----\n"
 )
 
-func installServer(conf *grpcserver.GRPCConfig) *grpcserver.GRPCServer {
-	s, err := conf.Complete().New()
-	So(err, ShouldBeNil)
-	go func() {
-		s.Run()
-	}()
-	// Wait for the server to start (you can use a more sophisticated wait mechanism)
-	time.Sleep(3 * time.Second)
-	return s
-}
-
-func noTLSInstallApi(conf *grpcserver.GRPCConfig) {
-	s := installServer(conf)
-	defer s.Stop()
-
-	// Set up a gRPC connection to the server
-	// 注意grpc.WithInsecure本质是通过非TLS连接到服务端，而不是TLS连接然后跳过证书检测
-	conn, err := grpc.Dial(conf.Addr, grpc.WithInsecure())
-	So(err, ShouldBeNil)
-
-	defer conn.Close()
-
-	_, err = debug.NewDebugServiceClient(conn).
-		Sleep(context.Background(), &debug.SleepRequest{Duration: durationpb.New(50 * time.Millisecond)})
-
-	if conf.Debug {
-		So(err, ShouldBeNil)
-	} else {
-		So(err, ShouldNotBeNil)
-	}
-
-	versionResp, err := version.NewVersionServiceClient(conn).Version(context.Background(), &version.VersionRequest{})
-	if conf.Version {
-		So(err, ShouldBeNil)
-		So(versionResp, ShouldNotBeNil)
-	} else {
-		So(err, ShouldNotBeNil)
-	}
-}
-
-func TestGRPCServer_UnisSocket_InstallAPI(t *testing.T) {
-	Convey("gRPC UnixSocket连接测试", t, func() {
-		conf := grpcserver.NewConfig()
-		conf.Debug = true
-		conf.Version = true
-		conf.Reflect = true
-		// 必须设置. 不设置将会遇到rpc error: code = ResourceExhausted desc = grpc: received message larger than max (7 vs. 0)
-		conf.MaxMsgSize = 4 * 1024 * 1024
-
-		// 注意, windows不支持unix domain socket
-		Convey("unix socket", func() {
-			conf.UnixSocket = "/tmp/test.socket"
-			testUnixSocket(conf, "unix://"+conf.UnixSocket)
+func Test_NewTlsServerCredentials(t *testing.T) {
+	Convey("NewTlsServerCredentials", t, func() {
+		Convey("正确证书密钥", func() {
+			_, err := grpctls.NewTlsServerCredentials([]byte(serverCrt), []byte(serverKey))
+			So(err, ShouldBeNil)
 		})
 
-	})
-}
+		Convey("错误证书密钥", func() {
+			var err error
+			// 证书密钥相反
+			_, err = grpctls.NewTlsServerCredentials([]byte(serverKey), []byte(serverCA))
+			So(err, ShouldNotBeNil)
 
-func TestGRPCServer_TCPSocket_InstallAPI(t *testing.T) {
-	opts := log.NewOptions()
-	opts.OutputPaths = nil
-	opts.ErrorOutputPaths = nil
-	log.Init(opts)
-	Convey("gRPC TCP协议安装API测试", t, func() {
-		conf := grpcserver.NewConfig()
-		// 必须设置. 不设置将会遇到rpc error: code = ResourceExhausted desc = grpc: received message larger than max (7 vs. 0)
-		conf.MaxMsgSize = 4 * 1024 * 1024
+			// 证书为空
+			_, err = grpctls.NewTlsServerCredentials([]byte(nil), []byte(serverKey))
+			So(err, ShouldNotBeNil)
 
-		Convey("安装了debug,version", func() {
-			conf.Addr = "0.0.0.0:56218"
-			conf.Debug = true
-			conf.Version = true
-			noTLSInstallApi(conf)
-		})
+			// 密钥为空
+			_, err = grpctls.NewTlsServerCredentials([]byte(serverCrt), []byte(nil))
+			So(err, ShouldNotBeNil)
 
-		Convey("安装了debug", func() {
-			conf.Addr = "0.0.0.0:56219"
-			conf.Version = true
-			noTLSInstallApi(conf)
-		})
+			// 证书和密钥不匹配
+			_, err = grpctls.NewTlsServerCredentials([]byte(serverCrt), []byte(clientKey))
+			So(err, ShouldNotBeNil)
 
-		Convey("安装了version", func() {
-			conf.Addr = "0.0.0.0:56220"
-			conf.Debug = true
-			noTLSInstallApi(conf)
+			// 错误证书格式
+			_, err = grpctls.NewTlsServerCredentials([]byte("xxxx"), []byte(serverKey))
+			So(err, ShouldNotBeNil)
+
+			_, err = grpctls.NewTlsServerCredentials([]byte(serverCrt), []byte("serverKey"))
+			So(err, ShouldNotBeNil)
 		})
 	})
 }
 
-func TLSInstallApi(conf *grpcserver.GRPCConfig, ca string, isRightCA bool) {
-	s := installServer(conf)
-	defer s.Stop()
-
-	var conn *grpc.ClientConn
-	var err error
-
-	// Set up a gRPC connection to the server
-	if ca != "" {
-		certPool := x509.NewCertPool()
-		ok := certPool.AppendCertsFromPEM([]byte(ca))
-		So(ok, ShouldBeTrue)
-
-		creds := credentials.NewTLS(&tls.Config{
-			RootCAs: certPool,
+func Test_NewMutualTlsServerCredentials(t *testing.T) {
+	Convey("NewMutualTlsServerCredentials", t, func() {
+		Convey("正确证书密钥", func() {
+			_, err := grpctls.NewMutualTlsServerCredentials([]byte(clientCA), []byte(serverCrt), []byte(serverKey))
+			So(err, ShouldBeNil)
 		})
 
-		//注意，在这里不会取检验证书
-		conn, err = grpc.Dial(conf.Addr, grpc.WithTransportCredentials(creds))
-		So(err, ShouldBeNil)
+		Convey("错误证书密钥", func() {
+			var err error
+			// 客户端CA证书为nil
+			_, err = grpctls.NewMutualTlsServerCredentials([]byte(nil), []byte(serverCrt), []byte(serverKey))
+			So(err, ShouldNotBeNil)
 
-	} else {
-		creds := credentials.NewTLS(&tls.Config{
-			InsecureSkipVerify: true,
-		})
-		conn, err = grpc.Dial(conf.Addr, grpc.WithTransportCredentials(creds))
-		So(err, ShouldBeNil)
-	}
-	defer conn.Close()
+			// 服务端证书密钥为空
+			_, err = grpctls.NewMutualTlsServerCredentials([]byte(clientCA), []byte(nil), []byte(nil))
+			So(err, ShouldNotBeNil)
 
-	// 在服务接口这里才会校验证书是否合法
-	_, err = version.NewVersionServiceClient(conn).Version(context.Background(), &version.VersionRequest{})
-	if isRightCA {
-		So(err, ShouldBeNil)
-	} else {
-		So(err, ShouldNotBeNil)
-	}
-}
+			// 错误ca格式
+			_, err = grpctls.NewMutualTlsServerCredentials([]byte("clientCA"), []byte(serverCrt), []byte(serverKey))
+			So(err, ShouldNotBeNil)
 
-func TestGRPCServer_TCPSocket_TLS(t *testing.T) {
-	opts := log.NewOptions()
-	opts.OutputPaths = nil
-	opts.ErrorOutputPaths = nil
-	log.Init(opts)
+			// 错误证书格式
+			_, err = grpctls.NewMutualTlsServerCredentials([]byte(clientCA), []byte("xxxx"), []byte(serverKey))
+			So(err, ShouldNotBeNil)
 
-	Convey("grpc通用服务测试", t, func() {
-		conf := grpcserver.NewConfig()
-		conf.Version = true
-		// 必须设置. 不设置将会遇到rpc error: code = ResourceExhausted desc = grpc: received message larger than max (7 vs. 0)
-		conf.MaxMsgSize = 4 * 1024 * 1024
+			_, err = grpctls.NewMutualTlsServerCredentials([]byte(clientCA), []byte(serverCrt), []byte("serverKey"))
+			So(err, ShouldNotBeNil)
 
-		Convey("无TLS", func() {
-			conf.Addr = "0.0.0.0:56320"
-			noTLSInstallApi(conf)
-		})
-
-		Convey("开启TLS", func() {
-			Convey("客户端跳过证书检测", func() {
-				conf.Addr = "0.0.0.0:56321"
-				conf.ServerCert.Key = serverKey
-				conf.ServerCert.Cert = serverCrt
-				conf.TlsEnable = true
-				TLSInstallApi(conf, "", true)
-
-			})
-
-			Convey("客户端检测证书,正确CA", func() {
-				conf.Addr = "0.0.0.0:56322"
-				conf.ServerCert.Key = serverKey
-				conf.ServerCert.Cert = serverCrt
-				conf.TlsEnable = true
-				TLSInstallApi(conf, serverCA, true)
-			})
-
-			Convey("客户端检测证书,错误CA", func() {
-				conf.Addr = "0.0.0.0:56322"
-				conf.ServerCert.Key = serverKey
-				conf.ServerCert.Cert = serverCrt
-				conf.TlsEnable = true
-				TLSInstallApi(conf, wrongCA, false)
-			})
-		})
-	})
-}
-
-func mTLSInstallApi(conf *grpcserver.GRPCConfig, serverCA string, clientCrt, clientKey string, isRightClientCA bool) {
-	s := installServer(conf)
-	defer s.Stop()
-
-	// Set up a gRPC connection to the server
-	certPool := x509.NewCertPool()
-	ok := certPool.AppendCertsFromPEM([]byte(serverCA))
-	So(ok, ShouldBeTrue)
-
-	// Load client's certificate and private key
-	clientCert, err := tls.X509KeyPair([]byte(clientCrt), []byte(clientKey))
-	So(err, ShouldBeNil)
-
-	creds := credentials.NewTLS(&tls.Config{
-		RootCAs:      certPool,
-		Certificates: []tls.Certificate{clientCert},
-	})
-
-	conn, err := grpc.Dial(conf.Addr, grpc.WithTransportCredentials(creds))
-	So(err, ShouldBeNil)
-	defer conn.Close()
-
-	_, err = debug.NewDebugServiceClient(conn).
-		Sleep(context.Background(), &debug.SleepRequest{Duration: durationpb.New(50 * time.Millisecond)})
-
-	_, err = version.NewVersionServiceClient(conn).Version(context.Background(), &version.VersionRequest{})
-	if isRightClientCA {
-		So(err, ShouldBeNil)
-	} else {
-		So(err, ShouldNotBeNil)
-	}
-
-}
-
-func TestGRPCServer_TCPSocket_mTLS(t *testing.T) {
-	opts := log.NewOptions()
-	opts.OutputPaths = nil
-	opts.ErrorOutputPaths = nil
-	log.Init(opts)
-
-	Convey("grpc mTLS 测试", t, func() {
-		conf := grpcserver.NewConfig()
-		conf.Version = true
-		// 必须设置. 不设置将会遇到rpc error: code = ResourceExhausted desc = grpc: received message larger than max (7 vs. 0)
-		conf.MaxMsgSize = 4 * 1024 * 1024
-
-		Convey("开启mTLS", func() {
-			Convey("客户端检测证书,正确CA", func() {
-				conf.Addr = "0.0.0.0:56332"
-				conf.ServerCert.Key = serverKey
-				conf.ServerCert.Cert = serverCrt
-				conf.ClientCA = clientCA
-				conf.TlsEnable = true
-				mTLSInstallApi(conf, serverCA, clientCrt, clientKey, true)
-			})
-
-			Convey("客户端检测证书,错误CA", func() {
-				conf.Addr = "0.0.0.0:56333"
-				conf.ServerCert.Key = serverKey
-				conf.ServerCert.Cert = serverCrt
-				conf.ClientCA = wrongCA
-				conf.TlsEnable = true
-				mTLSInstallApi(conf, serverCA, clientCrt, clientKey, false)
-			})
 		})
 	})
 }

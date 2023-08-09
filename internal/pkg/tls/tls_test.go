@@ -32,3 +32,29 @@ func TestGeneratableKeyCert_Validate(t *testing.T) {
 		So(c.Validate(), ShouldBeNil)
 	})
 }
+
+var (
+	tl = tls.GeneratableKeyCert{
+		CertData: tls.CertData{
+			Cert: "ssssss",
+			Key:  "ssssss",
+		},
+		CertKey: tls.CertKey{
+			CertFile: "xxxxx",
+			KeyFile:  "xxxxxx",
+		},
+		CertDirectory: "",
+		PairName:      "",
+	}
+)
+
+func Test_TLS_CopyAndHide(t *testing.T) {
+	Convey("TLS_CopyAndHide", t, func() {
+		o := tl.CopyAndHide()
+
+		So(o.CertData.Cert, ShouldNotEqual, "-")
+		So(o.CertData.Key, ShouldNotEqual, "-")
+		So(tl.CertData.Cert, ShouldEqual, "-")
+		So(tl.CertData.Key, ShouldEqual, "-")
+	})
+}

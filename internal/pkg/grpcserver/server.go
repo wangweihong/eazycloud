@@ -41,7 +41,6 @@ func (s *GRPCServer) Run() {
 	if s.Address != "" {
 		eg.Go(func() error {
 			log.Infof("start gRPC server at tcp://%s", s.Address)
-
 			listen, err := net.Listen("tcp", s.Address)
 			if err != nil {
 				log.Fatalf("failed to listen on tcp://%s : %v", s.Address, err)
@@ -67,7 +66,7 @@ func (s *GRPCServer) Run() {
 			if err != nil {
 				log.Fatalf("fail to build unix listen unix://%s: %v", s.UnixSocket, err)
 			}
-
+			log.Infof("gRPC Listen at %v", listen.Addr())
 			if err := s.Serve(listen); err != nil {
 				log.Fatalf("failed to serve grpc server unix://%s: %v", s.UnixSocket, err)
 			}

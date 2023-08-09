@@ -2,6 +2,7 @@ package grpcoptions
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/tls"
@@ -16,7 +17,7 @@ type TCPOptions struct {
 	BindPort    int    `json:"bind-port"    mapstructure:"bind-port"`
 	TlsEnable   bool   `json:"tls-enable"   mapstructure:"tls-enable"`
 	// ServerCert is the TLS cert info for serving secure traffic
-	ServerCert tls.GeneratableKeyCert `json:"tls"          mapstructure:"tls"`
+	ServerCert tls.MTLSCert `json:"tls"          mapstructure:"tls"`
 }
 
 // NewTCPOptions is for creating an generic tcp listen gRPC server.
@@ -97,6 +98,14 @@ func (s *TCPOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ServerCert.CertData.Key, "tcp.tls.key-data",
 		s.ServerCert.CertData.Key, ""+
 			"Data of default x509 private key matching --tcp.tls.cert-data.")
+
+	fs.StringVar(&s.ServerCert.ClientCAData, "tcp.tls.client-ca-data",
+		s.ServerCert.ClientCAData, ""+
+			"Data of default x509 Certificate for gRPC server validate connect client if valid.")
+
+	fs.StringVar(&s.ServerCert.ClientCAPath, "tcp.tls.client-ca-path",
+		s.ServerCert.ClientCAPath, ""+
+			"File containing the  data of x509 Certificate for gRPC server validate connect client if valid.")
 }
 
 // Complete fills in any fields not set that are required to have valid data.
@@ -132,8 +141,17 @@ func (s *TCPOptions) Complete() error {
 			keyCert.KeyFile,
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("load cert from dir %v fail:%w", s.ServerCert.CertDirectory, err)
 		}
+	}
+
+	if s.ServerCert.ClientCAData == "" && s.ServerCert.ClientCAPath != "" {
+		pemClientCA, err := ioutil.ReadFile(s.ServerCert.ClientCAPath)
+		if err != nil {
+			return fmt.Errorf("client ca %v load fail:%w", s.ServerCert.ClientCAPath, err)
+		}
+
+		s.ServerCert.ClientCAData = string(pemClientCA)
 	}
 
 	return nil

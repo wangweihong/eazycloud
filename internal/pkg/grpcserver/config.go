@@ -1,7 +1,7 @@
 package grpcserver
 
 import (
-	cryptotls "crypto/tls"
+	"github.com/wangweihong/eazycloud/internal/pkg/tls/grpctls"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -23,6 +23,7 @@ type GRPCConfig struct {
 	UnixSocket         string
 	MaxMsgSize         int
 	ServerCert         tls.CertData
+	ClientCA           string
 	Version            bool
 	Reflect            bool
 	Debug              bool
@@ -61,17 +62,27 @@ func (c *GRPCConfig) Complete() *CompletedGRPCConfig {
 
 // New create a grpc Server instance.
 func (c *CompletedGRPCConfig) New() (*GRPCServer, error) {
-	opts := []grpc.ServerOption{grpc.MaxRecvMsgSize(c.MaxMsgSize)}
+	opts := []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(c.MaxMsgSize),
+	}
 
 	if c.TlsEnable {
-		cert, err := cryptotls.X509KeyPair([]byte(c.ServerCert.Cert), []byte(c.ServerCert.Key))
+		var creds credentials.TransportCredentials
+		var err error
+		if c.ClientCA == "" {
+			log.Info("gRPC service run with TLS")
+
+			creds, err = grpctls.NewTlsServerCredentials([]byte(c.ServerCert.Cert), []byte(c.ServerCert.Key))
+		} else {
+			log.Info("gRPC service run with mTLS")
+
+			creds, err = grpctls.NewMutualTlsServerCredentials([]byte(c.ClientCA), []byte(c.ServerCert.Cert), []byte(c.ServerCert.Key))
+		}
+
 		if err != nil {
 			log.Fatalf("Failed to generate credentials %s", err.Error())
 		}
 
-		creds := credentials.NewTLS(&cryptotls.Config{Certificates: []cryptotls.Certificate{cert}})
-
-		log.Info("gRPC service run with TLS")
 		opts = append(opts, grpc.Creds(creds))
 	}
 
