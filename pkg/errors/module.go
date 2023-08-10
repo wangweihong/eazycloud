@@ -54,7 +54,14 @@ func Caller() string {
 	if fp := runtime.FuncForPC(pc); fp != nil {
 		funcName = fp.Name()
 	}
-	_, filename := path.Split(file)
+
+	dir, filename := path.Split(file)
+	//show package name for error stack
+	if dir != "" {
+		parent := filepath.Base(dir)
+		filename = filepath.Join(parent, filename)
+	}
+
 	fileList := strings.Split(funcName, ".")
 	funcName = fileList[len(fileList)-1]
 	format := "file:" + filename + ",func:" + funcName + ",line:" + strconv.FormatInt(int64(line), 10)

@@ -116,6 +116,26 @@ func Wrap(code int, desc string) *withStack {
 	return errStack
 }
 
+// WrapStack generate a new withStack error with `code` , `desc`,`stack`.
+func WrapStack(code int, desc string, stack []string) *withStack {
+	codeMux.RLock()
+	defer codeMux.RUnlock()
+
+	stack = append(stack, newStack(code, Caller()))
+	errStack := &withStack{
+		stack:       stack,
+		description: desc,
+	}
+
+	coder, exist := codes[code]
+	if !exist {
+		errStack.Coder = unknown
+		return errStack
+	}
+	errStack.Coder = coder
+	return errStack
+}
+
 // WrapF generate a new withStack error with `code` and desc `format+arg...`.
 func WrapF(code int, format string, args ...interface{}) *withStack {
 	codeMux.RLock()
@@ -149,7 +169,9 @@ func WrapError(code int, err error) *withStack {
 	coder, exist := codes[code]
 	if !exist {
 		errStack.Coder = unknown
-		errStack.description = err.Error()
+		if err != nil {
+			errStack.description = err.Error()
+		}
 		return errStack
 	}
 
@@ -169,7 +191,7 @@ func WrapError(code int, err error) *withStack {
 func UpdateStack(err error) *withStack {
 	errStack := FromError(err)
 	if errStack != nil {
-		errStack.stack = append(errStack.stack, newStack(unknown.code, Caller()))
+		errStack.stack = append(errStack.stack, newStack(errStack.Code(), Caller()))
 	}
 	return errStack
 }

@@ -59,6 +59,12 @@ func TestWrapError(t *testing.T) {
 			So(e.Description(), ShouldEqual, "myError")
 		})
 
+		Convey("nil error", func() {
+			e := errors.WrapError(101, nil)
+			So(e.Code(), ShouldEqual, e.Code())
+
+		})
+
 		Convey("exist", func() {
 			Convey("withStack error", func() {
 				e1 := errors.Wrap(100, "error1")
@@ -70,7 +76,7 @@ func TestWrapError(t *testing.T) {
 
 			Convey("normal error", func() {
 				e := errors.WrapError(101, fmt.Errorf("myError"))
-				So(e.Code(), ShouldEqual, e.Code())
+				So(e.Code(), ShouldEqual, 101)
 				So(e.HTTPStatus(), ShouldEqual, e.HTTPStatus())
 				So(e.Message(), ShouldEqual, e.Message())
 				So(e.Description(), ShouldEqual, "myError")
