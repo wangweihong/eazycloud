@@ -56,7 +56,7 @@ func Caller() string {
 	}
 
 	dir, filename := path.Split(file)
-	//show package name for error stack
+	// show package name for error stack
 	if dir != "" {
 		parent := filepath.Base(dir)
 		filename = filepath.Join(parent, filename)
