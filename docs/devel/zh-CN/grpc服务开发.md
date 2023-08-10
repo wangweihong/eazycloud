@@ -55,9 +55,20 @@ tcp:
     1. `client-ca-data`
     2. `client-ca-path`
 
-## 添加服务
-1. internal/pkg/proto目录
-
+## gRPC通用模块服务添加
+1. internal/pkg/grpcserver/proto目录,添加自定义模块目录并在里面生成.proto文件
+2. 执行`make proto`,将会在internal/pkg/grpcserver/apis生成对应的模块的*.pb.go
+3. 在`internal/pkg/grpcserver/service`中编写通用模块服务逻辑以及注册逻辑
+```
+// RegisterDebugServer  register debug service to gRPC.
+func RegisterDebugServer(s *grpc.Server) {
+	debug.RegisterDebugServiceServer(s, &debugService{})
+}
+```
+4. 在`internal/pkg/grpcserver/server.go`中注册该服务
+```
+versionservice.RegisterVersionService(s.Server)
+```
 
 # 测试
 ## 手动测试

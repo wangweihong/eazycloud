@@ -4,6 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/apis/callstatus"
+
+	"github.com/wangweihong/eazycloud/internal/pkg/code"
+	"github.com/wangweihong/eazycloud/pkg/errors"
+
 	"github.com/wangweihong/eazycloud/pkg/log"
 
 	"github.com/golang/protobuf/ptypes/empty"
@@ -32,6 +37,19 @@ func (s *debugService) Sleep(ctx context.Context, req *debug.SleepRequest) (*emp
 	log.F(ctx).Infof("awake,cost:%s", time.Since(start))
 
 	return &empty.Empty{}, nil
+}
+
+func (s *debugService) Example(ctx context.Context, req *debug.ExampleRequest) (*debug.ExampleResponse, error) {
+	resp := &debug.ExampleResponse{
+		CallStatus: callstatus.FromError(nil),
+	}
+
+	if !req.GetSuccess() {
+		err := errors.Wrap(code.ErrDatabase, "error test")
+		log.F(ctx).Errorf("%#+v", err)
+		resp.CallStatus = callstatus.FromError(err)
+	}
+	return resp, nil
 }
 
 // RegisterDebugServer  register debug service to gRPC.
