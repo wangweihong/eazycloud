@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/wangweihong/eazycloud/internal/examplegrpc/config"
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver"
 	"github.com/wangweihong/eazycloud/pkg/log"
 	"github.com/wangweihong/eazycloud/pkg/shutdown"
 	"github.com/wangweihong/eazycloud/pkg/shutdown/managers/posixsignal"

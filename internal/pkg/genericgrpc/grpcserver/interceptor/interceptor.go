@@ -3,10 +3,10 @@ package interceptor
 import (
 	"google.golang.org/grpc"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor/context"
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor/logging"
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor/recovery"
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor/requestid"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver/interceptor/context"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver/interceptor/logging"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver/interceptor/recovery"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver/interceptor/requestid"
 )
 
 const (

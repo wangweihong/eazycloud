@@ -15,9 +15,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver"
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/apis/debug"
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/apis/version"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/debug"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/version"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver"
 )
 
 const (

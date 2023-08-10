@@ -11,10 +11,10 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver/interceptor"
 	"github.com/wangweihong/eazycloud/pkg/sets"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver"
 )
 
 // ServerRunOptions contains the options while running a generic gRPC server.

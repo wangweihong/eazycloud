@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/apis/callstatus"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/callstatus"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/code"
 	"github.com/wangweihong/eazycloud/pkg/errors"
@@ -14,7 +14,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/apis/debug"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/debug"
 )
 
 type debugService struct{}

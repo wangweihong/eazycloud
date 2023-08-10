@@ -1,7 +1,7 @@
 package options
 
 import (
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/grpcoptions"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver/grpcoptions"
 	"github.com/wangweihong/eazycloud/pkg/app"
 	cliflag "github.com/wangweihong/eazycloud/pkg/cli/flag"
 	"github.com/wangweihong/eazycloud/pkg/json"

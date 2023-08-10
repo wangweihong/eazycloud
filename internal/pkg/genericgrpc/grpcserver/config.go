@@ -10,7 +10,7 @@ import (
 
 	"github.com/wangweihong/eazycloud/internal/pkg/debug"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver/interceptor"
 
 	"github.com/wangweihong/eazycloud/pkg/log"
 	//"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc".

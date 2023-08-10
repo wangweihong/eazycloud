@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/apis/version"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/version"
 	pkgversion "github.com/wangweihong/eazycloud/pkg/version"
 )
 

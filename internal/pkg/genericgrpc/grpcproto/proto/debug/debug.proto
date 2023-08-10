@@ -3,7 +3,7 @@ package debug;
 
 // 注意: 新版本的protobuf要求go_package必须至少带有一个/
 // 可以是相对路径，或者是项目域名路径
-option go_package = "github.com/wangweihong/eazycloud/internal/pkg/grpcserver/apis/debug";
+option go_package = "github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/debug";
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/duration.proto";

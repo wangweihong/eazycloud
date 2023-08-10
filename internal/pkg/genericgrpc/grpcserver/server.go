@@ -6,12 +6,12 @@ import (
 
 	"github.com/wangweihong/eazycloud/internal/pkg/debug"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/interceptor"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver/interceptor"
 
 	"google.golang.org/grpc/reflection"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/service/debugservice"
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver/service/versionservice"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/service/debugservice"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/service/versionservice"
 
 	"golang.org/x/sync/errgroup"
 
