@@ -26,5 +26,9 @@ func init() {
 	register(ErrInvalidYaml, 500, map[string]string{"MessageCN": "数据非有效YAML结构", "MessageEN": "Data is not valid Yaml."})
 	register(ErrEncodingYaml, 500, map[string]string{"MessageCN": "YAML数据编码失败", "MessageEN": "Yaml data could not be encoded."})
 	register(ErrDecodingYaml, 500, map[string]string{"MessageCN": "YAML数据编码失败", "MessageEN": "Yaml data could not be decoded."})
+	register(ErrGRPCClientGenerateError, 500, map[string]string{"MessageCN": "生成gRPC客户端失败", "MessageEN": "Generate gRPC client error."})
+	register(ErrGRPCClientCertificateError, 500, map[string]string{"MessageCN": "gRPC客户端证书错误", "MessageEN": "Validate gRPC client certificate error."})
+	register(ErrGRPCClientDialError, 500, map[string]string{"MessageCN": "gRPC客户端连接失败", "MessageEN": "Dial to gRPC server error."})
+	register(ErrGRPCClientInvokeServiceError, 500, map[string]string{"MessageCN": "gRPC客户端访问服务接口失败", "MessageEN": "Invoke gRPC server service function error."})
 	register(ErrGRPCResponseDataParseError, 500, map[string]string{"MessageCN": "解析gRPC服务返回数据失败", "MessageEN": "Decode data from gRPC service error."})
 }
