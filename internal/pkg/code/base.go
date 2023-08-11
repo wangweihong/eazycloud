@@ -85,24 +85,6 @@ const (
 	ErrPermissionDenied
 )
 
-// example: policy errors.
-const (
-
-	// @HTTP 404
-	// @MessageCN 策略未找到
-	// @MessageEN Policy not found.
-	ErrPolicyNotFound int = iota + 110201
-)
-
-// example: user errors.
-const (
-
-	// @HTTP 404
-	// @MessageCN 用户未找到
-	// @MessageEN User not found.
-	ErrUserNotFound int = iota + 110202
-)
-
 // common: encode/decode errors.
 const (
 	// @HTTP 500
@@ -141,7 +123,44 @@ const (
 	ErrEncodingYaml
 
 	// @HTTP 500
-	// @MessageCN  YAML数据编码
+	// @MessageCN  YAML数据编码失败
 	// @MessageEN  Yaml data could not be decoded.
 	ErrDecodingYaml
+)
+
+// common: Http  server error.
+const ()
+
+// common: Http  client error.
+const ()
+
+// common: gRPC  server error.
+const ()
+
+// common: gRPC  client error.
+const (
+	// @HTTP 500
+	// @MessageCN  生成gRPC客户端失败
+	// @MessageEN  Generate gRPC client error.
+	ErrGRPCClientGenerateError int = iota + 100701
+
+	// @HTTP 500
+	// @MessageCN  gRPC客户端证书错误
+	// @MessageEN   Validate gRPC client certificate error.
+	ErrGRPCClientCertificateError
+
+	// @HTTP 500
+	// @MessageCN  gRPC客户端连接失败
+	// @MessageEN   Dial to gRPC server error.
+	ErrGRPCClientDialError
+
+	// @HTTP 500
+	// @MessageCN  gRPC客户端访问服务接口失败
+	// @MessageEN   Invoke gRPC server service function error.
+	ErrGRPCClientInvokeServiceError
+
+	// @HTTP 500
+	// @MessageCN  解析gRPC服务返回数据失败
+	// @MessageEN  Decode data from gRPC service error.
+	ErrGRPCResponseDataParseError
 )

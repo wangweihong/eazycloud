@@ -36,8 +36,6 @@
 | ErrMissingHeader | 100205 | 401 | The `Authorization` header was empty. | 请求授权头部为空 |
 | ErrPasswordIncorrect | 100206 | 401 | Password was incorrect. | 密码验证失败 |
 | ErrPermissionDenied | 100207 | 403 | Permission denied. | 请求无权限执行 |
-| ErrPolicyNotFound | 110201 | 404 | Policy not found. | 策略未找到 |
-| ErrUserNotFound | 110202 | 404 | User not found. | 用户未找到 |
 | ErrEncodingFailed | 100301 | 500 | Encoding failed due to an error with the data. | 数据编码出错 |
 | ErrDecodingFailed | 100302 | 500 | Decoding failed due to an error with the data. | 数据解码出错 |
 | ErrInvalidJSON | 100303 | 500 | Data is not valid JSON. | 数据非有效JSON结构 |
@@ -45,5 +43,6 @@
 | ErrDecodingJSON | 100305 | 500 | JSON data could not be decoded. | JSON数据解码失败 |
 | ErrInvalidYaml | 100306 | 500 | Data is not valid Yaml. | 数据非有效YAML结构 |
 | ErrEncodingYaml | 100307 | 500 | Yaml data could not be encoded. | YAML数据编码失败 |
-| ErrDecodingYaml | 100308 | 500 | Yaml data could not be decoded. | YAML数据编码 |
+| ErrDecodingYaml | 100308 | 500 | Yaml data could not be decoded. | YAML数据编码失败 |
+| ErrGRPCResponseDataParseError | 100701 | 500 | Decode data from gRPC service error. | 解析gRPC服务返回数据失败 |
 

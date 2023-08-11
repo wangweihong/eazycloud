@@ -18,8 +18,6 @@ func init() {
 	register(ErrMissingHeader, 401, map[string]string{"MessageCN": "请求授权头部为空", "MessageEN": "The `Authorization` header was empty."})
 	register(ErrPasswordIncorrect, 401, map[string]string{"MessageCN": "密码验证失败", "MessageEN": "Password was incorrect."})
 	register(ErrPermissionDenied, 403, map[string]string{"MessageCN": "请求无权限执行", "MessageEN": "Permission denied."})
-	register(ErrPolicyNotFound, 404, map[string]string{"MessageCN": "策略未找到", "MessageEN": "Policy not found."})
-	register(ErrUserNotFound, 404, map[string]string{"MessageCN": "用户未找到", "MessageEN": "User not found."})
 	register(ErrEncodingFailed, 500, map[string]string{"MessageCN": "数据编码出错", "MessageEN": "Encoding failed due to an error with the data."})
 	register(ErrDecodingFailed, 500, map[string]string{"MessageCN": "数据解码出错", "MessageEN": "Decoding failed due to an error with the data."})
 	register(ErrInvalidJSON, 500, map[string]string{"MessageCN": "数据非有效JSON结构", "MessageEN": "Data is not valid JSON."})
@@ -27,5 +25,6 @@ func init() {
 	register(ErrDecodingJSON, 500, map[string]string{"MessageCN": "JSON数据解码失败", "MessageEN": "JSON data could not be decoded."})
 	register(ErrInvalidYaml, 500, map[string]string{"MessageCN": "数据非有效YAML结构", "MessageEN": "Data is not valid Yaml."})
 	register(ErrEncodingYaml, 500, map[string]string{"MessageCN": "YAML数据编码失败", "MessageEN": "Yaml data could not be encoded."})
-	register(ErrDecodingYaml, 500, map[string]string{"MessageCN": "YAML数据编码", "MessageEN": "Yaml data could not be decoded."})
+	register(ErrDecodingYaml, 500, map[string]string{"MessageCN": "YAML数据编码失败", "MessageEN": "Yaml data could not be decoded."})
+	register(ErrGRPCResponseDataParseError, 500, map[string]string{"MessageCN": "解析gRPC服务返回数据失败", "MessageEN": "Decode data from gRPC service error."})
 }
