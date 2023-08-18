@@ -1,6 +1,7 @@
 package stringutil
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -26,4 +27,10 @@ func PointerToString(p *string) string {
 		return *p
 	}
 	return ""
+}
+
+// 打印字符时不转义
+// "\n{\"msgtype\": " -- > "\n{\"msgtype\":
+func PrintUnescape(p string) {
+	fmt.Println(fmt.Sprintf("%#v", p))
 }
