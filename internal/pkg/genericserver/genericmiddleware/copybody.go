@@ -22,10 +22,10 @@ const (
 
 // Copy body to context bytes array.
 func CopyBodyMiddleware(skippers ...SkipperFunc) gin.HandlerFunc {
-	var maxMemory int64 = 64 << 20 // 64 MB
-	if v := HTTPMaxContentLength; v > 0 {
-		maxMemory = v
-	}
+	var maxMemory int64 = 4 << 20 // 4 MB
+	//if v := HTTPMaxContentLength; v > 0 {
+	//	maxMemory = v
+	//}
 
 	return func(c *gin.Context) {
 		if SkipHandler(c, skippers...) || c.Request.Body == nil {

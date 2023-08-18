@@ -12,8 +12,8 @@ import (
 type FeatureOptions struct {
 	// profile
 	EnableProfiling     bool   `json:"profiling"            mapstructure:"profiling"`            // 是否安装/debug/prof/* api
-	StandAloneProfiling bool   `json:"standalone_profiling" mapstructure:"standalone_profiling"` // prof api是否采用独立的服务
-	ProfileAddress      string `json:"profile_address"      mapstructure:"profile_address"`      // prof地址,采取独立服务时需指定
+	StandAloneProfiling bool   `json:"standalone-profiling" mapstructure:"standalone-profiling"` // prof api是否采用独立的服务
+	ProfileAddress      string `json:"profile-address"      mapstructure:"profile-address"`      // prof地址,采取独立服务时需指定
 	// metrics
 	EnableMetrics bool `json:"enable-metrics"       mapstructure:"enable-metrics"` // 是否启动/metrics api
 }

@@ -122,6 +122,11 @@ func (s *SecureServingOptions) Complete() error {
 		return nil
 	}
 
+	// if not required, do nothing
+	if !s.Required {
+		return nil
+	}
+
 	if len(s.ServerCert.CertData.Cert) != 0 || len(s.ServerCert.CertData.Key) != 0 {
 		return nil
 	}

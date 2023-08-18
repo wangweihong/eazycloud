@@ -146,39 +146,20 @@ func (s *GenericHTTPServer) InstallRuntimeDebug() {
 // Run spawns the http server. It only returns when the port cannot be listened on initially.
 func (s *GenericHTTPServer) Run() error {
 	// For scalability, use custom HTTP configuration mode here
-
-	s.insecureServer = &http.Server{
-		Addr:    s.InsecureServingInfo.Address,
-		Handler: s,
-		// ReadTimeout:    10 * time.Second,
-		// WriteTimeout:   10 * time.Second,
-		// MaxHeaderBytes: 1 << 20,
-	}
-
-	cert, err := cryptotls.X509KeyPair(
-		[]byte(s.SecureServingInfo.CertKey.Cert),
-		[]byte(s.SecureServingInfo.CertKey.Key),
-	)
-	if err != nil {
-		log.Fatalf("Failed to generate credentials %s", err.Error())
-	}
 	// For scalability, use custom HTTP configuration mode here
-	s.secureServer = &http.Server{
-		Addr:    s.SecureServingInfo.Address(),
-		Handler: s,
-		TLSConfig: &cryptotls.Config{
-			Certificates: []cryptotls.Certificate{cert},
-		},
-		// ReadTimeout:    10 * time.Second,
-		// WriteTimeout:   10 * time.Second,
-		// MaxHeaderBytes: 1 << 20,
-	}
-
 	var eg errgroup.Group
 
 	// Initializing the server in a goroutine so that
 	// it won't block the graceful shutdown handling below
 	if s.InsecureServingInfo.Required {
+		s.insecureServer = &http.Server{
+			Addr:    s.InsecureServingInfo.Address,
+			Handler: s,
+			// ReadTimeout:    10 * time.Second,
+			// WriteTimeout:   10 * time.Second,
+			// MaxHeaderBytes: 1 << 20,
+		}
+
 		eg.Go(func() error {
 			log.Infof("Start to listening the incoming requests on http address: %s", s.InsecureServingInfo.Address)
 
@@ -195,6 +176,25 @@ func (s *GenericHTTPServer) Run() error {
 	}
 
 	if s.SecureServingInfo.Required {
+		cert, err := cryptotls.X509KeyPair(
+			[]byte(s.SecureServingInfo.CertKey.Cert),
+			[]byte(s.SecureServingInfo.CertKey.Key),
+		)
+		if err != nil {
+			log.Fatalf("Failed to generate credentials %s", err.Error())
+		}
+		// For scalability, use custom HTTP configuration mode here
+		s.secureServer = &http.Server{
+			Addr:    s.SecureServingInfo.Address(),
+			Handler: s,
+			TLSConfig: &cryptotls.Config{
+				Certificates: []cryptotls.Certificate{cert},
+			},
+			// ReadTimeout:    10 * time.Second,
+			// WriteTimeout:   10 * time.Second,
+			// MaxHeaderBytes: 1 << 20,
+		}
+
 		eg.Go(func() error {
 			log.Infof("Start to listening the incoming requests on https address: %s", s.SecureServingInfo.Address())
 

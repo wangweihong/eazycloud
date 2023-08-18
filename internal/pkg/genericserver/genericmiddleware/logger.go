@@ -3,6 +3,8 @@ package genericmiddleware
 import (
 	"fmt"
 	"io"
+	"mime"
+	"net/http"
 	"os"
 	"time"
 
@@ -22,6 +24,7 @@ const (
 
 // Request logger
 // One Log Record Request Life Time
+// nolint: gocognit
 // TODO: 应该记录操作者身份.
 func LoggerMiddleware(skippers ...SkipperFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -43,23 +46,23 @@ func LoggerMiddleware(skippers ...SkipperFunc) gin.HandlerFunc {
 		fields["req_method"] = method
 		fields["req_url"] = c.Request.URL.String()
 		fields["req_proto"] = c.Request.Proto
-		// fields["header"] = c.Request.Header
+		fields["header"] = c.Request.Header
 		// fields["user_agent"] = c.GetHeader("User-Agent")
 		fields["req_content_length"] = c.Request.ContentLength
 		fields["req_media_type"] = c.GetHeader("Content-Type")
 
-		//if !DisableCopy {
-		//	if method == http.MethodPost || method == http.MethodPut {
-		//		mediaType, _, _ := mime.ParseMediaType(c.GetHeader("Content-Type"))
-		//		if mediaType != "multipart/form-data" {
-		//			if v, ok := c.Get(RequestBodyKey); ok {
-		//				if b, ok := v.([]byte); ok && len(b) <= MaxRequestLoggerLength {
-		//					fields["z_request_body"] = string(b)
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
+		if !DisableCopy { // nolint: nestif
+			if method == http.MethodPost || method == http.MethodPut {
+				mediaType, _, _ := mime.ParseMediaType(c.GetHeader("Content-Type"))
+				if mediaType != "multipart/form-data" {
+					if v, ok := c.Get(RequestBodyKey); ok {
+						if b, ok := v.([]byte); ok && len(b) <= MaxRequestLoggerLength {
+							fields["z_request_body"] = string(b)
+						}
+					}
+				}
+			}
+		}
 		c.Next()
 		// 这里应当从回应中取出具体的状态码，错误信息。错误栈
 		end := time.Now()
@@ -68,7 +71,6 @@ func LoggerMiddleware(skippers ...SkipperFunc) gin.HandlerFunc {
 			// Truncate in a golang < 1.8 safe way
 			Latency -= Latency % time.Second
 		}
-		// timeConsuming := time.Since(start).Nanoseconds() / 1e6
 		fields["resp_status"] = c.Writer.Status()
 		fields["resp_length"] = c.Writer.Size()
 		fields["req_latency"] = Latency
@@ -81,7 +83,7 @@ func LoggerMiddleware(skippers ...SkipperFunc) gin.HandlerFunc {
 			}
 		}
 
-		c.Set(log.FieldKeyCtx{}.String(), fields)
+		// c.Set(log.FieldKeyCtx{}.String(), fields)
 		log.F(c).L(c).Infof("%3d - [%s] %v %s  %s", c.Writer.Status(), c.ClientIP(), Latency, c.Request.Method, p)
 	}
 }
