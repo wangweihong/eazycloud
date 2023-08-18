@@ -22,7 +22,6 @@ const (
 	// @MessageEN Error occurred while binding the request body to the struct.
 	ErrBind
 
-	// ErrValidation - 400: Validation failed.
 	// @HTTP 400
 	// @MessageCN  参数校验失败
 	// @MessageEN  Validation failed.
@@ -37,6 +36,12 @@ const (
 	// @MessageCN  请求路由不存在
 	// @MessageEN  Page not found.
 	ErrPageNotFound
+
+	// ErrOperationBatchExecute 表明当前操作为批量操作,需解析结构确认批量结果
+	// @HTTP 200
+	// @MessageCN  批量执行操作
+	// @MessageEN  Operation batch execute.
+	ErrOperationBatchExecute
 )
 
 // common: database errors.
@@ -132,7 +137,22 @@ const (
 const ()
 
 // common: Http  client error.
-const ()
+const (
+	// @HTTP 500
+	// @MessageCN  HTTP请求失败
+	// @MessageEN  HTTP request error.
+	ErrHTTPError int = iota + 100501
+
+	// @HTTP 500
+	// @MessageCN  解析HTTP服务返回数据失败
+	// @MessageEN  Decode data from http response error.
+	ErrHTTPResponseDataParseError
+
+	// @HTTP 500
+	// @MessageCN  生成HTTP客户端失败
+	// @MessageEN  Generate HTTP client error.
+	ErrHTTPClientGenerateError
+)
 
 // common: gRPC  server error.
 const ()

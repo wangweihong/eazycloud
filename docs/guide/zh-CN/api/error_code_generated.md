@@ -28,6 +28,7 @@
 | ErrValidation | 100004 | 400 | Validation failed. | 参数校验失败 |
 | ErrTokenInvalid | 100005 | 401 | Token invalid. | 令牌无效 |
 | ErrPageNotFound | 100006 | 404 | Page not found. | 请求路由不存在 |
+| ErrOperationBatchExecute | 100007 | 200 | Operation batch execute. | 批量执行操作 |
 | ErrDatabase | 100101 | 500 | Database error. | 数据库出错 |
 | ErrEncrypt | 100201 | 401 | Error occurred while encrypting the user password. | 用户密码加密失败 |
 | ErrSignatureInvalid | 100202 | 401 | Signature is invalid. | 签名无效 |
@@ -44,6 +45,9 @@
 | ErrInvalidYaml | 100306 | 500 | Data is not valid Yaml. | 数据非有效YAML结构 |
 | ErrEncodingYaml | 100307 | 500 | Yaml data could not be encoded. | YAML数据编码失败 |
 | ErrDecodingYaml | 100308 | 500 | Yaml data could not be decoded. | YAML数据编码失败 |
+| ErrHTTPError | 100501 | 500 | HTTP request error. | HTTP请求失败 |
+| ErrHTTPResponseDataParseError | 100502 | 500 | Decode data from http response error. | 解析HTTP服务返回数据失败 |
+| ErrHTTPClientGenerateError | 100503 | 500 | Generate HTTP client error. | 生成HTTP客户端失败 |
 | ErrGRPCClientGenerateError | 100701 | 500 | Generate gRPC client error. | 生成gRPC客户端失败 |
 | ErrGRPCClientCertificateError | 100702 | 500 | Validate gRPC client certificate error. | gRPC客户端证书错误 |
 | ErrGRPCClientDialError | 100703 | 500 | Dial to gRPC server error. | gRPC客户端连接失败 |
