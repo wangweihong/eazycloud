@@ -50,6 +50,6 @@ log:
 feature:
   enable-metrics: true # 开启 metrics, router:  /metrics
   profiling: true # 开启性能分析,查看程序栈、线程等系统信息,默认值为true
-  profile_address: 127.0.0.0:6060 # 独立服务地址
-  standalone_profiling: false # 非独立服务时,可以通过 <host>:<port>/debug/pprof/地址.独立服务通过<profile_address>/debug/pprof/地址查看.默认值为false
+  profile-address: 127.0.0.0:6060 # 独立服务地址
+  standalone-profiling: false # 非独立服务时,可以通过 <host>:<port>/debug/pprof/地址.独立服务通过<profile_address>/debug/pprof/地址查看.默认值为false
 
