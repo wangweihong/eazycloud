@@ -173,5 +173,7 @@ func (c *Client) getClientConn(ctx context.Context, addr string, copt ...grpc.Ca
 		log.F(ctx).Errorf("dial to addr %s error: %w ", addr, err)
 		return nil, errors.WrapError(code.ErrGRPCClientDialError, err)
 	}
+
+	c.conn = conn
 	return conn, nil
 }
