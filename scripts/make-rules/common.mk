@@ -64,12 +64,12 @@ ifeq ($(origin PLATFORM), undefined)
 	ifeq ($(origin GOARCH), undefined)
 		GOARCH := $(shell go env GOARCH)
 	endif
-	PLATFORM := $(GOOS)_$(GOARCH)
+	PLATFORM := $(GOOS)/$(GOARCH)
 	# Use linux as the default OS when building images
-	IMAGE_PLAT := linux_$(GOARCH)
+	IMAGE_PLAT := linux/$(GOARCH)
 else
-	GOOS := $(word 1, $(subst _, ,$(PLATFORM)))
-	GOARCH := $(word 2, $(subst _, ,$(PLATFORM)))
+	GOOS := $(word 1, $(subst /, ,$(PLATFORM)))
+	GOARCH := $(word 2, $(subst /, ,$(PLATFORM)))
 	IMAGE_PLAT := $(PLATFORM)
 endif
 
