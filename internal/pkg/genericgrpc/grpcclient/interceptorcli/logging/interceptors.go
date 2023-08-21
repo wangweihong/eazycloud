@@ -3,7 +3,7 @@ package logging
 import (
 	"context"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient/interceptorcli/skipper"
+	"github.com/wangweihong/eazycloud/pkg/skipper"
 
 	"google.golang.org/grpc"
 
@@ -14,7 +14,7 @@ import (
 // UnaryClientInterceptor returns a new unary client interceptor for logging.
 func UnaryClientInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		if skipper.SkipInterceptor(method, skipperFunc...) {
+		if skipper.Skip(method, skipperFunc...) {
 			log.F(ctx).Debugf("skip intercept method %s", method)
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}

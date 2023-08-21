@@ -3,7 +3,7 @@ package grpcclient
 import (
 	"time"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient/interceptorcli/skipper"
+	"github.com/wangweihong/eazycloud/pkg/skipper"
 
 	"google.golang.org/grpc"
 )

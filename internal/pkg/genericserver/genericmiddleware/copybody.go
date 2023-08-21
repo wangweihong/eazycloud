@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/wangweihong/eazycloud/pkg/skipper"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/wangweihong/eazycloud/pkg/json"
@@ -21,14 +23,14 @@ const (
 )
 
 // Copy body to context bytes array.
-func CopyBodyMiddleware(skippers ...SkipperFunc) gin.HandlerFunc {
+func CopyBodyMiddleware(skippers ...skipper.SkipperFunc) gin.HandlerFunc {
 	var maxMemory int64 = 4 << 20 // 4 MB
 	//if v := HTTPMaxContentLength; v > 0 {
 	//	maxMemory = v
 	//}
 
 	return func(c *gin.Context) {
-		if SkipHandler(c, skippers...) || c.Request.Body == nil {
+		if skipper.Skip(c.Request.URL.Path, skippers...) || c.Request.Body == nil {
 			c.Next()
 			return
 		}

@@ -5,6 +5,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/wangweihong/eazycloud/pkg/skipper"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/wangweihong/eazycloud/pkg/tracectx"
@@ -16,9 +18,9 @@ const (
 )
 
 // RequestID is a middleware that injects a 'X-Request-ID' into the context and request/response header of each request.
-func RequestID(skippers ...SkipperFunc) gin.HandlerFunc {
+func RequestID(skippers ...skipper.SkipperFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if SkipHandler(c, skippers...) {
+		if skipper.Skip(c.Request.URL.Path, skippers...) {
 			c.Next()
 			return
 		}

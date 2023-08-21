@@ -7,8 +7,6 @@ import (
 	gindump "github.com/tpkeeper/gin-dump"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/wangweihong/eazycloud/pkg/sets"
 )
 
 const (
@@ -22,32 +20,6 @@ const (
 	MWNameLogger    = "logger"
 	MWNameDump      = "dump"
 )
-
-type SkipperFunc func(*gin.Context) bool
-
-func AllowPathPrefixSkipper(prefixes ...string) SkipperFunc {
-	return func(c *gin.Context) bool {
-		path := c.Request.URL.Path
-		return sets.NewString(prefixes...).IsPrefixOf(path)
-	}
-}
-
-func AllowPathPrefixNoSkipper(prefixes ...string) SkipperFunc {
-	return func(c *gin.Context) bool {
-		path := c.Request.URL.Path
-		return !sets.NewString(prefixes...).IsPrefixOf(path)
-	}
-}
-
-// SkipHandler 跳过指定的中间件.
-func SkipHandler(c *gin.Context, skippers ...SkipperFunc) bool {
-	for _, skipper := range skippers {
-		if skipper(c) {
-			return true
-		}
-	}
-	return false
-}
 
 // Middlewares store registered middlewares.
 var (

@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/wangweihong/eazycloud/pkg/skipper"
+
 	"github.com/mattn/go-isatty"
 
 	"github.com/wangweihong/eazycloud/pkg/util/netutil"
@@ -26,9 +28,9 @@ const (
 // One Log Record Request Life Time
 // nolint: gocognit
 // TODO: 应该记录操作者身份.
-func LoggerMiddleware(skippers ...SkipperFunc) gin.HandlerFunc {
+func LoggerMiddleware(skippers ...skipper.SkipperFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if SkipHandler(c, skippers...) {
+		if skipper.Skip(c.Request.URL.Path, skippers...) {
 			c.Next()
 			return
 		}
@@ -82,9 +84,15 @@ func LoggerMiddleware(skippers ...SkipperFunc) gin.HandlerFunc {
 				fields["z_resp_body"] = string(b)
 			}
 		}
-
-		// c.Set(log.FieldKeyCtx{}.String(), fields)
-		log.F(c).L(c).Infof("%3d - [%s] %v %s  %s", c.Writer.Status(), c.ClientIP(), Latency, c.Request.Method, p)
+		simpleCallInfo := fmt.Sprintf(
+			"%3d - [%s] %v %s  %s",
+			c.Writer.Status(),
+			c.ClientIP(),
+			Latency,
+			c.Request.Method,
+			p,
+		)
+		log.F(c).Info(simpleCallInfo, log.Every("call-detail", fields))
 	}
 }
 
