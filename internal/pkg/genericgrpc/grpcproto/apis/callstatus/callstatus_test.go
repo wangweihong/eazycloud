@@ -38,8 +38,8 @@ func TestCallStatus_ToError(t *testing.T) {
 		})
 
 		Convey("not nil", func() {
-			err := errors.Wrap(code.ErrDecodingJSON, "something")
-			err = errors.UpdateStack(err)
+			st := errors.Wrap(code.ErrDecodingJSON, "something")
+			err := errors.UpdateStack(st)
 			cs := callstatus.FromError(err)
 			e := callstatus.ToError(cs)
 			So(e, ShouldNotBeNil)

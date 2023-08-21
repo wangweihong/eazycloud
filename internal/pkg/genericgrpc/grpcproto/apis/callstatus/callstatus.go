@@ -16,9 +16,9 @@ func ToError(cs *CallStatus) error {
 
 // FromError convert err to grpc call status.
 func FromError(err error) *CallStatus {
-	e := errors.Wrap(code.ErrSuccess, "")
-	if err != nil {
-		e = errors.FromError(err)
+	e := errors.FromError(err)
+	if e == nil {
+		e = errors.Wrap(code.ErrSuccess, "")
 	}
 
 	cs := &CallStatus{
