@@ -16,6 +16,7 @@ import (
 	"github.com/wangweihong/eazycloud/internal/pkg/tls/httptls"
 	"github.com/wangweihong/eazycloud/pkg/errors"
 	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/eazycloud/pkg/util/callerutil"
 )
 
 type Client struct {
@@ -141,9 +142,11 @@ func (c *Client) Invoke(
 	opts ...CallOption,
 ) (*RawResponse, error) {
 	opts = combine(c.callOpts, opts)
+	file, line, fn := callerutil.CallerDepth(2)
+	callerMsg := fmt.Sprintf("%s:%s:%d", file, fn, line)
 
 	if c.chainInterceptors != nil {
-		return c.chainInterceptors[0](
+		rawResp, err := c.chainInterceptors[0](
 			ctx,
 			method,
 			rawURL,
@@ -152,8 +155,16 @@ func (c *Client) Invoke(
 			c,
 			getChainUnaryInvoker(c.chainInterceptors, 0, invoke),
 			opts...)
+
+		log.F(ctx).
+			Debug("Interceptor Invoked called.", log.String("caller", callerMsg), log.Err(err), log.Every("arg", arg), log.Every("reply", reply))
+		return rawResp, err
 	}
-	return invoke(ctx, method, rawURL, arg, reply, c, opts...)
+
+	rawResp, err := invoke(ctx, method, rawURL, arg, reply, c, opts...)
+	log.F(ctx).
+		Debug("Invoked called.", log.String("caller", callerMsg), log.Err(err), log.Every("arg", arg), log.Every("reply", reply))
+	return rawResp, err
 }
 
 func combine(o1 []CallOption, o2 []CallOption) []CallOption {
