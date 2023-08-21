@@ -36,7 +36,7 @@ ifeq (${BINS},)
   $(error Could not determine BINS, set ROOT_DIR or run in source dir)
 endif
 
-EXCLUDE_TESTS=$(ROOT_PACKAGE)/test $(ROOT_PACKAGE)/pkg/log $(ROOT_PACKAGE)/third_party $(ROOT_PACKAGE)/tools
+EXCLUDE_TESTS=$(ROOT_PACKAGE)/test $(ROOT_PACKAGE)/pkg/log $(ROOT_PACKAGE)/third_party $(ROOT_PACKAGE)/tools $(ROOT_PACKAGE)/examples
 
 .PHONY: go.build.verify
 go.build.verify:
