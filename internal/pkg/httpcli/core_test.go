@@ -13,6 +13,14 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func init() {
+	opts := log.NewOptions()
+	opts.OutputPaths = nil
+	opts.ErrorOutputPaths = nil
+	opts.Level = "debug"
+	log.Init(opts)
+}
+
 func installServer(conf *genericserver.Config) *genericserver.GenericHTTPServer {
 	s, err := conf.Complete().New()
 	So(err, ShouldBeNil)
@@ -20,21 +28,16 @@ func installServer(conf *genericserver.Config) *genericserver.GenericHTTPServer 
 		s.Run()
 	}()
 	// Wait for the server to start (you can use a more sophisticated wait mechanism)
-	time.Sleep(3 * time.Second)
+	time.Sleep(5 * time.Second)
 	return s
 }
 
 func TestClient_Invoke(t *testing.T) {
-	opts := log.NewOptions()
-	opts.OutputPaths = nil
-	opts.ErrorOutputPaths = nil
-	opts.Level = "debug"
-	log.Init(opts)
-
 	Convey("客户端调用", t, func() {
 		conf := genericserver.NewConfig()
 		conf.Healthz = true
 		conf.Version = true
+		conf.EnableMetrics = false
 		conf.InsecureServing = &genericserver.InsecureServingInfo{
 			Address:  "0.0.0.0:57217",
 			Required: true,
@@ -58,16 +61,11 @@ func TestClient_Invoke(t *testing.T) {
 }
 
 func TestClient_Interceptor(t *testing.T) {
-	opts := log.NewOptions()
-	opts.OutputPaths = nil
-	opts.ErrorOutputPaths = nil
-	//opts.Level = "debug"
-	log.Init(opts)
-
 	Convey("拦截器", t, func() {
 		conf := genericserver.NewConfig()
 		conf.Healthz = true
 		conf.Version = true
+		conf.EnableMetrics = false
 		conf.InsecureServing = &genericserver.InsecureServingInfo{
 			Address:  "0.0.0.0:57218",
 			Required: true,
@@ -116,7 +114,6 @@ func TestClient_Interceptor(t *testing.T) {
 
 			So(resp.Header.Get("inter1"), ShouldEqual, "bbbb")
 			So(resp.Header.Get("inter2"), ShouldEqual, "bbbb")
-
 		})
 	})
 }
