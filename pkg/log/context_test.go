@@ -14,15 +14,47 @@ func TestWithFieldPair(t *testing.T) {
 
 	var ctx = context.Background()
 	Convey("TestWithFieldPair", t, func() {
-		Convey("", func() {
-			ctx = log.WithFieldPair(ctx, "aaa", "bbb")
-			v := ctx.Value(log.FieldKeyCtx{})
-			fields, ok := v.(map[string]interface{})
-			So(ok, ShouldBeTrue)
-			So(fields, ShouldNotBeNil)
+		child := log.WithFieldPair(ctx, "a", "B")
+		child2 := log.WithFieldPair(ctx, "a", "C")
+		log.F(child).Info("")
+		log.F(child2).Info("")
 
-			d := fields["aaa"].(string)
-			So(d, ShouldEqual, "bbb")
-		})
+	})
+}
+
+func TestWithFields(t *testing.T) {
+	defer log.Flush()
+
+	var ctx = context.Background()
+	Convey("TestWithFields", t, func() {
+		log.F(ctx).Info("raw")
+		f := make(map[string]interface{})
+		f["a"] = "b"
+
+		child := log.WithFields(ctx, f)
+		child2 := log.WithFields(ctx, f)
+
+		f1 := child.Value(log.FieldKeyCtx{})
+		f2 := child2.Value(log.FieldKeyCtx{})
+
+		So(f1, ShouldResemble, f2)
+		f["c"] = "d"
+
+		f1 = child.Value(log.FieldKeyCtx{})
+		f2 = child2.Value(log.FieldKeyCtx{})
+
+		So(f1, ShouldResemble, f2)
+
+		f1m := f1.(map[string]interface{})
+		So(f1m["c"], ShouldBeNil)
+
+		child3 := log.WithFields(ctx, f)
+		fm2 := make(map[string]interface{})
+		fm2["a"] = "c"
+		child4 := log.WithFields(ctx, fm2)
+
+		log.F(child3).Info("")
+		log.F(child4).Info("")
+
 	})
 }

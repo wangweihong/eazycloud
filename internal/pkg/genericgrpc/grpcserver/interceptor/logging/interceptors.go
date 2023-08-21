@@ -2,6 +2,7 @@ package logging
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -42,8 +43,8 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		fields["req_time_end"] = end.Format("2006-01-02 15:04:05.000000")
 		fields["resp_err"] = err
 
-		lctx := log.WithFields(ctx, fields)
-		log.F(lctx).Infof("[%s] %v %s", clientIP, Latency, info.FullMethod)
+		simpleCallInfo := fmt.Sprintf("[%s] %v %s", clientIP, Latency, info.FullMethod)
+		log.F(ctx).Info(simpleCallInfo, log.Every("call-detail", fields))
 		return resp, err
 	}
 }

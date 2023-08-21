@@ -34,7 +34,7 @@ func main() {
 	zapL.Info("ccc")
 	// L
 	gctx2 := &gin.Context{}
-	gctx2.Set(log.KeyUsername, "127.0.0.1")
-	gctx2.Set(log.KeyRequestID, "user1")
+	gctx2.Set(string(log.KeyUsername), "127.0.0.1")
+	gctx2.Set(string(log.KeyRequestID), "user1")
 	log.L(gctx2).Info("Log with fields")
 }

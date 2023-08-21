@@ -33,6 +33,21 @@ func Test_WithValues(t *testing.T) {
 
 }
 
+func TestZapLogger_WithValuesM(t *testing.T) {
+	defer log.Flush() // used for record logger printer
+
+	f := make(map[string]interface{})
+	f["key"] = "value"
+	logger := log.WithValuesM(f) // used for record context
+	logger.Info("Hello world!")
+	logger.Info("Hello world!")
+
+	f["key2"] = ""
+	ctx := log.WithFields(context.Background(), f)
+	log.F(ctx).Info("s")
+
+}
+
 func Test_V(t *testing.T) {
 	defer log.Flush() // used for record logger printer
 
