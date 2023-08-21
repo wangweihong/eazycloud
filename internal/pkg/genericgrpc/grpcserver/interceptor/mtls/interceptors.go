@@ -2,7 +2,11 @@ package mtls
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/wangweihong/eazycloud/internal/pkg/code"
+	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/eazycloud/pkg/skipper"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -10,36 +14,54 @@ import (
 )
 
 // UnaryServerInterceptor returns a new unary server interceptor for mtls verify.
-func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
+func UnaryServerInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryServerInterceptor {
+	name := "mtls"
+
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		log.F(ctx).Debugf("Interceptor %s Enter", name)
+		defer log.F(ctx).Debugf("Interceptor %s Finish", name)
+
+		if skipper.Skip(info.FullMethod, skipperFunc...) {
+			log.F(ctx).Debugf("skip interceptor %s for %s", name, info.FullMethod)
+
+			resp, err := handler(ctx, req)
+			return resp, errors.UpdateStack(err)
+		}
+
 		peer, ok := peerFromContext(ctx)
 		if !ok {
-			return nil, fmt.Errorf("failed to get client peer information")
+			log.F(ctx).Error("failed to get client peer information")
+			return nil, errors.Wrap(code.ErrGRPCClientCertificateError, "failed to get client peer information")
 		}
 
 		if peer == nil || peer.AuthInfo == nil {
-			return nil, fmt.Errorf("client is not authenticated")
+			log.F(ctx).Error("client is not authenticated")
+			return nil, errors.Wrap(code.ErrGRPCClientCertificateError, "client is not authenticated")
 		}
 
 		// 获取客户端证书信息
 		tlsInfo, ok := peer.AuthInfo.(credentials.TLSInfo)
 		if !ok {
-			return nil, fmt.Errorf("failed to get TLSInfo from client AuthInfo")
+			log.F(ctx).Error("failed to get TLSInfo from client AuthInfo")
+			return nil, errors.Wrap(code.ErrGRPCClientCertificateError, "failed to get TLSInfo from client AuthInfo")
 		}
 
 		// 获取客户端证书
 		certificates := tlsInfo.State.PeerCertificates
 		if len(certificates) == 0 {
-			return nil, fmt.Errorf("client certificate is missing")
+			log.F(ctx).Error("client certificate is missing")
+			return nil, errors.Wrap(code.ErrGRPCClientCertificateError, "client certificate is missing")
 		}
 
 		// 验证客户端证书的主体信息
 		clientCert := certificates[0]
 		if clientCert.Subject.CommonName != "client.example.com" {
-			return nil, fmt.Errorf("invalid client certificate subject")
+			log.F(ctx).Error("invalid client certificate subject")
+			return nil, errors.Wrap(code.ErrGRPCClientCertificateError, "invalid client certificate subject")
 		}
 
-		return handler(ctx, req)
+		resp, err := handler(ctx, req)
+		return resp, errors.UpdateStack(err)
 	}
 }
 
@@ -48,28 +70,33 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		peer, ok := peerFromContext(stream.Context())
 		if !ok {
-			return fmt.Errorf("failed to get client peer information")
+			log.Error("failed to get client peer information")
+			return errors.Wrap(code.ErrGRPCClientCertificateError, "failed to get client peer information")
 		}
 
 		if peer == nil || peer.AuthInfo == nil {
-			return fmt.Errorf("client is not authenticated")
+			log.Error("client is not authenticated")
+			return errors.Wrap(code.ErrGRPCClientCertificateError, "client is not authenticated")
 		}
 
 		// 获取客户端证书信息
 		tlsInfo, ok := peer.AuthInfo.(credentials.TLSInfo)
 		if !ok {
-			return fmt.Errorf("failed to get TLSInfo from client AuthInfo")
+			log.Error("failed to get TLSInfo from client AuthInfo")
+			return errors.Wrap(code.ErrGRPCClientCertificateError, "failed to get TLSInfo from client AuthInfo")
 		}
 		// 获取客户端证书
 		certificates := tlsInfo.State.PeerCertificates
 		if len(certificates) == 0 {
-			return fmt.Errorf("client certificate is missing")
+			log.Error("client certificate is missing")
+			return errors.Wrap(code.ErrGRPCClientCertificateError, "client certificate is missing")
 		}
 
 		// 验证客户端证书的主体信息
 		clientCert := certificates[0]
 		if clientCert.Subject.CommonName != "client.example.com" {
-			return fmt.Errorf("invalid client certificate subject")
+			log.Error("invalid client certificate subject")
+			return errors.Wrap(code.ErrGRPCClientCertificateError, "invalid client certificate subject")
 		}
 
 		return handler(srv, stream)

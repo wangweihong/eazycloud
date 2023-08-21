@@ -3,6 +3,8 @@ package recovery
 import (
 	"context"
 
+	"github.com/wangweihong/eazycloud/pkg/errors"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,8 +21,13 @@ type RecoveryHandlerFuncContext func(ctx context.Context, p interface{}) (_ inte
 
 // UnaryServerInterceptor returns a new unary server interceptor for panic recovery.
 func UnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
+	name := "recovery"
+
 	o := evaluateOptions(opts)
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		log.F(ctx).Debugf("Interceptor %s Enter", name)
+		defer log.F(ctx).Debugf("Interceptor %s Finish", name)
+
 		panicked := true
 
 		defer func() {
@@ -32,7 +39,7 @@ func UnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 
 		resp, err = handler(ctx, req)
 		panicked = false
-		return resp, err
+		return resp, errors.UpdateStack(err)
 	}
 }
 

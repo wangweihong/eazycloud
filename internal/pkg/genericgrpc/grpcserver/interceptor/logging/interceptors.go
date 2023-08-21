@@ -7,6 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/eazycloud/pkg/skipper"
+
 	"google.golang.org/grpc/peer"
 
 	"github.com/wangweihong/eazycloud/pkg/log"
@@ -16,8 +19,20 @@ import (
 )
 
 // UnaryServerInterceptor returns a new unary server interceptor for trace.
-func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
+func UnaryServerInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryServerInterceptor {
+	name := "logging"
+
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		log.F(ctx).Debugf("Interceptor %s Enter", name)
+		defer log.F(ctx).Debugf("Interceptor %s Finish", name)
+
+		if skipper.Skip(info.FullMethod, skipperFunc...) {
+			log.F(ctx).Debugf("skip interceptor %s for %s", name, info.FullMethod)
+
+			resp, err := handler(ctx, req)
+			return resp, errors.UpdateStack(err)
+		}
+
 		// 调用下一个拦截器或最终的RPC处理程序
 		start := time.Now()
 		fields := make(map[string]interface{})
@@ -45,7 +60,7 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 		simpleCallInfo := fmt.Sprintf("[%s] %v %s", clientIP, Latency, info.FullMethod)
 		log.F(ctx).Info(simpleCallInfo, log.Every("call-detail", fields))
-		return resp, err
+		return resp, errors.UpdateStack(err)
 	}
 }
 

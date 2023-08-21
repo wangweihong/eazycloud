@@ -3,6 +3,9 @@ package context
 import (
 	"context"
 
+	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/eazycloud/pkg/skipper"
+
 	"github.com/wangweihong/eazycloud/pkg/log"
 
 	"google.golang.org/grpc"
@@ -11,8 +14,20 @@ import (
 )
 
 // UnaryServerInterceptor returns a new unary server interceptor for trace.
-func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
+func UnaryServerInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryServerInterceptor {
+	name := "context"
+
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		log.F(ctx).Debugf("Interceptor %s Enter", name)
+		defer log.F(ctx).Debugf("Interceptor %s Finish", name)
+
+		if skipper.Skip(info.FullMethod, skipperFunc...) {
+			log.F(ctx).Debugf("skip interceptor %s for %s", name, info.FullMethod)
+
+			resp, err := handler(ctx, req)
+			return resp, errors.UpdateStack(err)
+		}
+
 		traceID := tracectx.FromTraceIDContext(ctx)
 		// don't inject too much field in global context
 		fields := make(map[string]interface{})
@@ -21,7 +36,7 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 		// 调用下一个拦截器或最终的RPC处理程序
 		resp, err := handler(ctx, req)
-		return resp, err
+		return resp, errors.UpdateStack(err)
 	}
 }
 

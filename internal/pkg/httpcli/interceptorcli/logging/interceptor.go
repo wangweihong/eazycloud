@@ -10,12 +10,14 @@ import (
 	"github.com/wangweihong/eazycloud/pkg/skipper"
 )
 
-func LoggingInterceptor(name string, skipperFunc ...skipper.SkipperFunc) httpcli.Interceptor {
+func LoggingInterceptor(skipperFunc ...skipper.SkipperFunc) httpcli.Interceptor {
+	name := "logging"
 	return func(ctx context.Context, method string, rawURL string, arg, reply interface{}, cc *httpcli.Client, invoker httpcli.Invoker, opts ...httpcli.CallOption) (*httpcli.RawResponse, error) {
-		log.F(ctx).Debugf("Intercepttor %s Enter", name)
+		log.F(ctx).Debugf("Interceptor %s Enter", name)
 		defer log.F(ctx).Debugf("Interceptor %s Finish", name)
+
 		if skipper.Skip(rawURL, skipperFunc...) {
-			log.F(ctx).Debugf("skip interceptor %s for rawrurl %s", name, rawURL)
+			log.F(ctx).Debugf("skip interceptor %s for %s", name, rawURL)
 
 			return invoker(ctx, method, rawURL, arg, reply, cc, opts...)
 		}

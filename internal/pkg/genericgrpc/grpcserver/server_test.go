@@ -30,6 +30,14 @@ const (
 	wrongCA   = "-----BEGIN CERTIFICATE-----\nMIIFCTCCAvGgAwIBAgIUKXAB9kIZyN0r8PhR+wbKo5aKraQwDQYJKoZIhvcNAQEN\nBQAwFDESMBAGA1UEAwwJZWF6eWNsb3VkMB4XDTIzMDgwOTAzMTYyMFoXDTMzMDgw\nNjAzMTYyMFowFDESMBAGA1UEAwwJZWF6eWNsb3VkMIICIjANBgkqhkiG9w0BAQEF\nAAOCAg8AMIICCgKCAgEA5PcNkVaOiGmbA30P0NvL2/9+wNrRJD4NdVeHucLQwZ+3\n8ErOA8oiexTExlUFlIzSmLKciLIrwanyMCE/r4/dUCs8pQl+E3jPjT6sKRF4BtbN\nQFBZhzPWa0Ia8FHZ0D7wM6D9duA63UlvyeqK25ChjZC1FX7vOIyyskZWZfP9I6jU\nSrE+B6tXkXUorgaQSz6bmqMBiUM+v8R52XFC/ucwWFFzmI52oG/utR104/a97t5s\n7OpobMlMz2Ll0tsxg0tKiU9nlwKIgMaHHP3R7MMusLDkcoLlzdQNGHXM+c3usShH\n9bipKVm7KbKiDqCuBm91aCTcd5sMDiS+oKyorgrGGDJNHUC6pNoFHNb/k5FOmiz6\n1lfmgSM9R7FrmnHr6bkahYOUClPsnd9IHzyzJmekncbJsx2mlNTZGXYe0SNzMUau\nKxZqNWZfEbVOo7i2IB/688XZMo7srkHeHn6Y67h9PPNB6oR0UPsk68ZImip4CrQG\n9sZkNX73Ujkxeq57xLNJaOqWvq8xfIBbNchGgEfPIalZ07ei5hjzX6pEOlrDWV0c\n2VOCPlTEypFr9rsqXw++zsTqVYiRLLG4cmRKEBHnaNeELU8IYpQuFsnqGWpCpwz3\noHmemW/EY25k0luk7KmaLI7cIH9XgGca9VfnsneSzi4XcnW+aYIWJoGcPVro2qkC\nAwEAAaNTMFEwHQYDVR0OBBYEFAzV6u2lJUEQ02P++kz9BYhl7vaiMB8GA1UdIwQY\nMBaAFAzV6u2lJUEQ02P++kz9BYhl7vaiMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZI\nhvcNAQENBQADggIBAC2XHwAjuU8sxqABduSfrhRwEfFDwqtMlOw8mtmLqkOI8w50\nEelIV2EfdVkpbU6wGEoLDFTJm17BrcR3SiJp194ZH6h3Qof1t/dlSFWssTGWdbFA\ncJaN9TWc5NzxXvCddV0clIzW8jZc5rRFgkAU+/+yvd17iStf7j20ON8qZ4JriRI3\neiXT/XOfz3sWf0qtqqLjJrbp4XSX60axxKPRiGq3G1UBI1WcRvdpmKYPjno5YS1Q\n4ND6WqjlNBGg0ANwthm7V7RQNgvGg45Jt/Lw1cjLPo4qvzC9c2b6Oo08AUleRV6q\nPFPgaC/lGyDRQcquQrZxuJxagO5EWyv3phTqKJLnpNEAcxdX4J70GP1Qu/WkCncT\nuaSL/j35dX11HXCiDeUTOx6VGCKGtQ7FBu+sm4TEK2BAgfskm8DAJYeIp+vQ7Hmp\n7y60zNxT+pg7eydZx5FSmeyyMD6g67sDQ7zb9XDjDpPOsN1uOhOcF0PsiSZuvnGn\nxKvzfkn9tTA5W46RMIjj3PFqkIMKbY9KxzzM2aw0CTsvAGbB6Sj1y1dYHurEfea4\nkg8javdyIuNZZklTQfjoviDrpum0zxh7NcHAkkWgRCyVkiwBsiBm5BlMxxdnmg3l\nTG13I5JG3WS+qTvaKwOd5fYB+JyJqyyAYvociyKykj/dAQ5w7dlWCwAJqdnW\n-----END CERTIFICATE-----\n"
 )
 
+func init() {
+	opts := log.NewOptions()
+	opts.OutputPaths = nil
+	opts.ErrorOutputPaths = nil
+	//opts.Level = "debug"
+	log.Init(opts)
+}
+
 func installServer(conf *grpcserver.GRPCConfig) *grpcserver.GRPCServer {
 	s, err := conf.Complete().New()
 	So(err, ShouldBeNil)
@@ -89,10 +97,6 @@ func TestGRPCServer_UnisSocket_InstallAPI(t *testing.T) {
 }
 
 func TestGRPCServer_TCPSocket_InstallAPI(t *testing.T) {
-	opts := log.NewOptions()
-	opts.OutputPaths = nil
-	opts.ErrorOutputPaths = nil
-	log.Init(opts)
 	Convey("gRPC TCP协议安装API测试", t, func() {
 		conf := grpcserver.NewConfig()
 		// 必须设置. 不设置将会遇到rpc error: code = ResourceExhausted desc = grpc: received message larger than max (7 vs. 0)
@@ -159,11 +163,6 @@ func TLSInstallApi(conf *grpcserver.GRPCConfig, ca string, isRightCA bool) {
 }
 
 func TestGRPCServer_TCPSocket_TLS(t *testing.T) {
-	opts := log.NewOptions()
-	opts.OutputPaths = nil
-	opts.ErrorOutputPaths = nil
-	log.Init(opts)
-
 	Convey("grpc通用服务测试", t, func() {
 		conf := grpcserver.NewConfig()
 		conf.Version = true
@@ -239,11 +238,6 @@ func mTLSInstallApi(conf *grpcserver.GRPCConfig, serverCA string, clientCrt, cli
 }
 
 func TestGRPCServer_TCPSocket_mTLS(t *testing.T) {
-	opts := log.NewOptions()
-	opts.OutputPaths = nil
-	opts.ErrorOutputPaths = nil
-	log.Init(opts)
-
 	Convey("grpc mTLS 测试", t, func() {
 		conf := grpcserver.NewConfig()
 		conf.Version = true

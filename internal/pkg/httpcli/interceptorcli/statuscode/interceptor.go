@@ -14,13 +14,14 @@ import (
 )
 
 // 非200状态码拦截.
-func NoSuccessStatusCodeInterceptor(name string, skipperFunc ...skipper.SkipperFunc) httpcli.Interceptor {
+func NoSuccessStatusCodeInterceptor(skipperFunc ...skipper.SkipperFunc) httpcli.Interceptor {
+	name := "NoSuccessStatusCodeInterceptor"
 	return func(ctx context.Context, method string, rawURL string, arg, reply interface{}, cc *httpcli.Client, invoker httpcli.Invoker, opts ...httpcli.CallOption) (*httpcli.RawResponse, error) {
-		log.F(ctx).Debugf("Intercepttor %s Enter", name)
+		log.F(ctx).Debugf("Interceptor %s Enter", name)
 		defer log.F(ctx).Debugf("Interceptor %s Finish", name)
 
 		if skipper.Skip(rawURL, skipperFunc...) {
-			log.F(ctx).Debugf("skip interceptor %s for rawrurl %s", name, rawURL)
+			log.F(ctx).Debugf("skip interceptor %s for %s", name, rawURL)
 
 			return invoker(ctx, method, rawURL, arg, reply, cc, opts...)
 		}
@@ -30,13 +31,11 @@ func NoSuccessStatusCodeInterceptor(name string, skipperFunc ...skipper.SkipperF
 
 		rawResp, err := invoker(ctx, method, rawURL, arg, reply, cc, opts...)
 		if err != nil {
-			log.F(ctx).Error("invoker fail", log.Err(err))
 			return rawResp, errors.UpdateStack(err)
 		}
 
 		if rawResp.StatusCode != http.StatusOK {
 			log.F(ctx).Error("invoker fail, no 200")
-
 			return rawResp, errors.Wrap(code.ErrHTTPError, "response code is not 200")
 		}
 

@@ -16,28 +16,40 @@ import (
 
 // UnaryClientInterceptor returns a new unary client interceptor for logging.
 func UnaryClientInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryClientInterceptor {
+	name := "callstatus"
+
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		log.F(ctx).Debugf("Interceptor %s Enter", name)
+		defer log.F(ctx).Debugf("Interceptor %s Finish", name)
+
 		if skipper.Skip(method, skipperFunc...) {
-			log.F(ctx).Debugf("skip intercept method %s", method)
+			log.F(ctx).Debugf("skip interceptor %s for %s", name, method)
+
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}
 
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		if err != nil {
-			log.F(ctx).Error("invoker fail", log.Err(err))
 			return errors.UpdateStack(err)
 		}
 
 		cs, exist := fetchCallStatusField(reply)
 		if !exist {
+			log.F(ctx).Errorf("`CallStatus` field not exist in response")
 			return errors.Wrap(code.ErrGRPCResponseDataParseError, "`CallStatus` field not exist in response")
 		}
 
 		if cs == nil {
+			log.F(ctx).Errorf("CallStatus is nil")
 			return errors.Wrap(code.ErrGRPCResponseDataParseError, "CallStatus is nil")
 		}
 
-		return callstatus.ToError(cs)
+		if err := callstatus.ToError(cs); err != nil {
+			log.F(ctx).Error(err.Error())
+			return errors.UpdateStack(err)
+		}
+
+		return nil
 	}
 }
 

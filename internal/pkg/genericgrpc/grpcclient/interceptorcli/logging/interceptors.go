@@ -13,16 +13,20 @@ import (
 
 // UnaryClientInterceptor returns a new unary client interceptor for logging.
 func UnaryClientInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryClientInterceptor {
+	name := "logging"
+
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		log.F(ctx).Debugf("Interceptor %s Enter", name)
+		defer log.F(ctx).Debugf("Interceptor %s Finish", name)
+
 		if skipper.Skip(method, skipperFunc...) {
-			log.F(ctx).Debugf("skip intercept method %s", method)
+			log.F(ctx).Debugf("skip interceptor %s for method %s", name, method)
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}
 
 		log.F(ctx).Debug("request param", log.Every("req", req), log.String("method", method))
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		if err != nil {
-			log.F(ctx).Error("invoker fail", log.Err(err))
 			return errors.UpdateStack(err)
 		}
 		log.F(ctx).Debug("response data", log.Every("out", reply))
