@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient/interceptorcli/skipper"
+	"github.com/wangweihong/eazycloud/pkg/skipper"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient/interceptorcli"
 

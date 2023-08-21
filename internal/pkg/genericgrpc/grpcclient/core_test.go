@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/wangweihong/eazycloud/pkg/skipper"
+
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient/interceptorcli/callstatus"
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient/interceptorcli/skipper"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/debug"
 
@@ -86,8 +87,8 @@ func TestNewClient(t *testing.T) {
 
 func TestClient_Call(t *testing.T) {
 	opts := log.NewOptions()
-	//opts.OutputPaths = nil
-	//opts.ErrorOutputPaths = nil
+	opts.OutputPaths = nil
+	opts.ErrorOutputPaths = nil
 	opts.Level = "debug"
 	log.Init(opts)
 	Convey("Client_Call", t, func() {
