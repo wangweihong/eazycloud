@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericserver"
+	"github.com/wangweihong/eazycloud/pkg/httpsvr"
+
 	"github.com/wangweihong/eazycloud/pkg/httpcli"
 	"github.com/wangweihong/eazycloud/pkg/log"
 	"github.com/wangweihong/eazycloud/pkg/version"
@@ -21,7 +22,7 @@ func init() {
 	log.Init(opts)
 }
 
-func installServer(conf *genericserver.Config) *genericserver.GenericHTTPServer {
+func installServer(conf *httpsvr.Config) *httpsvr.GenericHTTPServer {
 	s, err := conf.Complete().New()
 	So(err, ShouldBeNil)
 	go func() {
@@ -34,11 +35,11 @@ func installServer(conf *genericserver.Config) *genericserver.GenericHTTPServer 
 
 func TestClient_Invoke(t *testing.T) {
 	Convey("客户端调用", t, func() {
-		conf := genericserver.NewConfig()
+		conf := httpsvr.NewConfig()
 		conf.Healthz = true
 		conf.Version = true
 		conf.EnableMetrics = false
-		conf.InsecureServing = &genericserver.InsecureServingInfo{
+		conf.InsecureServing = &httpsvr.InsecureServingInfo{
 			Address:  "0.0.0.0:57217",
 			Required: true,
 		}
@@ -62,11 +63,11 @@ func TestClient_Invoke(t *testing.T) {
 
 func TestClient_Interceptor(t *testing.T) {
 	Convey("拦截器", t, func() {
-		conf := genericserver.NewConfig()
+		conf := httpsvr.NewConfig()
 		conf.Healthz = true
 		conf.Version = true
 		conf.EnableMetrics = false
-		conf.InsecureServing = &genericserver.InsecureServingInfo{
+		conf.InsecureServing = &httpsvr.InsecureServingInfo{
 			Address:  "0.0.0.0:57218",
 			Required: true,
 		}

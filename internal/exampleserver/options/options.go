@@ -2,9 +2,9 @@
 package options
 
 import (
-	"github.com/wangweihong/eazycloud/internal/pkg/genericserver/genericoptions"
 	"github.com/wangweihong/eazycloud/pkg/app"
 	cliflag "github.com/wangweihong/eazycloud/pkg/cli/flag"
+	"github.com/wangweihong/eazycloud/pkg/httpsvr/genericoptions"
 	"github.com/wangweihong/eazycloud/pkg/json"
 	"github.com/wangweihong/eazycloud/pkg/log"
 )
