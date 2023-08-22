@@ -6,7 +6,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/validation/field"
+	"github.com/wangweihong/eazycloud/pkg/validation/field"
 
 	english "github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"

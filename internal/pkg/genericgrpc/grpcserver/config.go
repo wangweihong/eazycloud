@@ -2,13 +2,12 @@ package grpcserver
 
 import (
 	"github.com/wangweihong/eazycloud/internal/pkg/tls/grpctls"
+	"github.com/wangweihong/eazycloud/pkg/debug"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/tls"
-
-	"github.com/wangweihong/eazycloud/internal/pkg/debug"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver/interceptor"
 

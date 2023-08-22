@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/validation/field"
+	"github.com/wangweihong/eazycloud/pkg/validation/field"
 )
 
 const (

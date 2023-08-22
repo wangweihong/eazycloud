@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/debug"
+	"github.com/wangweihong/eazycloud/pkg/debug"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericserver/profiling"
 

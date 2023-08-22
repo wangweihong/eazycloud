@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/debug"
+	"github.com/wangweihong/eazycloud/pkg/debug"
 
 	"github.com/wangweihong/eazycloud/pkg/util/maputil"
 

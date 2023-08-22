@@ -4,7 +4,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/debug"
+	"github.com/wangweihong/eazycloud/pkg/debug"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver/interceptor"
 
