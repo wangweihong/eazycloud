@@ -3,7 +3,7 @@ package ginx
 import (
 	"net/http"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/code"
+	"github.com/wangweihong/eazycloud/pkg/code"
 	"github.com/wangweihong/eazycloud/pkg/errors"
 	"github.com/wangweihong/eazycloud/pkg/log"
 

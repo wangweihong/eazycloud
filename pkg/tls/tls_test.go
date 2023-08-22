@@ -5,7 +5,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/tls"
+	"github.com/wangweihong/eazycloud/pkg/tls"
 )
 
 func TestGeneratableKeyCert_Validate(t *testing.T) {

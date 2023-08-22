@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/tls"
+	"github.com/wangweihong/eazycloud/pkg/tls"
 
 	"github.com/wangweihong/eazycloud/pkg/app"
 

@@ -1,13 +1,15 @@
-package grpcclient_test
+package grpccli_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
+	"github.com/wangweihong/eazycloud/pkg/grpccli"
+
 	"github.com/wangweihong/eazycloud/pkg/skipper"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient/interceptorcli/callstatus"
+	"github.com/wangweihong/eazycloud/pkg/grpccli/interceptorcli/callstatus"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/debug"
 
@@ -21,7 +23,6 @@ import (
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/version"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient"
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver"
 )
 
@@ -48,39 +49,39 @@ func installServer(conf *grpcserver.GRPCConfig) *grpcserver.GRPCServer {
 
 func TestNewClient(t *testing.T) {
 	Convey("NewClient", t, func() {
-		_, err := grpcclient.NewClient("")
+		_, err := grpccli.NewClient("")
 		So(err, ShouldNotBeNil)
 
-		_, err = grpcclient.NewClient("127.0.0.1")
+		_, err = grpccli.NewClient("127.0.0.1")
 		So(err, ShouldBeNil)
 
-		_, err = grpcclient.NewClient("127.0.0.1",
-			grpcclient.WithTimeout(10*time.Second),
-			grpcclient.WithReport())
+		_, err = grpccli.NewClient("127.0.0.1",
+			grpccli.WithTimeout(10*time.Second),
+			grpccli.WithReport())
 		So(err, ShouldBeNil)
 
-		_, err = grpcclient.NewClient("/home/test/we.socket")
+		_, err = grpccli.NewClient("/home/test/we.socket")
 		So(err, ShouldBeNil)
 
-		_, err = grpcclient.NewClient("127.0.0.1", grpcclient.WithInsecure())
+		_, err = grpccli.NewClient("127.0.0.1", grpccli.WithInsecure())
 		So(err, ShouldBeNil)
 
-		_, err = grpcclient.NewClient("127.0.0.1", grpcclient.WithServerCA(serverCA))
+		_, err = grpccli.NewClient("127.0.0.1", grpccli.WithServerCA(serverCA))
 		So(err, ShouldBeNil)
 
-		_, err = grpcclient.NewClient("127.0.0.1", grpcclient.WithServerCA(""))
+		_, err = grpccli.NewClient("127.0.0.1", grpccli.WithServerCA(""))
 		So(err, ShouldNotBeNil)
 
-		_, err = grpcclient.NewClient("127.0.0.1", grpcclient.WithMTLS(serverCA, clientCrt, clientKey))
+		_, err = grpccli.NewClient("127.0.0.1", grpccli.WithMTLS(serverCA, clientCrt, clientKey))
 		So(err, ShouldBeNil)
 
-		_, err = grpcclient.NewClient("127.0.0.1", grpcclient.WithMTLS(serverCA, "", clientKey))
+		_, err = grpccli.NewClient("127.0.0.1", grpccli.WithMTLS(serverCA, "", clientKey))
 		So(err, ShouldNotBeNil)
 
-		_, err = grpcclient.NewClient("127.0.0.1", grpcclient.WithMTLS(serverCA, clientCrt, ""))
+		_, err = grpccli.NewClient("127.0.0.1", grpccli.WithMTLS(serverCA, clientCrt, ""))
 		So(err, ShouldNotBeNil)
 
-		_, err = grpcclient.NewClient("127.0.0.1", grpcclient.WithMTLS("", clientCrt, ""))
+		_, err = grpccli.NewClient("127.0.0.1", grpccli.WithMTLS("", clientCrt, ""))
 		So(err, ShouldNotBeNil)
 	})
 }
@@ -107,9 +108,9 @@ func TestClient_Call(t *testing.T) {
 			s := installServer(conf)
 			defer s.Stop()
 
-			c, err := grpcclient.NewClient(
+			c, err := grpccli.NewClient(
 				conf.Addr,
-				grpcclient.WithIntercepts("logger"),
+				grpccli.WithIntercepts("logger"),
 			)
 			So(err, ShouldBeNil)
 			defer c.Close()
@@ -136,7 +137,7 @@ func TestClient_Call(t *testing.T) {
 
 func Version(
 	ctx context.Context,
-	c *grpcclient.Client,
+	c *grpccli.Client,
 	in *version.VersionRequest,
 	opt ...grpc.CallOption,
 ) (*version.VersionResponse, error) {
@@ -180,9 +181,9 @@ func TestClient_Interceptors(t *testing.T) {
 			defer s.Stop()
 
 			Convey("不跳过拦截器", func() {
-				c, err := grpcclient.NewClient(
+				c, err := grpccli.NewClient(
 					conf.Addr,
-					grpcclient.WithIntercepts("logger", "callstatus"),
+					grpccli.WithIntercepts("logger", "callstatus"),
 				)
 				So(err, ShouldBeNil)
 				defer c.Close()
@@ -202,9 +203,9 @@ func TestClient_Interceptors(t *testing.T) {
 
 			Convey("跳过拦截器，指定拦截器跳过", func() {
 				sf := skipper.AllowPathPrefixSkipper("/version.VersionService/Version")
-				c, err := grpcclient.NewClient(
+				c, err := grpccli.NewClient(
 					conf.Addr,
-					grpcclient.WithDialOption(grpc.WithUnaryInterceptor(callstatus.UnaryClientInterceptor(sf))),
+					grpccli.WithDialOption(grpc.WithUnaryInterceptor(callstatus.UnaryClientInterceptor(sf))),
 				)
 				So(err, ShouldBeNil)
 				defer c.Close()
@@ -218,10 +219,10 @@ func TestClient_Interceptors(t *testing.T) {
 
 			Convey("跳过拦截器,全局跳过", func() {
 				sf := skipper.AllowPathPrefixSkipper("/version.VersionService")
-				c, err := grpcclient.NewClient(
+				c, err := grpccli.NewClient(
 					conf.Addr,
-					grpcclient.WithIntercepts("logger", "callstatus"),
-					grpcclient.WithSkippers(sf),
+					grpccli.WithIntercepts("logger", "callstatus"),
+					grpccli.WithSkippers(sf),
 				)
 				So(err, ShouldBeNil)
 				defer c.Close()

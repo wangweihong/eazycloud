@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"path"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/tls"
+	"github.com/wangweihong/eazycloud/pkg/tls"
 
 	"github.com/spf13/pflag"
 )

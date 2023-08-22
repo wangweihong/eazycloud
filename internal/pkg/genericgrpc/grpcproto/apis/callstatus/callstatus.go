@@ -1,7 +1,7 @@
 package callstatus
 
 import (
-	"github.com/wangweihong/eazycloud/internal/pkg/code"
+	"github.com/wangweihong/eazycloud/pkg/code"
 	"github.com/wangweihong/eazycloud/pkg/errors"
 )
 

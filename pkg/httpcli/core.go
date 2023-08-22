@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/code"
-	"github.com/wangweihong/eazycloud/internal/pkg/tls/httptls"
+	"github.com/wangweihong/eazycloud/pkg/code"
 	"github.com/wangweihong/eazycloud/pkg/errors"
 	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/eazycloud/pkg/tls/httptls"
 	"github.com/wangweihong/eazycloud/pkg/util/callerutil"
 )
 

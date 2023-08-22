@@ -3,10 +3,10 @@ package interceptorcli
 import (
 	"google.golang.org/grpc"
 
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/eazycloud/pkg/grpccli/interceptorcli/callstatus"
+	"github.com/wangweihong/eazycloud/pkg/grpccli/interceptorcli/logging"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient/interceptorcli/callstatus"
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient/interceptorcli/logging"
+	"github.com/wangweihong/eazycloud/pkg/skipper"
 )
 
 const (

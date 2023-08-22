@@ -5,8 +5,8 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/code"
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/callstatus"
+	"github.com/wangweihong/eazycloud/pkg/code"
 	"github.com/wangweihong/eazycloud/pkg/errors"
 	"github.com/wangweihong/eazycloud/pkg/log"
 )

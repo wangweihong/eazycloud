@@ -11,7 +11,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/wangweihong/eazycloud/internal/pkg/genericserver"
-	"github.com/wangweihong/eazycloud/internal/pkg/tls"
+	"github.com/wangweihong/eazycloud/pkg/tls"
 )
 
 const (

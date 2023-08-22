@@ -3,7 +3,7 @@ package example
 import (
 	"context"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/httpcli"
+	"github.com/wangweihong/eazycloud/pkg/httpcli"
 )
 
 type UserAPI interface {

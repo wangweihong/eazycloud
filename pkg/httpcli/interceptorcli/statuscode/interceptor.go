@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/code"
+	"github.com/wangweihong/eazycloud/pkg/code"
 	"github.com/wangweihong/eazycloud/pkg/json"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/httpcli"
 	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/eazycloud/pkg/httpcli"
 	"github.com/wangweihong/eazycloud/pkg/log"
 	"github.com/wangweihong/eazycloud/pkg/skipper"
 )

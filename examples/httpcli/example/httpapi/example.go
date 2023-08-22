@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/wangweihong/eazycloud/examples/httpcli/example"
-	"github.com/wangweihong/eazycloud/internal/pkg/code"
-	"github.com/wangweihong/eazycloud/internal/pkg/httpcli"
+	"github.com/wangweihong/eazycloud/pkg/code"
 	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/eazycloud/pkg/httpcli"
 )
 
 type user struct {

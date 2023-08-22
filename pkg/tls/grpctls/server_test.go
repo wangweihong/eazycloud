@@ -5,7 +5,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/tls/grpctls"
+	"github.com/wangweihong/eazycloud/pkg/tls/grpctls"
 )
 
 const (

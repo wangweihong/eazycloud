@@ -10,15 +10,15 @@ import (
 	"time"
 
 	"github.com/wangweihong/eazycloud/examples/httpcli/example/options"
-	"github.com/wangweihong/eazycloud/internal/pkg/code"
-	"github.com/wangweihong/eazycloud/internal/pkg/httpcli/interceptorcli/logging"
-	"github.com/wangweihong/eazycloud/internal/pkg/httpcli/interceptorcli/statuscode"
+	"github.com/wangweihong/eazycloud/pkg/code"
 	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/eazycloud/pkg/httpcli/interceptorcli/logging"
+	"github.com/wangweihong/eazycloud/pkg/httpcli/interceptorcli/statuscode"
 	"github.com/wangweihong/eazycloud/pkg/log"
 	"github.com/wangweihong/eazycloud/pkg/skipper"
 
 	"github.com/wangweihong/eazycloud/examples/httpcli/example"
-	"github.com/wangweihong/eazycloud/internal/pkg/httpcli"
+	"github.com/wangweihong/eazycloud/pkg/httpcli"
 )
 
 type client struct {

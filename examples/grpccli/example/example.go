@@ -3,9 +3,10 @@ package example
 import (
 	"context"
 
+	"github.com/wangweihong/eazycloud/pkg/grpccli"
+
 	"google.golang.org/grpc"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcclient"
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/debug"
 	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/version"
 	"github.com/wangweihong/eazycloud/pkg/errors"
@@ -18,8 +19,8 @@ type Backend interface {
 	Close()
 }
 
-func NewBackend(addr string, opt ...grpcclient.Option) (Backend, error) {
-	c, err := grpcclient.NewClient(addr, opt...)
+func NewBackend(addr string, opt ...grpccli.Option) (Backend, error) {
+	c, err := grpccli.NewClient(addr, opt...)
 	if err != nil {
 		return nil, errors.UpdateStack(err)
 	}
@@ -27,7 +28,7 @@ func NewBackend(addr string, opt ...grpcclient.Option) (Backend, error) {
 }
 
 type example struct {
-	c *grpcclient.Client
+	c *grpccli.Client
 }
 
 func (c *example) Version(
