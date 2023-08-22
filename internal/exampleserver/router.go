@@ -3,7 +3,7 @@ package example_server
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericmiddleware"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericserver/genericmiddleware"
 )
 
 func initRouter(g *gin.Engine) {

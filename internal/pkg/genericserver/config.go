@@ -1,10 +1,15 @@
 package genericserver
 
 import (
-	"github.com/wangweihong/eazycloud/internal/pkg/genericmiddleware"
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/wangweihong/eazycloud/pkg/debug"
+
+	"github.com/wangweihong/eazycloud/pkg/tls"
+
+	"github.com/wangweihong/eazycloud/internal/pkg/genericserver/genericmiddleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,21 +27,14 @@ type Config struct {
 
 	EnableMetrics bool
 	Profiling     *FeatureProfilingInfo
-}
-
-// CertKey contains configuration items related to certificate.
-type CertKey struct {
-	// CertFile is a file containing a PEM-encoded certificate, and possibly the complete certificate chain
-	CertFile string
-	// KeyFile is a file containing a PEM-encoded private key for the certificate specified by CertFile
-	KeyFile string
+	RuntimeDebug  *debug.RuntimeDebugInfo
 }
 
 // SecureServingInfo holds configuration of the TLS server.
 type SecureServingInfo struct {
 	BindAddress string
 	BindPort    int
-	CertKey     CertKey
+	CertKey     tls.CertData
 	Required    bool
 }
 
@@ -92,6 +90,12 @@ func NewConfig() *Config {
 			StandAloneProfiling: false,
 			ProfileAddress:      "127.0.0.1:6060",
 		},
+		RuntimeDebug: &debug.RuntimeDebugInfo{
+			Enable:    false,
+			OutputDir: "",
+		},
+		InsecureServing: &InsecureServingInfo{},
+		SecureServing:   &SecureServingInfo{},
 	}
 }
 
@@ -119,6 +123,7 @@ func (c CompletedConfig) New() (*GenericHTTPServer, error) {
 		profiling:           c.Profiling,
 		middlewares:         c.Middlewares,
 		Engine:              gin.New(),
+		runtimeDebug:        c.RuntimeDebug,
 	}
 
 	// 初始化http server配置

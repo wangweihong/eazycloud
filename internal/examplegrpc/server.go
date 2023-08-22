@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/wangweihong/eazycloud/internal/examplegrpc/config"
-	"github.com/wangweihong/eazycloud/internal/pkg/grpcserver"
+	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver"
 	"github.com/wangweihong/eazycloud/pkg/log"
 	"github.com/wangweihong/eazycloud/pkg/shutdown"
 	"github.com/wangweihong/eazycloud/pkg/shutdown/managers/posixsignal"
@@ -47,13 +47,18 @@ func createServer(cfg *config.Config) (*server, error) {
 }
 
 // 根据服务器配置应用到通用服务器配置上.
-
 func buildGenericGRPCServerConfig(cfg *config.Config) (genericConfig *grpcserver.GRPCConfig, lastErr error) {
+	addr := fmt.Sprintf("%s:%d", cfg.TCP.BindAddress, cfg.TCP.BindPort)
+	if !cfg.TCP.Required {
+		addr = ""
+	}
 	genericConfig = &grpcserver.GRPCConfig{
-		Addr:       fmt.Sprintf("%s:%d", cfg.GRPC.BindAddress, cfg.GRPC.BindPort),
-		MaxMsgSize: cfg.GRPC.MaxMsgSize,
-		ServerCert: cfg.GRPC.ServerCert,
-		TlsEnable:  cfg.GRPC.TlsEnable,
+		UnixSocket: cfg.UnixSocket.Socket,
+		Addr:       addr,
+		ServerCert: cfg.TCP.ServerCert.CertData,
+		TlsEnable:  cfg.TCP.TlsEnable,
+		MaxMsgSize: cfg.ServerRunOptions.MaxMsgSize,
+		ClientCA:   cfg.TCP.ServerCert.ClientCAData,
 	}
 
 	if lastErr = cfg.ServerRunOptions.ApplyTo(genericConfig); lastErr != nil {

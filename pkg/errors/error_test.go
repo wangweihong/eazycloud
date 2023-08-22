@@ -17,13 +17,16 @@ func TestErrorStack(t *testing.T) {
 	Convey("check errors function line number", t, func() {
 		Convey("withStack error", func() {
 			e := errors.FromError(example())
+			So(e, ShouldNotBeNil)
 			So(len(e.StackInfo()), ShouldEqual, 1)
 			So(e.StackInfo()[0].Line, ShouldEqual, "13")
 
 			ue := errors.UpdateStack(e)
-			So(len(ue.StackInfo()), ShouldEqual, 2)
-			So(ue.StackInfo()[0].Line, ShouldEqual, "13")
-			So(ue.StackInfo()[1].Line, ShouldEqual, "23")
+			fe := errors.FromError(ue)
+			So(fe, ShouldNotBeNil)
+			So(len(fe.StackInfo()), ShouldEqual, 2)
+			So(fe.StackInfo()[0].Line, ShouldEqual, "13")
+			So(fe.StackInfo()[1].Line, ShouldEqual, "24")
 		})
 	})
 }
@@ -59,6 +62,12 @@ func TestWrapError(t *testing.T) {
 			So(e.Description(), ShouldEqual, "myError")
 		})
 
+		Convey("nil error", func() {
+			e := errors.WrapError(101, nil)
+			So(e.Code(), ShouldEqual, e.Code())
+
+		})
+
 		Convey("exist", func() {
 			Convey("withStack error", func() {
 				e1 := errors.Wrap(100, "error1")
@@ -70,7 +79,7 @@ func TestWrapError(t *testing.T) {
 
 			Convey("normal error", func() {
 				e := errors.WrapError(101, fmt.Errorf("myError"))
-				So(e.Code(), ShouldEqual, e.Code())
+				So(e.Code(), ShouldEqual, 101)
 				So(e.HTTPStatus(), ShouldEqual, e.HTTPStatus())
 				So(e.Message(), ShouldEqual, e.Message())
 				So(e.Description(), ShouldEqual, "myError")
@@ -113,6 +122,7 @@ func TestFromError(t *testing.T) {
 		Convey("error is withStack error", func() {
 			e := errors.Wrap(102, "some thing happen")
 			st := errors.FromError(e)
+			So(st, ShouldNotBeNil)
 			So(st.Code(), ShouldEqual, 102)
 			So(st.Error(), ShouldEqual, "ReadFileError:some thing happen")
 		})
@@ -120,9 +130,16 @@ func TestFromError(t *testing.T) {
 		Convey("error is simple error", func() {
 			e := fmt.Errorf("i'm not withStack error")
 			st := errors.FromError(e)
+			So(st, ShouldNotBeNil)
 			So(st.Code(), ShouldEqual, errors.Unknown().Code())
 			So(st.Description(), ShouldEqual, "i'm not withStack error")
 			So(st.Error(), ShouldEqual, "unknown error code:i'm not withStack error")
+		})
+
+		Convey("error is nil", func() {
+			var e error
+			st := errors.FromError(e)
+			So(st, ShouldBeNil)
 		})
 
 	})
@@ -133,18 +150,34 @@ func TestUpdateStack(t *testing.T) {
 		Convey("error is withStack error", func() {
 			e := errors.Wrap(102, "some thing happen")
 			st := errors.UpdateStack(e)
-			So(st.Code(), ShouldEqual, 102)
-			So(st.Error(), ShouldEqual, "ReadFileError:some thing happen")
-			So(len(st.Stack()), ShouldEqual, 2)
+			ss := errors.FromError(st)
+			So(ss, ShouldNotBeNil)
+			So(ss.Code(), ShouldEqual, 102)
+			So(ss.Error(), ShouldEqual, "ReadFileError:some thing happen")
+			So(len(ss.Stack()), ShouldEqual, 2)
 		})
 
 		Convey("error is simple error", func() {
 			e := fmt.Errorf("i'm not withStack error")
 			st := errors.UpdateStack(e)
-			So(st.Code(), ShouldEqual, errors.Unknown().Code())
-			So(st.Description(), ShouldEqual, "i'm not withStack error")
-			So(st.Error(), ShouldEqual, "unknown error code:i'm not withStack error")
-			So(len(st.Stack()), ShouldEqual, 2)
+			ss := errors.FromError(st)
+			So(ss, ShouldNotBeNil)
+			So(ss.Code(), ShouldEqual, errors.Unknown().Code())
+			So(ss.Description(), ShouldEqual, "i'm not withStack error")
+			So(ss.Error(), ShouldEqual, "unknown error code:i'm not withStack error")
+			So(len(ss.Stack()), ShouldEqual, 2)
+		})
+
+		Convey("when error is nil", func() {
+			e := errors.UpdateStack(nil)
+			So(e, ShouldBeNil)
+			IsError := func(err error) (ok bool) {
+				if err == nil {
+					return true
+				}
+				return false
+			}
+			So(IsError(e), ShouldBeTrue)
 		})
 	})
 }

@@ -5,6 +5,8 @@ server:
   mode: debug # server mode: release, debug, test，默认 release
   healthz: true # 是否开启健康检查，如果开启会安装 /healthz 路由，默认 true
   middlewares: context,requestid # 加载的 gin 中间件列表，多个中间件，逗号(,)隔开
+  runtime-debug: true # 启动运行时调试, 可通过Linux信号触发进行程序性能采集等。
+  runtime-debug-dir: ${EXAMPLE_SERVER_RUNTIME_DEBUG_OUTPUT_DIR} #运行时调试时采集的数据存放目录
 
 # HTTP 配置
 insecure:
@@ -20,6 +22,9 @@ secure:
   tls:
     #cert-dir:  # TLS 证书所在的目录
     #pair-name:  # TLS 私钥对名称
+    cert-data:
+      cert: # TLS 证书PEM数据
+      key:  # TLS 私钥PEM数据
     cert-key:
       cert-file: ${EXAMPLE_SERVER_SECURE_TLS_CERT_FILE} # 包含 x509 证书的文件路径，用 HTTPS 认证
       private-key-file: ${EXAMPLE_SERVER_SECURE_TLS_CERT_KEY} # TLS 私钥
@@ -45,6 +50,6 @@ log:
 feature:
   enable-metrics: true # 开启 metrics, router:  /metrics
   profiling: true # 开启性能分析,查看程序栈、线程等系统信息,默认值为true
-  profile_address: 127.0.0.0:6060 # 独立服务地址
-  standalone_profiling: false # 非独立服务时,可以通过 <host>:<port>/debug/pprof/地址.独立服务通过<profile_address>/debug/pprof/地址查看.默认值为false
+  profile-address: 127.0.0.0:6060 # 独立服务地址
+  standalone-profiling: false # 非独立服务时,可以通过 <host>:<port>/debug/pprof/地址.独立服务通过<profile_address>/debug/pprof/地址查看.默认值为false
 

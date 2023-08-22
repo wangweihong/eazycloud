@@ -15,25 +15,23 @@ const (
 	MessageLangENKey = "MessageEN"
 )
 
-var (
-	unknown = fundamental{
-		code: 1,
-		message: map[string]string{
-			MessageLangCNKey: "未知错误码",
-			MessageLangENKey: "unknown error code",
-		},
-		httpCode: http.StatusInternalServerError,
-	}
+var unknown = fundamental{
+	code: 1,
+	message: map[string]string{
+		MessageLangCNKey: "未知错误码",
+		MessageLangENKey: "unknown error code",
+	},
+	httpCode: http.StatusInternalServerError,
+}
 
-	success = fundamental{
-		code: 0,
-		message: map[string]string{
-			MessageLangCNKey: "成功",
-			MessageLangENKey: "success",
-		},
-		httpCode: http.StatusOK,
-	}
-)
+var success = fundamental{
+	code: 0,
+	message: map[string]string{
+		MessageLangCNKey: "成功",
+		MessageLangENKey: "success",
+	},
+	httpCode: http.StatusOK,
+}
 
 // fundamental is an error that has a message and a stack, but no caller.
 type fundamental struct {
@@ -85,9 +83,11 @@ func (f fundamental) MessageEN() string {
 // errorlint:ignore
 // IsCode reports whether any error in err's chain contains the given error code.
 func IsCode(err error, code int) bool {
-	if v, ok := err.(*withStack); ok {
-		if v.Code() == code {
-			return true
+	if err != nil {
+		if v, ok := err.(*withStack); ok {
+			if v.Code() == code {
+				return true
+			}
 		}
 	}
 

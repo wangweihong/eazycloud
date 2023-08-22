@@ -116,6 +116,26 @@ func Wrap(code int, desc string) *withStack {
 	return errStack
 }
 
+// WrapStack generate a new withStack error with `code` , `desc`,`stack`.
+func WrapStack(code int, desc string, stack []string) *withStack {
+	codeMux.RLock()
+	defer codeMux.RUnlock()
+
+	stack = append(stack, newStack(code, Caller()))
+	errStack := &withStack{
+		stack:       stack,
+		description: desc,
+	}
+
+	coder, exist := codes[code]
+	if !exist {
+		errStack.Coder = unknown
+		return errStack
+	}
+	errStack.Coder = coder
+	return errStack
+}
+
 // WrapF generate a new withStack error with `code` and desc `format+arg...`.
 func WrapF(code int, format string, args ...interface{}) *withStack {
 	codeMux.RLock()
@@ -149,7 +169,9 @@ func WrapError(code int, err error) *withStack {
 	coder, exist := codes[code]
 	if !exist {
 		errStack.Coder = unknown
-		errStack.description = err.Error()
+		if err != nil {
+			errStack.description = err.Error()
+		}
 		return errStack
 	}
 
@@ -166,12 +188,15 @@ func WrapError(code int, err error) *withStack {
 }
 
 // UpdateStack add a new layer to err's caller stack.
-func UpdateStack(err error) *withStack {
-	errStack := FromError(err)
-	if errStack != nil {
-		errStack.stack = append(errStack.stack, newStack(unknown.code, Caller()))
+func UpdateStack(err error) error {
+	if err != nil {
+		errStack := FromError(err)
+		if errStack != nil {
+			errStack.stack = append(errStack.stack, newStack(errStack.Code(), Caller()))
+			return errStack
+		}
 	}
-	return errStack
+	return nil
 }
 
 func (m withStack) ToBasicJson() map[string]interface{} {
@@ -193,10 +218,15 @@ func (m withStack) ToDetailJson() map[string]interface{} {
 	return out
 }
 
-// ParseError parse any error into *withStack.
-// nil error will return nil direct.
+// FromError parse any error into *withStack.
+// nil error will return nil directly, caller should handle nil *withStack.
 // None withStack error will be parsed as ErrUnknown.
+// NOTE: `*withStack is nil` doesn't equal to `error is nil`.
 func FromError(err error) *withStack {
+	return fromError(err)
+}
+
+func fromError(err error) *withStack {
 	if err == nil {
 		return nil
 	}

@@ -83,3 +83,17 @@ func (m StringSlice) SortAsc() []string {
 
 	return nil
 }
+
+func (m StringSlice) HasEmpty() (int, bool) {
+	if m != nil {
+		var eN int
+		for _, v := range m {
+			if v == "" {
+				eN++
+			}
+		}
+		return eN, eN != 0
+	}
+
+	return 0, false
+}

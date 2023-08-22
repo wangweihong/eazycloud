@@ -64,12 +64,12 @@ ifeq ($(origin PLATFORM), undefined)
 	ifeq ($(origin GOARCH), undefined)
 		GOARCH := $(shell go env GOARCH)
 	endif
-	PLATFORM := $(GOOS)_$(GOARCH)
+	PLATFORM := $(GOOS)/$(GOARCH)
 	# Use linux as the default OS when building images
-	IMAGE_PLAT := linux_$(GOARCH)
+	IMAGE_PLAT := linux/$(GOARCH)
 else
-	GOOS := $(word 1, $(subst _, ,$(PLATFORM)))
-	GOARCH := $(word 2, $(subst _, ,$(PLATFORM)))
+	GOOS := $(word 1, $(subst /, ,$(PLATFORM)))
+	GOARCH := $(word 2, $(subst /, ,$(PLATFORM)))
 	IMAGE_PLAT := $(PLATFORM)
 endif
 
@@ -108,15 +108,13 @@ SPACE := $(EMPTY) $(EMPTY)
 
 # Specify components which need generate config from template
 ifeq ($(origin COMPONENTS),undefined)
-	# COMPONENTS ?= example1 example2
 	COMPONENTS?= example-server example-grpc
 endif
 
 
 # Specify components which need certificate
 ifeq ($(origin CERTIFICATES),undefined)
-	# CERTIFICATES ?= example1 example2
-	CERTIFICATES?= example-server
+	CERTIFICATES?= example-server example-grpc
 endif
 
 # 这种写法的目的是如果发现未定义才进行赋值
@@ -129,10 +127,15 @@ endif
 #  这意味着我们可以通过include *.mk, 或者直接make CERTIFICATES_SUBJECT=xxx来设置CERTIFICATES_SUBJECT变量
 # # 证书主体信息
 ifeq ($(origin CERTIFICATES_SUBJECT),undefined)
-	CERTIFICATES_SUBJECT= /C=CN/ST=Guangdong/L=Shenzhen/O=EazyCloud/OU=Develop
+	CERTIFICATES_SUBJECT= /CN=eazycloud
 endif
 
-# 证书主体可选名称
-ifeq ($(origin CERTIFICATES_ALT_NAME),undefined)
-	CERTIFICATES_ALT_NAME= 127.0.0.1,example.com,192.168.134.139
+# 服务端证书主体可选名称
+ifeq ($(origin SERVER_CERTIFICATES_ALT_NAME),undefined)
+	SERVER_CERTIFICATES_ALT_NAME= 0.0.0.0
+endif
+
+# 客户端证书主体可选名称
+ifeq ($(origin CLIENT_CERTIFICATES_ALT_NAME),undefined)
+	CLIENT_CERTIFICATES_ALT_NAME= ""
 endif

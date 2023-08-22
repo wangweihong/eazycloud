@@ -16,10 +16,6 @@ ifneq ($(DLV),)
 endif
 GO_BUILD_FLAGS += -ldflags "$(GO_LDFLAGS)"
 
-ifeq ($(GOOS),windows)
-	GO_OUT_EXT := .exe
-endif
-
 # root makefile define root package path
 ifeq ($(ROOT_PACKAGE),)
 	$(error the variable ROOT_PACKAGE must be set prior to including golang.mk)
@@ -40,7 +36,7 @@ ifeq (${BINS},)
   $(error Could not determine BINS, set ROOT_DIR or run in source dir)
 endif
 
-EXCLUDE_TESTS=$(ROOT_PACKAGE)/test $(ROOT_PACKAGE)/pkg/log $(ROOT_PACKAGE)/third_party $(ROOT_PACKAGE)/tools
+EXCLUDE_TESTS=$(ROOT_PACKAGE)/test $(ROOT_PACKAGE)/pkg/log $(ROOT_PACKAGE)/third_party $(ROOT_PACKAGE)/tools $(ROOT_PACKAGE)/examples
 
 .PHONY: go.build.verify
 go.build.verify:
@@ -48,21 +44,23 @@ ifneq ($(shell $(GO) version | grep -q -E '\bgo($(GO_SUPPORTED_VERSIONS))\b' && 
 	$(error unsupported go version. Please make install one of the following supported version: '$(GO_SUPPORTED_VERSIONS)')
 endif
 
+# 由于makefile目标名不能包含"/",因此在go.build/go.build.multiarch中将架构"linux/amd64"分隔符转换成"linux_amd64"
 .PHONY: go.build.%
 go.build.%:
 	$(eval COMMAND := $(word 2,$(subst ., ,$*)))
 	$(eval PLATFORM := $(word 1,$(subst ., ,$*)))
 	$(eval OS := $(word 1,$(subst _, ,$(PLATFORM))))
 	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
-	@echo "===========> Building binary $(COMMAND) $(VERSION) for $(OS) $(ARCH)"
+	$(if $(filter windows,$(OS)),$(eval GO_OUT_EXT := .exe),$(eval GO_OUT_EXT := ))
+	@echo "===========> Building binary $(COMMAND) $(VERSION) for $(OS)/$(ARCH),Output:$(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT)"
 	@mkdir -p $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)
 	@CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) $(GO) build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) $(ROOT_PACKAGE)/cmd/$(COMMAND)
 
 .PHONY: go.build
-go.build: go.build.verify $(addprefix go.build., $(addprefix $(PLATFORM)., $(BINS)))
+go.build: go.build.verify $(addprefix go.build., $(addprefix $(subst /,_,$(PLATFORM))., $(BINS)))
 
 .PHONY: go.build.multiarch
-go.build.multiarch: go.build.verify $(foreach p,$(PLATFORMS),$(addprefix go.build., $(addprefix $(p)., $(BINS))))
+go.build.multiarch: go.build.verify $(foreach p,$(subst /,_,$(PLATFORMS)),$(addprefix go.build., $(addprefix $(p)., $(BINS))))
 
 .PHONY: go.clean
 go.clean:
