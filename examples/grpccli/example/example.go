@@ -7,9 +7,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/debug"
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcproto/apis/version"
 	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/eazycloud/pkg/grpcproto/apis/debug"
+	"github.com/wangweihong/eazycloud/pkg/grpcproto/apis/version"
 )
 
 type Backend interface {

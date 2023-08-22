@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/wangweihong/eazycloud/internal/examplegrpc/config"
-	"github.com/wangweihong/eazycloud/internal/pkg/genericgrpc/grpcserver"
+	"github.com/wangweihong/eazycloud/pkg/grpcsvr"
 	"github.com/wangweihong/eazycloud/pkg/log"
 	"github.com/wangweihong/eazycloud/pkg/shutdown"
 	"github.com/wangweihong/eazycloud/pkg/shutdown/managers/posixsignal"
 )
 
 type server struct {
-	grpcServer *grpcserver.GRPCServer
+	grpcServer *grpcsvr.GRPCServer
 	// 控制服务关闭时处理动作, 如捕捉到信号后如何处理
 	gracefulShutdown *shutdown.GracefulShutdown
 }
@@ -47,12 +47,12 @@ func createServer(cfg *config.Config) (*server, error) {
 }
 
 // 根据服务器配置应用到通用服务器配置上.
-func buildGenericGRPCServerConfig(cfg *config.Config) (genericConfig *grpcserver.GRPCConfig, lastErr error) {
+func buildGenericGRPCServerConfig(cfg *config.Config) (genericConfig *grpcsvr.GRPCConfig, lastErr error) {
 	addr := fmt.Sprintf("%s:%d", cfg.TCP.BindAddress, cfg.TCP.BindPort)
 	if !cfg.TCP.Required {
 		addr = ""
 	}
-	genericConfig = &grpcserver.GRPCConfig{
+	genericConfig = &grpcsvr.GRPCConfig{
 		UnixSocket: cfg.UnixSocket.Socket,
 		Addr:       addr,
 		ServerCert: cfg.TCP.ServerCert.CertData,

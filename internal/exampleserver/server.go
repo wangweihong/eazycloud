@@ -2,7 +2,7 @@ package example_server
 
 import (
 	"github.com/wangweihong/eazycloud/internal/exampleserver/config"
-	"github.com/wangweihong/eazycloud/internal/pkg/genericserver"
+	"github.com/wangweihong/eazycloud/pkg/httpsvr"
 	"github.com/wangweihong/eazycloud/pkg/log"
 	"github.com/wangweihong/eazycloud/pkg/shutdown"
 	"github.com/wangweihong/eazycloud/pkg/shutdown/managers/posixsignal"
@@ -10,7 +10,7 @@ import (
 
 type server struct {
 	// api服务,提供http和tls
-	httpServer *genericserver.GenericHTTPServer
+	httpServer *httpsvr.GenericHTTPServer
 	// 控制服务关闭时处理动作, 如捕捉到信号后如何处理
 	gracefulShutdown *shutdown.GracefulShutdown
 }
@@ -46,8 +46,8 @@ func createServer(cfg *config.Config) (*server, error) {
 }
 
 // 根据服务器配置应用到通用服务器配置上.
-func buildGenericHTTPServerConfig(cfg *config.Config) (genericConfig *genericserver.Config, lastErr error) {
-	genericConfig = genericserver.NewConfig()
+func buildGenericHTTPServerConfig(cfg *config.Config) (genericConfig *httpsvr.Config, lastErr error) {
+	genericConfig = httpsvr.NewConfig()
 	if lastErr = cfg.GenericServerRunOptions.ApplyTo(genericConfig); lastErr != nil {
 		return
 	}
