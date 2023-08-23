@@ -3,6 +3,7 @@ package grpcsvr
 import (
 	"net"
 	"os"
+	"path/filepath"
 
 	"github.com/wangweihong/eazycloud/pkg/debug"
 
@@ -60,6 +61,9 @@ func (s *GRPCServer) Run() {
 			if err := os.Remove(s.UnixSocket); err != nil && !os.IsNotExist(err) {
 				log.Fatalf("unix socket file %v already in use, remove fail:%v", s.UnixSocket, err)
 			}
+
+			_ = os.MkdirAll(filepath.Dir(s.UnixSocket), 0o755)
+
 			log.Infof("start gRPC server at unix://%s", s.UnixSocket)
 
 			listen, err := s.buildUnixListen()
