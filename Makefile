@@ -13,6 +13,7 @@ all: tidy gen proto format lint cover build
 
 include scripts/make-rules/common.mk # make sure include common.mk at the first include line
 include scripts/make-rules/golang.mk
+include scripts/make-rules/image.mk
 include scripts/make-rules/tools.mk
 include scripts/make-rules/gen.mk
 include scripts/make-rules/dependencies.mk
@@ -54,6 +55,16 @@ build:
 .PHONY: build.multiarch
 build.multiarch:
 	@$(MAKE) go.build.multiarch
+
+## image: Build docker images for host arch.
+.PHONY: image
+image:
+	@$(MAKE) image.build
+
+## image.multiarch: Build docker images for multiple platforms. See option PLATFORMS.
+.PHONY: image.multiarch
+image.multiarch:
+	@$(MAKE) image.build.multiarch
 
 ## clean: Remove all files that are created by building.
 .PHONY: clean
