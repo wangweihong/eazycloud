@@ -9,7 +9,7 @@ ROOT_PACKAGE=github.com/wangweihong/eazycloud
 VERSION_PACKAGE=github.com/wangweihong/eazycloud/pkg/version
 
 .PHONY: all
-all: tidy gen proto format lint cover build
+all: tidy gen format lint cover build
 
 include scripts/make-rules/common.mk # make sure include common.mk at the first include line
 include scripts/make-rules/golang.mk
@@ -31,14 +31,14 @@ Options:
   BINS             The binaries to build. Default is all of cmd.
                    This option is available when using: make build/build.multiarch
                    Example: make build BINS="eazycloud-apiserver hubctl"
-  IMAGES           Backend images to make. Default is all of cmd starting with iam-.
-                   This option is available when using: make image/image.multiarch/push/push.multiarch
+  IMAGES           Backend images to make. Default is all dir under build/docker/*.
+                   This option is available when using: make image/image.multiarch/push/
                    Example: make image.multiarch IMAGES="eazycloud-apiserver hubctl"
   REGISTRY_PREFIX  Docker registry prefix. Default is "".
                    Example: make push REGISTRY_PREFIX=harbor.registry.wang/exampled VERSION=v1.6.2
-  PLATFORMS        The multiple platforms to build. Default is linux_amd64 and linux_arm64.
-                   This option is available when using: make build.multiarch/image.multiarch/push.multiarch
-                   Example: make image.multiarch IMAGES="eazycloud-apiserver hubctl" PLATFORMS="linux/amd64 linux/arm64".
+  PLATFORMS        The multiple platforms to build. Default is linux/amd64 and linux/arm64.
+                   This option is available when using: make build.multiarch/image.build.multiarch/build.image.multiarch
+                   Example: make image.build.multiarch IMAGES="eazycloud-apiserver hubctl" PLATFORMS="linux/amd64 linux/arm64".
                    Support PLATFORMS check `go tool dist list` shows.
   VERSION          The version information compiled into binaries.
                    The default is obtained from gsemver or git.
@@ -61,9 +61,19 @@ build.multiarch:
 image:
 	@$(MAKE) image.build
 
-## image.multiarch: Build docker images for multiple platforms. See option PLATFORMS.
-.PHONY: image.multiarch
-image.multiarch:
+## gobuild.push.multiarch: Build source code in docker golang container and docker image for multiple platforms, push images to registry. See option PLATFORMS.
+.PHONY: gobuild.push.multiarch
+gobuild.push.multiarch:
+	@$(MAKE) image.gobuild.multiarch
+
+## push: Build docker images for host arch and push images to registry.
+.PHONY: push
+push:
+	@$(MAKE) image.push
+
+## push.multiarch: Build docker images for multiple platforms and push images to registry. See option PLATFORMS.
+.PHONY: push.multiarch
+push.multiarch:
 	@$(MAKE) image.build.multiarch
 
 ## clean: Remove all files that are created by building.

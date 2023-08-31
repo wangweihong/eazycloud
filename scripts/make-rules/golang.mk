@@ -26,6 +26,8 @@ ifeq ($(origin GOBIN), undefined)
 	GOBIN := $(GOPATH)/bin
 endif
 
+GOPROXY := $(shell go env GOPROXY)
+
 COMMANDS ?= $(filter-out %.md, $(wildcard ${ROOT_DIR}/cmd/*))
 BINS ?= $(foreach cmd,${COMMANDS},$(notdir ${cmd}))
 
@@ -45,16 +47,17 @@ ifneq ($(shell $(GO) version | grep -q -E '\bgo($(GO_SUPPORTED_VERSIONS))\b' && 
 endif
 
 # 由于makefile目标名不能包含"/",因此在go.build/go.build.multiarch中将架构"linux/amd64"分隔符转换成"linux_amd64"
+# $(if $(filter windows,$(OS)),$(eval GO_OUT_EXT := .exe),$(eval GO_OUT_EXT := )) 的作用是在Makefile解析阶段(非运行阶段)根据系统
+# 	是否windows决定是否加上对应的.exe后缀
 .PHONY: go.build.%
 go.build.%:
 	$(eval COMMAND := $(word 2,$(subst ., ,$*)))
-	$(eval PLATFORM := $(word 1,$(subst ., ,$*)))
-	$(eval OS := $(word 1,$(subst _, ,$(PLATFORM))))
-	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
-	$(if $(filter windows,$(OS)),$(eval GO_OUT_EXT := .exe),$(eval GO_OUT_EXT := ))
-	@echo "===========> Building binary $(COMMAND) $(VERSION) for $(OS)/$(ARCH),Output:$(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT)"
+	$(eval RULEPLATFORM := $(word 1,$(subst ., ,$*)))
+	$(eval OS := $(word 1,$(subst _, ,$(RULEPLATFORM))))
+	$(eval ARCH := $(word 2,$(subst _, ,$(RULEPLATFORM))))
+	@echo "===========> Building binary $(COMMAND) $(VERSION) for $(OS)/$(ARCH),Output:$(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)"
 	@mkdir -p $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)
-	@CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) $(GO) build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) $(ROOT_PACKAGE)/cmd/$(COMMAND)
+	@CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) $(GO) build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND) $(ROOT_PACKAGE)/cmd/$(COMMAND)
 
 .PHONY: go.build
 go.build: go.build.verify $(addprefix go.build., $(addprefix $(subst /,_,$(PLATFORM))., $(BINS)))
