@@ -94,3 +94,30 @@ func TestStringSlice_HasEmpty(t *testing.T) {
 		So(hasEmpty, ShouldBeTrue)
 	})
 }
+
+func TestStringSlice_Cut(t *testing.T) {
+	Convey("TestStringSlice_Cut", t, func() {
+		var nilS []string
+		So(sliceutil.StringSlice(nilS).Cut("x"), ShouldBeNil)
+		So(sliceutil.StringSlice([]string{"a", "c", "b"}).Cut("a"), ShouldResemble, []string{"c", "b"})
+		So(sliceutil.StringSlice([]string{"a", "c", "b"}).Cut("c"), ShouldResemble, []string{"a", "b"})
+		So(sliceutil.StringSlice([]string{"a", "c", "b"}).Cut("b"), ShouldResemble, []string{"a", "c"})
+		So(sliceutil.StringSlice([]string{"a", "c", "b"}).Cut("d"), ShouldResemble, []string{"a", "c", "b"})
+	})
+}
+
+func TestStringSlice_FallBack(t *testing.T) {
+	Convey("TestStringSlice_FallBack", t, func() {
+		var nilS []string
+		So(sliceutil.StringSlice(nilS).FallBehind("x"), ShouldResemble, []string{"x"})
+		So(sliceutil.StringSlice([]string{"a", "c", "b"}).FallBehind("a"), ShouldResemble, []string{"c", "b", "a"})
+	})
+}
+
+func TestStringSlice_TrimSpace(t *testing.T) {
+	Convey("TestStringSlice_TrimSpace", t, func() {
+		var nilS []string
+		So(sliceutil.StringSlice(nilS).TrimSpace(), ShouldBeNil)
+		So(sliceutil.StringSlice([]string{"a", "", " ", "  ", "b"}).TrimSpace(), ShouldResemble, []string{"a", "b"})
+	})
+}
