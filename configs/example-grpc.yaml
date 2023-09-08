@@ -15,7 +15,7 @@ tcp:
   required: true
   bind-address: ${EXAMPLE_GRPC_BIND_ADDRESS} #gRPC 监听地址，如果是tcp协议,默认为 0.0.0.0; 如果是UDP协议默认是/var/run/example-grpc.socket
   bind-port: ${EXAMPLE_GRPC_BIND_PORT} # 使用 gRPC 端口号默认为 8081
-  tls-enable: true # 是否开启TLS服务
+  tls-enable: false # 是否开启TLS服务
   # TLS证书配置,其中cert-data/cert-key/cert-dir,pair-name 三种方式选择其一即可。
   # 优先级最高为cert-data,其次为cert-key,最后为cert-dir,pair-name
   tls:

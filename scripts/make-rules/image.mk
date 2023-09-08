@@ -60,7 +60,7 @@ image.dockerbuildx.verify:
 
 # Installing QEMU static binaries
 .PHONY: image.dockerbuildx.prerequisite
-image.dockerbuildx.prerequisite: image.verify image.daemon.verify image.dockerbuildx.verify
+image.dockerbuildx.prerequisite: image.verify image.dockerbuildx.verify
 	@docker run --rm --privileged tonistiigi/binfmt:latest --install all >/dev/null
 
 .PHONY: image.build
