@@ -9,16 +9,18 @@ ROOT_PACKAGE=github.com/wangweihong/eazycloud
 VERSION_PACKAGE=github.com/wangweihong/eazycloud/pkg/version
 
 .PHONY: all
-all: tidy gen proto format lint cover build
+all: tidy gen format lint cover build
 
 include scripts/make-rules/common.mk # make sure include common.mk at the first include line
 include scripts/make-rules/golang.mk
+include scripts/make-rules/image.mk
 include scripts/make-rules/tools.mk
 include scripts/make-rules/gen.mk
 include scripts/make-rules/dependencies.mk
 include scripts/make-rules/swagger.mk
 include scripts/make-rules/proto.mk
 include scripts/make-rules/certs.mk
+include scripts/make-rules/example.mk
 
 # Usage
 
@@ -29,14 +31,14 @@ Options:
   BINS             The binaries to build. Default is all of cmd.
                    This option is available when using: make build/build.multiarch
                    Example: make build BINS="eazycloud-apiserver hubctl"
-  IMAGES           Backend images to make. Default is all of cmd starting with iam-.
-                   This option is available when using: make image/image.multiarch/push/push.multiarch
+  IMAGES           Backend images to make. Default is all dir under build/docker/*.
+                   This option is available when using: make image/image.multiarch/push/
                    Example: make image.multiarch IMAGES="eazycloud-apiserver hubctl"
   REGISTRY_PREFIX  Docker registry prefix. Default is "".
                    Example: make push REGISTRY_PREFIX=harbor.registry.wang/exampled VERSION=v1.6.2
-  PLATFORMS        The multiple platforms to build. Default is linux_amd64 and linux_arm64.
-                   This option is available when using: make build.multiarch/image.multiarch/push.multiarch
-                   Example: make image.multiarch IMAGES="eazycloud-apiserver hubctl" PLATFORMS="linux/amd64 linux/arm64".
+  PLATFORMS        The multiple platforms to build. Default is linux/amd64 and linux/arm64.
+                   This option is available when using: make build.multiarch/image.build.multiarch/build.image.multiarch
+                   Example: make image.build.multiarch IMAGES="eazycloud-apiserver hubctl" PLATFORMS="linux/amd64 linux/arm64".
                    Support PLATFORMS check `go tool dist list` shows.
   VERSION          The version information compiled into binaries.
                    The default is obtained from gsemver or git.
@@ -53,6 +55,26 @@ build:
 .PHONY: build.multiarch
 build.multiarch:
 	@$(MAKE) go.build.multiarch
+
+## image: Build docker images for host arch.
+.PHONY: image
+image:
+	@$(MAKE) image.build
+
+## gobuild.push.multiarch: Build source code in docker golang container and docker image for multiple platforms, push images to registry. See option PLATFORMS.
+.PHONY: gobuild.push.multiarch
+gobuild.push.multiarch:
+	@$(MAKE) image.gobuild.multiarch
+
+## push: Build docker images for host arch and push images to registry.
+.PHONY: push
+push:
+	@$(MAKE) image.push
+
+## push.multiarch: Build docker images for multiple platforms and push images to registry. See option PLATFORMS.
+.PHONY: push.multiarch
+push.multiarch:
+	@$(MAKE) image.build.multiarch
 
 ## clean: Remove all files that are created by building.
 .PHONY: clean
@@ -128,25 +150,6 @@ proto:
 .PHONY: configs
 configs:
 	@$(MAKE) gen.defaultconfigs
-
-## swagger-example: Generate example swagger and serve.
-.PHONY: swagger-example
-swagger-example:
-	@$(MAKE) swagger.example
-	@$(MAKE) swagger.example.serve
-
-## deecopy-gen-example: Run an example show how deepcopy auto generate api type's DeepCopy function.
-.PHONY: deepcopy-gen-example
-deepcopy-gen-example: tools.verify.deepcopy-gen
-	@deepcopy-gen --input-dirs=./tools/deepcopy-gen/example --output-base=../
-
-## code-gen-example: Run an example show how codegen auto generate error code .go definition file and .md file
-code-gen-example: tools.verify.codegen
-	@echo "===========> Generating error code go source files to path:${ROOT_DIR}/tools/codegen/example"
-	@codegen -type=int ${ROOT_DIR}/tools/codegen/example
-	@echo "===========> Generating error code markdown documentation to path:${ROOT_DIR}/tools/codegen/example/error_code_generated.md"
-	@codegen -type=int -doc \
-		-output ${ROOT_DIR}/tools/codegen/example/error_code_generated.md ${ROOT_DIR}/tools/codegen/example
 
 ## help: Show this help info.
 # 这里会提取target上一行的\#\#注释并生成到Makefile help文档中

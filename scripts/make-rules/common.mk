@@ -1,7 +1,21 @@
-SHELL := /bin/bash
 
-# include the common make file
-# MAKEFILE_LIST: makefile自带的环境变量，包含所有的makefile文件
+SHELL := /bin/bash
+OLD_SHELL := $(SHELL)
+SHELL = $(OLD_SHELL)
+
+# Makefile settings
+ifndef V
+MAKEFLAGS += --no-print-directory
+endif
+
+ifdef DEBUG
+# https://www.cmcrossroads.com/article/tracing-rule-execution-gnu-make
+# replace shell with debug Makefile log
+SHELL = $(warning Building $@$(if $<, (from $<))$(if $?, ($? newer)))$(OLD_SHELL) -x
+endif
+
+## include the common make file
+## MAKEFILE_LIST: makefile自带的环境变量，包含所有的makefile文件
 COMMON_SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 
 # 代码目录
@@ -52,9 +66,9 @@ COVERAGE := 60
 endif
 
 # The OS must be linux when building docker images
-PLATFORMS ?= linux_amd64 linux_arm64
+PLATFORMS ?= linux/amd64 linux/arm64
 # The OS can be linux/windows/darwin when building binaries
-# PLATFORMS ?= darwin_amd64 windows_amd64 linux_amd64 linux_arm64
+# PLATFORMS ?= darwin/amd64 windows/amd64 linux/amd64 linux/arm64
 
 # Set a specific PLATFORM
 ifeq ($(origin PLATFORM), undefined)
@@ -65,33 +79,26 @@ ifeq ($(origin PLATFORM), undefined)
 		GOARCH := $(shell go env GOARCH)
 	endif
 	PLATFORM := $(GOOS)/$(GOARCH)
-	# Use linux as the default OS when building images
-	IMAGE_PLAT := linux/$(GOARCH)
 else
 	GOOS := $(word 1, $(subst /, ,$(PLATFORM)))
 	GOARCH := $(word 2, $(subst /, ,$(PLATFORM)))
-	IMAGE_PLAT := $(PLATFORM)
 endif
 
 # Linux command settings
 FIND := find . ! -path './third_party/*' ! -path './vendor/*'
 XARGS := xargs --no-run-if-empty
 
-# Makefile settings
-ifndef V
-MAKEFLAGS += --no-print-directory
-endif
 
-ifeq ($(origin CHANGE_HOOK_LINE_SPERATOR), undefined)
-	# 保证脚本换行符为\n,CRLF-->LF
-	#CHANGE_HOOK_LINE_SPERATOR = $(shell dos2unix ./scripts/githooks/* )
-	CHANGE_HOOK_LINE_SPERATOR = $(shell find ./scripts/githooks -type f -exec sh -c 'tr -d "\r" < "$0" > "$0.tmp" && mv "$0.tmp" "$0"' {} \; )
-	# 保证脚本可执行
+#ifeq ($(origin CHANGE_HOOK_LINE_SPERATOR), undefined)
+#	# 保证脚本换行符为\n,CRLF-->LF
+#	#CHANGE_HOOK_LINE_SPERATOR = $(shell dos2unix ./scripts/githooks/* )
+#	CHANGE_HOOK_LINE_SPERATOR = $(shell find ./scripts/githooks -type f -exec sh -c 'tr -d "\r" < "$0" > "$0.tmp" && mv "$0.tmp" "$0"' {} \; )
+#	# 保证脚本可执行
 	MAKE_HOOK_EXECUTABLE:= $(shell chmod +x ./scripts/githooks/*)
-    # Copy githook scripts when execute makefile
+#    # Copy githook scripts when execute makefile
     # 采取这种方式, 可以实现git hook的统一和强制. 当执行Make任意规则时,强制进行拷贝。因此不需要单独的规则来拷贝
     COPY_GITHOOK:=$(shell cp -f ./scripts/githooks/* .git/hooks/)
-endif
+#endif
 
 # Specify tools severity, include: BLOCKER_TOOLS, CRITICAL_TOOLS, TRIVIAL_TOOLS.
 # Missing BLOCKER_TOOLS can cause the CI flow execution failed, i.e. `make all` failed.

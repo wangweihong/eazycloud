@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/wangweihong/eazycloud/pkg/util/errorutil"
+
 	"github.com/wangweihong/eazycloud/pkg/errors"
 	"github.com/wangweihong/eazycloud/pkg/skipper"
 
@@ -16,6 +18,12 @@ import (
 	"github.com/wangweihong/eazycloud/pkg/util/netutil"
 
 	"google.golang.org/grpc"
+)
+
+var (
+	DisableCopy             bool
+	MaxRequestLoggerLength  = 4096
+	MaxResponseLoggerLength = 4096
 )
 
 // UnaryServerInterceptor returns a new unary server interceptor for trace.
@@ -56,7 +64,10 @@ func UnaryServerInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryServer
 
 		fields["req_latency_ms"] = Latency
 		fields["req_time_end"] = end.Format("2006-01-02 15:04:05.000000")
-		fields["resp_err"] = err
+		fields["resp_err"] = errorutil.ErrorMsg(err)
+		if !DisableCopy {
+			fields["resp_body"] = resp
+		}
 
 		simpleCallInfo := fmt.Sprintf("[%s] %v %s", clientIP, Latency, info.FullMethod)
 		log.F(ctx).Info(simpleCallInfo, log.Every("call-detail", fields))

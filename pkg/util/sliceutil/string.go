@@ -1,6 +1,9 @@
 package sliceutil
 
-import "sort"
+import (
+	"sort"
+	"strings"
+)
 
 type StringSlice []string
 
@@ -96,4 +99,39 @@ func (m StringSlice) HasEmpty() (int, bool) {
 	}
 
 	return 0, false
+}
+
+func (m StringSlice) Cut(data string) []string {
+	var index int = -1
+	for i, v := range m {
+		if v == data {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		return m
+	}
+
+	return append(m[:index], m[index+1:]...)
+}
+
+func (m StringSlice) FallBehind(data string) []string {
+	n := m.Cut(data)
+	return append(n, data)
+}
+
+func (m StringSlice) TrimSpace() []string {
+	if m == nil {
+		return nil
+	}
+
+	n := make([]string, 0, len(m))
+	for _, v := range m {
+		if strings.TrimSpace(v) != "" {
+			n = append(n, v)
+		}
+	}
+	return n
 }

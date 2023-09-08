@@ -114,6 +114,10 @@ func (s *TCPOptions) Complete() error {
 		return nil
 	}
 
+	if !s.TlsEnable {
+		return nil
+	}
+
 	if len(s.ServerCert.CertData.Cert) != 0 || len(s.ServerCert.CertData.Key) != 0 {
 		return nil
 	}
