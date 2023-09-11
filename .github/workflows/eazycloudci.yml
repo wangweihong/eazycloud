@@ -1,7 +1,7 @@
 name: EazycloudCI
 
 on:
-  push:
+#  push:
 #    branchs:
 #      - '*'
 #    branches-ignore:
