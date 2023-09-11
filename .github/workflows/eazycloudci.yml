@@ -2,10 +2,10 @@ name: EazycloudCI
 
 on:
   push:
-    branchs:
-      - '*'
-    branches-ignore:
-      - 'master'
+#    branchs:
+#      - '*'
+#    branches-ignore:
+#      - 'master'
   pull_request:
     types: [opened, reopened]
 
