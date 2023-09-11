@@ -9,7 +9,7 @@ ROOT_PACKAGE=github.com/wangweihong/eazycloud
 VERSION_PACKAGE=github.com/wangweihong/eazycloud/pkg/version
 
 .PHONY: all
-all: tidy gen format lint cover build
+all: tidy gen proto format lint cover build
 
 include scripts/make-rules/common.mk # make sure include common.mk at the first include line
 include scripts/make-rules/golang.mk
