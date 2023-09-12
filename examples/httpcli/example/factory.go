@@ -12,7 +12,7 @@ func Instance() Factory {
 	return client
 }
 
-// SetClient set the iam store client.
+// SetClient set the store client.
 func SetInstance(factory Factory) {
 	client = factory
 }

@@ -71,7 +71,7 @@ lib::log::error_exit() {
   local stack_skip="${3:-0}"
   stack_skip=$((stack_skip + 1))
 
-  if [[ ${IAM_VERBOSE} -ge 4 ]]; then
+  if [[ ${LOG_VERBOSE} -ge 4 ]]; then
     local source_file=${BASH_SOURCE[${stack_skip}]}
     local source_line=${BASH_LINENO[$((stack_skip - 1))]}
     echo "!!! Error in ${source_file}:${source_line}" >&2
