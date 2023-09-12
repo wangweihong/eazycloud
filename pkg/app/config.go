@@ -2,15 +2,15 @@ package app
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/cobra"
 
 	"github.com/wangweihong/eazycloud/pkg/util/homedir"
 
 	"github.com/gosuri/uitable"
 
-	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -42,27 +42,8 @@ func addConfigFlag(basename string, fs *pflag.FlagSet) {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 
 	// 添加cobra初始化方法,该方法将在cobra执行标志解析后执行
-	cobra.OnInitialize(func() {
-		if cfgFile != "" {
-			viper.SetConfigFile(cfgFile)
-		} else {
-			// 1. 添加当前路径为配置路径
-			viper.AddConfigPath(".")
-			// 2. 添加~/<baseName>以及/etc/baseName作为配置路径
-			if names := strings.Split(basename, "-"); len(names) > 1 {
-				viper.AddConfigPath(filepath.Join(homedir.HomeDir(), "."+names[0]))
-				viper.AddConfigPath(filepath.Join("/etc", names[0]))
-			}
-			// 设置配置名
-			viper.SetConfigName(basename)
-		}
-
-		// 加载配置文件
-		if err := viper.ReadInConfig(); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error: failed to read configuration file(%s): %v\n", cfgFile, err)
-			os.Exit(1)
-		}
-	})
+	// 不在Initialize进行配置加载。在这里进行配置加载会影响到--version flag无法执行
+	cobra.OnInitialize(func() {})
 }
 
 func printConfig() {
@@ -79,26 +60,29 @@ func printConfig() {
 	}
 }
 
-/*
 // loadConfig reads in config file and ENV variables if set.
-func loadConfig(cfg string, defaultName string) {
+func loadConfig(cfg string, defaultName string) error {
 	if cfg != "" {
 		viper.SetConfigFile(cfg)
 	} else {
 		viper.AddConfigPath(".")
-		viper.AddConfigPath(filepath.Join(homedir.HomeDir(), RecommendedHomeDir))
+		// 2. 添加~/<defaultName>以及/etc/defaultName作为配置路径
+		if names := strings.Split(defaultName, "-"); len(names) > 1 {
+			viper.AddConfigPath(filepath.Join(homedir.HomeDir(), "."+names[0]))
+			viper.AddConfigPath(filepath.Join("/etc", names[0]))
+		}
+		// 设置配置名
 		viper.SetConfigName(defaultName)
 	}
 
 	// Use config file from the flag.
-	viper.SetConfigType("yaml")              // set the type of the configuration to yaml.
-	viper.AutomaticEnv()                     // read in environment variables that match.
-	viper.SetEnvPrefix(RecommendedEnvPrefix) // set ENVIRONMENT variables prefix to IAM.
+	viper.SetConfigType("yaml") // set the type of the configuration to yaml.
+	viper.AutomaticEnv()        // read in environment variables that match.
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 
-	// If a config file is found, read it in.
+	// 加载配置文件
 	if err := viper.ReadInConfig(); err != nil {
-		log.Warnf("WARNING: viper failed to discover and load the configuration file: %s", err.Error())
+		return fmt.Errorf("failed to read configuration file(%s): %w", cfgFile, err)
 	}
+	return nil
 }
-*/
