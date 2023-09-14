@@ -1,23 +1,31 @@
-build-job:
+# This creates the stages in which the jobs will run. By default all
+# jobs will run in parallel in the stage. Once the jobs are completed
+# successfully then you move on to the next stage. The way jobs run
+# is completely configurable.
+stages:
+  - build
+  - test
+
+# With the include statement, you can quickly add jobs which have
+# been pre-defined in external YAMLs. The SAST job I included below
+# is provided and maintained by GitLab and adds Static Application
+# Security Testing (SAST) to your pipeline.
+# only support in test stage
+# check https://docs.gitlab.com/ee/user/application_security/sast/
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+
+"build and test":
   stage: build
+  before_script:
+    - echo "make use `make` has installed"
+    - echo "make use `go` has installed"
   script:
-    - echo "Hello, $GITLAB_USER_LOGIN!"
+    - make tidy
+    - make gen
+    - make lint
+    - make cover
+    - make build
+    - make configs
 
-test-job1:
-  stage: test
-  script:
-    - echo "This job tests something"
 
-test-job2:
-  stage: test
-  script:
-    - echo "This job tests something, but takes more time than test-job1."
-    - echo "After the echo commands complete, it runs the sleep command for 20 seconds"
-    - echo "which simulates a test that runs 20 seconds longer than test-job1"
-    - sleep 20
-
-deploy-prod:
-  stage: deploy
-  script:
-    - echo "This job deploys something from the $CI_COMMIT_BRANCH branch."
-  environment: production
