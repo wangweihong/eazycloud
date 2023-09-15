@@ -20,6 +20,11 @@ variables:
 include:
   - template: Jobs/SAST.gitlab-ci.yml
 
+build_job:
+  stage: build
+  script:
+    - echo "Path is now: $PATH"
+
 "build and test":
   stage: build
   before_script:
