@@ -31,13 +31,14 @@ build_job:
 
 "build and test":
   stage: build
-  # variables:
-  #   GOPROXY: "https://goproxy.cn"
+  variables:
+    GOPROXY: "https://goproxy.cn"
   #   GOBIN: "$GOPATH/bin"
   #   PATH: "$PATH:$GOBIN"
   before_script:
     - echo "make use make has installed" && make --version || exit 1
     - echo "make use go has installed"  && go version || exit 1
+    - export GOPROXY=$GOPROXY
     - export GOBIN=$GOPATH/bin
     - export PATH=$PATH:$GOBIN
     - env
