@@ -3,12 +3,10 @@
 # successfully then you move on to the next stage. The way jobs run
 # is completely configurable.
 stages:
+  - debug
   - build
   - test
 
-variables:
-  GOPROXY: "https://goproxy.cn"
-  PATH: "$PATH:$GOBIN"
 
 
 # With the include statement, you can quickly add jobs which have
@@ -20,6 +18,12 @@ variables:
 include:
   - template: Jobs/SAST.gitlab-ci.yml
 
+print-all-env-vars-job:
+  stage: debug
+  script:
+    - echo "GitLab CI/CD | Print all environment variables"
+    - env
+
 build_job:
   stage: build
   script:
@@ -27,6 +31,9 @@ build_job:
 
 "build and test":
   stage: build
+  variables:
+    GOPROXY: "https://goproxy.cn"
+    PATH: "$PATH:$GOBIN"
   before_script:
     - echo "make use make has installed" && make --version || exit 1
     - echo "make use go has installed"  && go version || exit 1
