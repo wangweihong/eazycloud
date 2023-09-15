@@ -21,6 +21,8 @@ include:
     - echo "make use make has installed" && make --version || exit 1
     - echo "make use go has installed"  && go version || exit 1
     - export GOPROXY=https://goproxy.cn
+    # make sure we can find gen tools
+    - export PATH=$PATH:$GOPATH/bin
   script:
     - make tidy
     - make gen
