@@ -7,8 +7,8 @@ stages:
   - test
 
 variables:
-  GOPROXY: https://goproxy.cn
-  PATH: $PATH:$GOBIN
+  GOPROXY: "https://goproxy.cn"
+  PATH: "$PATH:$GOBIN"
 
 
 # With the include statement, you can quickly add jobs which have
