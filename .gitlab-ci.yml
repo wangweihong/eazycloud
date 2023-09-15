@@ -6,6 +6,11 @@ stages:
   - build
   - test
 
+variables:
+  GOPROXY: https://goproxy.cn
+  GOBIN: /bin
+
+
 # With the include statement, you can quickly add jobs which have
 # been pre-defined in external YAMLs. The SAST job I included below
 # is provided and maintained by GitLab and adds Static Application
@@ -21,8 +26,7 @@ include:
     - echo "make use make has installed" && make --version || exit 1
     - echo "make use go has installed"  && go version || exit 1
     - export GOPROXY=https://goproxy.cn
-    # make sure we can find gen tools
-    - export PATH=$PATH:$GOPATH/bin
+
   script:
     - make tidy
     - make gen
