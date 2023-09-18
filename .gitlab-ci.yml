@@ -36,11 +36,15 @@ build_job:
   #   GOBIN: "$GOPATH/bin"
   #   PATH: "$PATH:$GOBIN"
   before_script:
-    - echo "make use make has installed" && make --version || exit 1
-    - echo "make use go has installed"  && go version || exit 1
     - export GOPROXY=$GOPROXY
     - export GOBIN=$GOPATH/bin
+    - export GOROOT=/usr/local/go
+    # don't change go command path otherwise `go tool cover` will fail. see https://github.com/golang/go/issues/27113
+    - export PATH=$PATH:$GOROOT/bin
     - export PATH=$PATH:$GOBIN
+    - echo "make use make has installed" && make --version || exit 1
+    - echo "make use go has installed"  && which go && go version || exit 1
+    - go env
     - env
   script:
     - make tidy

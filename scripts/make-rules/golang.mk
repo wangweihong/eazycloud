@@ -96,7 +96,7 @@ go.test: tools.verify.go-junit-report
 	@echo "===========> Run unit test"
 	@echo "EXCLUDE_TESTS: $(EXCLUDE_TESTS)"
 	@set -o pipefail;$(GO) test -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
-		-timeout=10m -shuffle=on -short -v `go list ./...|\
+		-timeout=10m -shuffle=on -short -v `$(GO) list ./...|\
 		egrep -v $(subst $(SPACE),'|',$(sort $(EXCLUDE_TESTS)))` 2>&1 | \
 		tee >(go-junit-report --set-exit-code >$(OUTPUT_DIR)/report.xml)
 	@sed -i '/mock_.*.go/d' $(OUTPUT_DIR)/coverage.out # remove mock_.*.go files from test coverage
