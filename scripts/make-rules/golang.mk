@@ -46,6 +46,13 @@ ifneq ($(shell $(GO) version | grep -q -E '\bgo($(GO_SUPPORTED_VERSIONS))\b' && 
 	$(error unsupported go version. Please make install one of the following supported version: '$(GO_SUPPORTED_VERSIONS)')
 endif
 
+.PHONY: go.path.verify
+go.path.verify: go.build.verify
+	@if [[ ! -e "$(shell $(GO) env GOROOT)/bin/$(GO)" ]]; then \
+		echo "Please make sure $(GO) exist under \$$GOROOT/bin. Check https://github.com/golang/go/issues/27113"; \
+		exit 1;\
+	fi
+
 # 由于makefile目标名不能包含"/",因此在go.build/go.build.multiarch中将架构"linux/amd64"分隔符转换成"linux_amd64"
 # $(if $(filter windows,$(OS)),$(eval GO_OUT_EXT := .exe),$(eval GO_OUT_EXT := )) 的作用是在Makefile解析阶段(非运行阶段)根据系统
 # 	是否windows决定是否加上对应的.exe后缀
@@ -112,7 +119,7 @@ ifneq ($(shell awk -W version | grep -q -E 'GNU Awk' && echo 0 || echo 1), 0)
 endif
 
 .PHONY: go.test.cover
-go.test.cover: gawk.verify go.test
+go.test.cover:  go.path.verify gawk.verify go.test
 	@$(GO) tool cover -func=$(OUTPUT_DIR)/coverage.out | \
 		awk -v target=$(COVERAGE) -f $(ROOT_DIR)/scripts/coverage.awk
 
