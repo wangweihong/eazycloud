@@ -268,6 +268,10 @@ func (a *App) runCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if !a.noConfig {
+		if err := loadConfig(cfgFile, a.basename); err != nil {
+			return err
+		}
+
 		if err := viper.BindPFlags(cmd.Flags()); err != nil {
 			return err
 		}

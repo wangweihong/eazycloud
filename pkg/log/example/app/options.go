@@ -7,7 +7,7 @@ import (
 	"github.com/wangweihong/eazycloud/pkg/log"
 )
 
-// Options runs an iam api server.
+// Options runs an app server.
 type Options struct {
 	Log *log.Options `json:"log" mapstructure:"log"`
 }
