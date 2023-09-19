@@ -35,4 +35,21 @@ if [ "$branch" = "$protected_branch" ]; then
   exit 1 # if you remove this line then it won't block push but send message to group and on command line
 fi
 
+# check if has go file not format
+gofiles=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$')
+unformatted=$(gofmt -l $gofiles)
+
+# Some files are not gofmt'd. Print message and fail.
+if [ -n "$gofiles" ] || [ -n "$unformatted" ];then
+    printf "${RED}Go files must be formatted with gofmt before commit. Please run:\n"
+    printf "${RED}make format \n"
+    printf "${RED} or\n"
+    for fn in $unformatted; do
+       printf "${RED}gofmt -w $PWD/$fn\n"
+    done
+
+    printf "${RESTORE}\n"
+    exit 1 #
+fi
+
 exit 0
