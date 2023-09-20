@@ -14,6 +14,10 @@
 *.sh              text eol=lf
 *.awk              text eol=lf
 
+# Githook script
+pre-commit        text eol=lf
+commit-msg        text eol=lf
+
 # Makefile
 *.mk              text eol=lf
 Makefile          text eol=lf
