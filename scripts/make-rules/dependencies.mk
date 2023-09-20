@@ -6,8 +6,7 @@
 dependencies.run: dependencies.packages dependencies.tools
 
 .PHONY: dependencies.packages
-dependencies.packages:
-	@$(GO) mod tidy
+dependencies.packages: go.tidy
 
 .PHONY: dependencies.tools
 dependencies.tools: dependencies.tools.blocker dependencies.tools.critical
