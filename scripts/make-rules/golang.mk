@@ -3,7 +3,7 @@
 #
 
 GO := go
-GO_SUPPORTED_VERSIONS ?= 1.13|1.14|1.15|1.16|1.17|1.18|1.19|1.20
+GO_SUPPORTED_VERSIONS ?= 1.17|1.18|1.19|1.20
 
 # 获取实际的git信息,在编译链接阶段替换到版本包中变量
 GO_LDFLAGS += -X $(VERSION_PACKAGE).GitVersion=$(VERSION) \
@@ -45,6 +45,13 @@ go.build.verify:
 ifneq ($(shell $(GO) version | grep -q -E '\bgo($(GO_SUPPORTED_VERSIONS))\b' && echo 0 || echo 1), 0)
 	$(error unsupported go version. Please make install one of the following supported version: '$(GO_SUPPORTED_VERSIONS)')
 endif
+
+.PHONY: go.path.verify
+go.path.verify: go.build.verify
+	@if [[ ! -e "$(shell $(GO) env GOROOT)/bin/$(GO)" ]]; then \
+		echo "Please make sure $(GO) exist under \$$GOROOT/bin. Check https://github.com/golang/go/issues/27113"; \
+		exit 1;\
+	fi
 
 # 由于makefile目标名不能包含"/",因此在go.build/go.build.multiarch中将架构"linux/amd64"分隔符转换成"linux_amd64"
 # $(if $(filter windows,$(OS)),$(eval GO_OUT_EXT := .exe),$(eval GO_OUT_EXT := )) 的作用是在Makefile解析阶段(非运行阶段)根据系统
@@ -91,22 +98,37 @@ go.lint: tools.verify.golangci-lint
 #	egrep -v "$(subst $(SPACE),'|',$(sort $(EXCLUDE_TESTS)))"：使用egrep命令对列出的包进行过滤，排除在EXCLUDE_TESTS变量中列出的测试包。$(sort $(EXCLUDE_TESTS))将EXCLUDE_TESTS中的文件名按字母顺序排序，$(subst ' ','|',...)将空格替换为竖线（|）作为egrep命令中的正则表达式的分隔符。
 #	2>&1：将标准错误（stderr）重定向到标准输出（stdout）。
 # tee >(go-junit-report --set-exit-code >$(OUTPUT_DIR)/report.xml): 这个部分使用tee命令将标准输出的内容复制到两个地方。首先，通过>(...)语法将标准输出重定向到go-junit-report命令，该命令会将测试结果转换为JUnit格式的XML报告，并通过--set-exit-code选项设置退出码，然后将结果写入$(OUTPUT_DIR)/report.xml文件中。其次，标准输出继续传递到后续的管道或重定向操作。
+# 注意: go tool cover必须保证go命令在$GOROOT/bin目录下，否则会报cover: cannot run go list: fork/exec /usr/local/go/bin/go.
+# 见https://github.com/golang/go/issues/27113
 .PHONY: go.test
 go.test: tools.verify.go-junit-report
 	@echo "===========> Run unit test"
 	@echo "EXCLUDE_TESTS: $(EXCLUDE_TESTS)"
 	@set -o pipefail;$(GO) test -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
-		-timeout=10m -shuffle=on -short -v `go list ./...|\
+		-timeout=10m -shuffle=on -short -v `$(GO) list ./...|\
 		egrep -v $(subst $(SPACE),'|',$(sort $(EXCLUDE_TESTS)))` 2>&1 | \
 		tee >(go-junit-report --set-exit-code >$(OUTPUT_DIR)/report.xml)
 	@sed -i '/mock_.*.go/d' $(OUTPUT_DIR)/coverage.out # remove mock_.*.go files from test coverage
 	@$(GO) tool cover -html=$(OUTPUT_DIR)/coverage.out -o $(OUTPUT_DIR)/coverage.html
 
+# make sure awk is GNU Awk!
+.PHONY: gawk.verify
+gawk.verify:
+ifneq ($(shell awk -W version | grep -q -E 'GNU Awk' && echo 0 || echo 1), 0)
+	$(error Please install GNU Awk (gawk) and make it accessible in your PATH.)
+endif
+
 .PHONY: go.test.cover
-go.test.cover: go.test
+go.test.cover:  go.path.verify gawk.verify go.test
 	@$(GO) tool cover -func=$(OUTPUT_DIR)/coverage.out | \
 		awk -v target=$(COVERAGE) -f $(ROOT_DIR)/scripts/coverage.awk
 
 .PHONY: go.updates
 go.updates: tools.verify.go-mod-outdated
 	@$(GO) list -u -m -json all | go-mod-outdated -update -direct
+
+
+.PHONY: go.tidy
+go.tidy:
+	@echo "===========> Run go mod tidy"
+	@$(GO) mod tidy -compat=1.17

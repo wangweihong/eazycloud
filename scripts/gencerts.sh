@@ -46,7 +46,7 @@ function common_generate_certificate()
  local mode=${5}
 
  if [ $# -ne 5 ];then
-    lib::log::error "Usage: common_generate_certificate ./_output/certs example-server 127.0.0.1,localhost /CN=example-server server "
+    lib::log::error "Usage: common_generate_certificate ./_output/certs example-server /CN=example-server 127.0.0.1,localhost server "
     exit 1
  fi
 

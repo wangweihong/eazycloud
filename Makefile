@@ -124,9 +124,7 @@ check-updates:
 
 ## tidy: Go mod tidy
 .PHONY: tidy
-tidy:
-	@echo "===========> Run go mod tidy"
-	@$(GO) mod tidy -compat=1.17
+tidy: go.tidy
 
 ## gen: Generate all necessary files, such as error code files.
 .PHONY: gen

@@ -1,12 +1,17 @@
 package httpcli
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
 
 type callInfo struct {
-	timeout          *time.Duration
-	header           map[string]string
-	query            map[string]string
-	responseNotParse bool
+	timeout            *time.Duration
+	header             map[string]string
+	query              map[string]interface{}
+	responseNotParse   bool
+	httpRequestProcess func(req *http.Request) (*http.Request, error)
+	urlSetter          func() (string, error)
 }
 
 type CallOption func(*callInfo)
@@ -26,10 +31,10 @@ func HeaderCallOption(header map[string]string) CallOption {
 }
 
 // QueryCallOption 设置某个连接查询参数.
-func QueryCallOption(query map[string]string) CallOption {
+func QueryCallOption(query map[string]interface{}) CallOption {
 	return func(c *callInfo) {
 		if c.query == nil {
-			c.query = make(map[string]string)
+			c.query = make(map[string]interface{})
 		}
 		for k, v := range query {
 			c.query[k] = v
@@ -38,13 +43,13 @@ func QueryCallOption(query map[string]string) CallOption {
 }
 
 // OneQueryCallOption 设置某个连接查询参数.
-func OneQueryCallOption(key string, value string) CallOption {
+func OneQueryCallOption(key string, value interface{}) CallOption {
 	return func(c *callInfo) {
 		if key == "" {
 			return
 		}
 		if c.query == nil {
-			c.query = make(map[string]string)
+			c.query = make(map[string]interface{})
 		}
 		c.query[key] = value
 	}
@@ -54,5 +59,23 @@ func OneQueryCallOption(key string, value string) CallOption {
 func ResponseNotParseCallOption() CallOption {
 	return func(c *callInfo) {
 		c.responseNotParse = true
+	}
+}
+
+type RequestProcessFunc func(req *http.Request) (*http.Request, error)
+
+// RequestProcessCallOption在client.Do前处理Request
+func RequestProcessCallOption(httpRequestProcess RequestProcessFunc) CallOption {
+	return func(c *callInfo) {
+		c.httpRequestProcess = httpRequestProcess
+	}
+}
+
+type URLSetter func() (string, error)
+
+// 有可能需要根据资源/rawURL动态更改请求URL
+func URLOption(epf URLSetter) CallOption {
+	return func(c *callInfo) {
+		c.urlSetter = epf
 	}
 }

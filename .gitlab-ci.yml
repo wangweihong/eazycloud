@@ -1,0 +1,94 @@
+# This creates the stages in which the jobs will run. By default all
+# jobs will run in parallel in the stage. Once the jobs are completed
+# successfully then you move on to the next stage. The way jobs run
+# is completely configurable.
+
+variables:
+  GOPROXY: "https://goproxy.cn"
+
+before_script:
+  - export GOPROXY=$GOPROXY
+  - export GOBIN=$GOPATH/bin
+  - export GOROOT=/usr/local/go
+  # don't change go command path otherwise `go tool cover` will fail. see https://github.com/golang/go/issues/27113
+  - export PATH=$PATH:$GOROOT/bin
+  - export PATH=$PATH:$GOBIN
+
+stages:
+  # 调试
+  - debug
+  # 构建依赖生成,如自动代码生成, proto文件生成
+  - pre-build
+  # 代码编译
+  - build
+  # 代码质量/风格检测
+  - code-quality-check
+  # 代码安全性检测
+  - code-security-check
+  # 代码测试
+  - test
+  # 配置生成
+  - config
+
+# With the include statement, you can quickly add jobs which have
+# been pre-defined in external YAMLs. The SAST job I included below
+# is provided and maintained by GitLab and adds Static Application
+# Security Testing (SAST) to your pipeline.
+# only support in test stage
+# check https://docs.gitlab.com/ee/user/application_security/sast/
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+
+# 打印CI/CD生成的环境变量
+"print_all_env_vars":
+  stage: debug
+  script:
+    - echo "GitLab CI/CD | Print all environment variables"
+    - env
+
+# 构建自生成代码
+"generate_code":
+  stage: pre-build
+  script:
+    - make gen
+    - make proto
+
+# 构建Linux多架构二进制
+"binaries linux/*":
+  stage: build
+  before_script:
+    - echo "make use make has installed" && make --version || exit 1
+    - echo "make use go has installed"  && which go && go version || exit 1
+  script:
+    - make PLATFORMS="linux/amd64 linux/arm64" build
+
+# 构建Windows架构二进制
+"binaries windows/*":
+  stage: build
+  script:
+    - make PLATFORMS="windows/amd64" build
+
+# 检测代码是否格式化
+"code format check":
+  stage: code-quality-check
+  script:
+    - test -z $(gofmt -l .)
+
+# linter检测潜在问题
+"lint check":
+  stage: code-quality-check
+  script:
+    - make lint
+
+"unit test coverage":
+  stage: test
+  before_script:
+    - echo "make use make has installed" && make --version || exit 1
+    - echo "make use go has installed"  && which go && go version || exit 1
+  script:
+    - make cover
+
+"default config gen":
+  stage: config
+  script:
+    - make configs
