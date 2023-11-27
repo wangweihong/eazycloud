@@ -40,7 +40,7 @@ gofiles=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$')
 unformatted=$(gofmt -l $gofiles)
 
 # Some files are not gofmt'd. Print message and fail.
-if [ -n "$gofiles" ] || [ -n "$unformatted" ];then
+if [ -n "$gofiles" ] && [ -n "$unformatted" ];then
     printf "${RED}Go files must be formatted with gofmt before commit. Please run:\n"
     printf "${RED}make format \n"
     printf "${RED} or\n"
