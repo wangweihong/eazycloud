@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/wangweihong/eazycloud/pkg/code"
@@ -232,22 +231,32 @@ func invoke(
 	}
 
 	reqURL := cc.addr + rawURL
-	if ci.query != nil {
-		var buf bytes.Buffer
-		for k, v := range ci.query {
-			if v == "" {
-				continue
-			}
-			buf.WriteString(url.QueryEscape(k))
-			buf.WriteByte('=')
-			buf.WriteString(url.QueryEscape(v))
-			buf.WriteByte('&')
+	if ci.urlSetter != nil {
+		var err error
+		originURL := reqURL
+		reqURL, err = ci.urlSetter()
+		if err != nil {
+			log.F(ctx).Errorf("http Do urlSetter err:%s", err.Error())
+			return nil, err
 		}
-		queryStr := strings.TrimSuffix(buf.String(), "&")
-		if strings.Contains(reqURL, "?") {
-			reqURL += "&" + queryStr
-		} else {
-			reqURL += "?" + queryStr
+		log.F(ctx).Debugf("urlSetter change req url from %v to %v", originURL, reqURL)
+	}
+	if ci.query != nil {
+		values := url.Values{}
+		for k, v := range ci.query {
+			value := ""
+			switch v.(type) {
+			case string:
+				value = fmt.Sprintf("%s", v)
+			case int:
+				value = fmt.Sprintf("%d", v)
+			default:
+				value = fmt.Sprintf("%d", v)
+			}
+			values.Set(k, value)
+		}
+		if len(ci.query) > 0 {
+			reqURL = fmt.Sprintf("%s?%s", reqURL, values.Encode())
 		}
 	}
 	// refer to https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
