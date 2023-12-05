@@ -1,12 +1,16 @@
 package httpcli
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
 
 type callInfo struct {
-	timeout          *time.Duration
-	header           map[string]string
-	query            map[string]string
-	responseNotParse bool
+	timeout            *time.Duration
+	header             map[string]string
+	query              map[string]interface{}
+	responseNotParse   bool
+	httpRequestProcess func(req *http.Request) (*http.Request, error)
 }
 
 type CallOption func(*callInfo)
@@ -26,10 +30,10 @@ func HeaderCallOption(header map[string]string) CallOption {
 }
 
 // QueryCallOption 设置某个连接查询参数.
-func QueryCallOption(query map[string]string) CallOption {
+func QueryCallOption(query map[string]interface{}) CallOption {
 	return func(c *callInfo) {
 		if c.query == nil {
-			c.query = make(map[string]string)
+			c.query = make(map[string]interface{})
 		}
 		for k, v := range query {
 			c.query[k] = v
@@ -38,13 +42,13 @@ func QueryCallOption(query map[string]string) CallOption {
 }
 
 // OneQueryCallOption 设置某个连接查询参数.
-func OneQueryCallOption(key string, value string) CallOption {
+func OneQueryCallOption(key string, value interface{}) CallOption {
 	return func(c *callInfo) {
 		if key == "" {
 			return
 		}
 		if c.query == nil {
-			c.query = make(map[string]string)
+			c.query = make(map[string]interface{})
 		}
 		c.query[key] = value
 	}
@@ -54,5 +58,14 @@ func OneQueryCallOption(key string, value string) CallOption {
 func ResponseNotParseCallOption() CallOption {
 	return func(c *callInfo) {
 		c.responseNotParse = true
+	}
+}
+
+type ProcessRequestFunc func(req *http.Request) (*http.Request, error)
+
+// HttpRequestProcessOption 在http请求发起调用前，对http请求进行处理. 如根据url/请求头进行加密,并写入httpReq.
+func HttpRequestProcessOption(fun ProcessRequestFunc) CallOption {
+	return func(c *callInfo) {
+		c.httpRequestProcess = fun
 	}
 }

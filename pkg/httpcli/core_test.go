@@ -75,7 +75,7 @@ func TestClient_Interceptor(t *testing.T) {
 		defer s.Close()
 		Convey("拦截器", func() {
 			inter1 := func(ctx context.Context, method string, rawURL string, arg, reply interface{}, cc *httpcli.Client, invoker httpcli.Invoker, opts ...httpcli.CallOption) (*httpcli.RawResponse, error) {
-				opt := httpcli.QueryCallOption(map[string]string{
+				opt := httpcli.QueryCallOption(map[string]interface{}{
 					"inter1": "b",
 				})
 				opts = append(opts, opt)
@@ -88,7 +88,7 @@ func TestClient_Interceptor(t *testing.T) {
 				return resp, err
 			}
 			inter2 := func(ctx context.Context, method string, rawURL string, arg, reply interface{}, cc *httpcli.Client, invoker httpcli.Invoker, opts ...httpcli.CallOption) (*httpcli.RawResponse, error) {
-				opt := httpcli.QueryCallOption(map[string]string{
+				opt := httpcli.QueryCallOption(map[string]interface{}{
 					"inter2": "bbbb",
 				})
 				opts = append(opts, opt)
