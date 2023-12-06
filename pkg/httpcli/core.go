@@ -235,6 +235,16 @@ func invoke(
 	}
 
 	reqURL := cc.addr + rawURL
+	if ci.urlSetter != nil {
+		var err error
+		originURL := reqURL
+		reqURL, err = ci.urlSetter()
+		if err != nil {
+			log.F(ctx).Errorf("http Do urlSetter err:%s", err.Error())
+			return nil, err
+		}
+		log.F(ctx).Debugf("urlSetter change req url from %v to %v", originURL, reqURL)
+	}
 	if ci.query != nil {
 		values := url.Values{}
 		for k, v := range ci.query {

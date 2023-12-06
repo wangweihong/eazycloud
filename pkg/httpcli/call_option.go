@@ -11,6 +11,7 @@ type callInfo struct {
 	query              map[string]interface{}
 	responseNotParse   bool
 	httpRequestProcess func(req *http.Request) (*http.Request, error)
+	urlSetter          func() (string, error)
 }
 
 type CallOption func(*callInfo)
@@ -67,5 +68,14 @@ type ProcessRequestFunc func(req *http.Request) (*http.Request, error)
 func HttpRequestProcessOption(fun ProcessRequestFunc) CallOption {
 	return func(c *callInfo) {
 		c.httpRequestProcess = fun
+	}
+}
+
+type URLSetter func() (string, error)
+
+// 有可能需要根据资源/rawURL动态更改请求URL
+func URLOption(epf URLSetter) CallOption {
+	return func(c *callInfo) {
+		c.urlSetter = epf
 	}
 }
