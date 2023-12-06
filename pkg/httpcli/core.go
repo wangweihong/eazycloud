@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
+	"sync"
 	"time"
 
 	"github.com/wangweihong/eazycloud/pkg/code"
@@ -20,6 +20,7 @@ import (
 )
 
 type Client struct {
+	lock            sync.Mutex
 	conn            *http.Client
 	transport       *http.Transport
 	timeout         *time.Duration
@@ -82,7 +83,9 @@ func (c *Client) validate() error {
 	return nil
 }
 
-func (c *Client) getConn(ctx context.Context) (*http.Client, error) {
+func (c *Client) GetConn(ctx context.Context) (*http.Client, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	// reuse conn
 	// lock?
 	if c.conn != nil {
@@ -232,22 +235,34 @@ func invoke(
 	}
 
 	reqURL := cc.addr + rawURL
-	if ci.query != nil {
-		var buf bytes.Buffer
-		for k, v := range ci.query {
-			if v == "" {
-				continue
-			}
-			buf.WriteString(url.QueryEscape(k))
-			buf.WriteByte('=')
-			buf.WriteString(url.QueryEscape(v))
-			buf.WriteByte('&')
+	if ci.urlSetter != nil {
+		var err error
+		originURL := reqURL
+		reqURL, err = ci.urlSetter()
+		if err != nil {
+			log.F(ctx).Errorf("http Do urlSetter err:%s", err.Error())
+			return nil, err
 		}
-		queryStr := strings.TrimSuffix(buf.String(), "&")
-		if strings.Contains(reqURL, "?") {
-			reqURL += "&" + queryStr
-		} else {
-			reqURL += "?" + queryStr
+		log.F(ctx).Debugf("urlSetter change req url from %v to %v", originURL, reqURL)
+	}
+	if ci.query != nil {
+		values := url.Values{}
+		for k, v := range ci.query {
+			var value string
+			switch v.(type) {
+			case string:
+				value = fmt.Sprintf("%s", v)
+			case int, int32, int64:
+				value = fmt.Sprintf("%d", v)
+			case float64, float32:
+				value = fmt.Sprintf("%v", v)
+			default:
+				value = fmt.Sprintf("%v", v)
+			}
+			values.Set(k, value)
+		}
+		if len(ci.query) > 0 {
+			reqURL = fmt.Sprintf("%s?%s", reqURL, values.Encode())
 		}
 	}
 	// refer to https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
@@ -310,14 +325,22 @@ func invoke(
 		}
 	}
 
-	conn, err := cc.getConn(ctx)
+	// 某些情况下, 需要根据http请求的URL/头部等进行签名等处理
+	if ci.httpRequestProcess != nil {
+		httpReq, err = ci.httpRequestProcess(httpReq)
+		if err != nil {
+			log.F(ctx).Errorf("httpRequestProcess err:%s", err.Error())
+			return nil, err
+		}
+	}
+
+	conn, err := cc.GetConn(ctx)
 	if err != nil {
 		log.F(ctx).Errorf("get client conn err:%s", err.Error())
 		return nil, err
 	}
 
 	log.F(ctx).Debug("Before Do", log.Any("headers", httpReq.Header), log.String("requrl", httpReq.URL.String()))
-
 	httpResp, err := conn.Do(httpReq)
 	if err != nil {
 		log.F(ctx).Errorf("http Do err:%s", err.Error())
