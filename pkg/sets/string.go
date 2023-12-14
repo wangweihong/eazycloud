@@ -40,6 +40,16 @@ func (s String) Insert(items ...string) String {
 	return s
 }
 
+// InsertIf adds items to the set if match condition.
+func (s String) InsertIf(condition func(string)bool,items ...string) String {
+	for _, item := range items {
+		if condition(item){
+			s[item] = Empty{}
+		}
+	}
+	return s
+}
+
 // Delete removes all items from the set.
 func (s String) Delete(items ...string) String {
 	for _, item := range items {
@@ -48,39 +58,81 @@ func (s String) Delete(items ...string) String {
 	return s
 }
 
+// DeleteIf removes  items from the set if match condition.
+func (s String) DeleteIf(condition func(string)bool,items ...string) String {
+	for _, item := range items {
+		if condition(item){
+			delete(s, item)
+		}
+	}
+	return s
+}
+
+// Match return true if key and item match condition
+func (s String)Match(condition func(string,string)bool,item string)bool{
+	for k := range s {
+		if condition(k, item) {
+			return true
+		}
+	}
+	return false
+}
+
+// Match return true if key and item match condition
+func (s String)FindMatch(condition func(string,string)bool,item string)String{
+	ns := NewString()
+	for k := range s {
+		if condition(k, item) {
+			ns.Insert(k)
+		}
+	}
+	return ns
+}
+
+// Match return true if key  match items condition
+func (s String)MatchAny(condition func(string,string)bool,items ...string)bool{
+	for _,item := range items{
+		if s.Match(condition,item){
+			return true
+		}
+	}
+	return false
+}
+
+
 // Has returns true if and only if item is contained in the set.
 func (s String) Has(item string) bool {
 	_, contained := s[item]
 	return contained
 }
 
-// Has returns true if and only if item is contained in the set.
+// Contain returns true if and only if item is contained in the set.
 func (s String) Contain(item string) bool {
-	for k := range s {
-		if strings.Contains(k, item) {
+	return s.Match(func(key string, item string) bool {
+		if strings.Contains(key,item){
 			return true
 		}
-	}
-	return false
+		return false
+	},item)
 }
 
 func (s String) HasPrefix(item string) bool {
-	for k := range s {
-		if strings.HasPrefix(k, item) {
+	return s.Match(func(key string, item string) bool {
+		if strings.HasPrefix(key,item){
 			return true
 		}
-	}
-	return false
+		return false
+	},item)
 }
 
 // sets存在值为item的前缀.
 func (s String) IsPrefixOf(item string) bool {
-	for k := range s {
-		if strings.HasPrefix(item, k) {
+	return s.Match(func(key string, item string) bool {
+		if strings.HasSuffix(key,item){
 			return true
 		}
-	}
-	return false
+		return false
+	},item)
 }
 
 // HasAll returns true if and only if all items are contained in the set.

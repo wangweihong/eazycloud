@@ -45,6 +45,7 @@ func (s Int) Delete(items ...int) Int {
 	return s
 }
 
+
 // Has returns true if and only if item is contained in the set.
 func (s Int) Has(item int) bool {
 	_, contained := s[item]
