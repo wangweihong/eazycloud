@@ -1,6 +1,7 @@
 package maputil_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/wangweihong/eazycloud/pkg/sets"
@@ -76,6 +77,58 @@ func TestStringIntMap_Delete(t *testing.T) {
 		})
 	})
 }
+
+func TestStringIntMap_DeleteIfKey(t *testing.T) {
+	Convey("TestStringIntMap_DeleteIfKey", t, func() {
+		condition := func(k string)bool{
+			if strings.Contains(k,"b"){
+				return true
+			}
+			return false
+		}
+		Convey("nil", func() {
+			var nilMap map[string]int
+			maputil.StringIntMap(nilMap).DeleteIfKey(condition)
+		})
+		Convey("not nil", func() {
+			d := make(map[string]int)
+			d["ab"] = 10
+			d["bb"] = 20
+			d["cc"] = 31
+			maputil.StringIntMap(d).DeleteIfKey(condition)
+
+			So(maputil.StringIntMap(d).Has("ab"), ShouldBeFalse)
+			So(maputil.StringIntMap(d).Has("bb"), ShouldBeFalse)
+			So(maputil.StringIntMap(d).Has("cc"), ShouldBeTrue)
+		})
+	})
+}
+
+func TestStringIntMap_DeleteIfValue(t *testing.T) {
+	Convey("TestStringIntMap_DeleteIfValue", t, func() {
+		condition := func(k int)bool{
+			if k % 10 == 0 {
+				return true
+			}
+			return false
+		}
+		Convey("nil", func() {
+			var nilMap map[string]int
+			maputil.StringIntMap(nilMap).DeleteIfValue(condition)
+		})
+		Convey("not nil", func() {
+			d := make(map[string]int)
+			d["ab"] =  10
+			d["bb"] = 20
+			d["cc"] = 31
+			maputil.StringIntMap(d).DeleteIfValue(condition)
+			So(maputil.StringIntMap(d).Has("ab"), ShouldBeFalse)
+			So(maputil.StringIntMap(d).Has("bb"), ShouldBeFalse)
+			So(maputil.StringIntMap(d).Has("cc"), ShouldBeTrue)
+		})
+	})
+}
+
 
 func TestStringIntMap_Get(t *testing.T) {
 	Convey("TestStringIntMap_Get", t, func() {

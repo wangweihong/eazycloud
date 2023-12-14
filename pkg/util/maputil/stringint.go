@@ -24,6 +24,31 @@ func (m StringIntMap) Delete(key string) {
 	delete(m, key)
 }
 
+
+func (m StringIntMap) DeleteIfKey(condition func(string) bool) {
+	if m == nil {
+		return
+	}
+
+	for k := range m {
+		if condition(k) {
+			delete(m, k)
+		}
+	}
+}
+
+func (m StringIntMap) DeleteIfValue(condition func(int) bool) {
+	if m == nil {
+		return
+	}
+
+	for k,v := range m {
+		if condition(v) {
+			delete(m, k)
+		}
+	}
+}
+
 func (m StringIntMap) Has(key string) bool {
 	if m != nil {
 		if _, exist := m[key]; exist {

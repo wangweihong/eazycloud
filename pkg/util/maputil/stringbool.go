@@ -24,6 +24,30 @@ func (m StringBoolMap) Delete(key string) {
 	delete(m, key)
 }
 
+func (m StringBoolMap) DeleteIfKey(condition func(string) bool) {
+	if m == nil {
+		return
+	}
+
+	for k := range m {
+		if condition(k) {
+			delete(m, k)
+		}
+	}
+}
+
+func (m StringBoolMap) DeleteIfValue(condition func(bool) bool) {
+	if m == nil {
+		return
+	}
+
+	for k,v := range m {
+		if condition(v) {
+			delete(m, k)
+		}
+	}
+}
+
 func (m StringBoolMap) Has(key string) bool {
 	if m != nil {
 		if _, exist := m[key]; exist {
