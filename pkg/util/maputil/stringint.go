@@ -1,5 +1,7 @@
 package maputil
 
+import "github.com/wangweihong/eazycloud/pkg/sets"
+
 type StringIntMap map[string]int
 
 func (m StringIntMap) DeepCopy() StringIntMap {
@@ -85,4 +87,15 @@ func (m StringIntMap) Keys() []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+func (m StringIntMap) ToSetString() sets.String {
+	ss := sets.NewString()
+	if m == nil {
+		return ss
+	}
+	for k:=range m{
+		ss.Insert(k)
+	}
+	return ss
 }

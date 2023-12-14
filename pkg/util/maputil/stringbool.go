@@ -1,5 +1,7 @@
 package maputil
 
+import "github.com/wangweihong/eazycloud/pkg/sets"
+
 type StringBoolMap map[string]bool
 
 func (m StringBoolMap) DeepCopy() StringBoolMap {
@@ -57,6 +59,15 @@ func (m StringBoolMap) Has(key string) bool {
 	return false
 }
 
+func (m StringBoolMap) HasAny(key string) bool {
+	if m != nil {
+		if _, exist := m[key]; exist {
+			return true
+		}
+	}
+	return false
+}
+
 func (m StringBoolMap) Set(key string, value bool) StringBoolMap {
 	if m == nil {
 		o := make(map[string]bool)
@@ -84,4 +95,16 @@ func (m StringBoolMap) Keys() []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+func (m StringBoolMap) ToSetString() sets.String {
+	ss := sets.NewString()
+
+	if m == nil {
+		return ss
+	}
+	for k:=range m{
+		ss.Insert(k)
+	}
+	return ss
 }

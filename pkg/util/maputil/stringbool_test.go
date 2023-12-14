@@ -161,3 +161,16 @@ func TestStringBoolMap_Keys(t *testing.T) {
 		})
 	})
 }
+
+func TestStringBoolMap_ToSetString(t *testing.T) {
+	Convey("TestStringBoolMap_ToSetString", t, func() {
+			So(maputil.StringBoolMap(nil).ToSetString(),ShouldNotBeNil)
+
+			d := make(map[string]bool)
+			d["a"] = true
+			d["b"] = true
+
+			ss := maputil.StringBoolMap(d).ToSetString()
+			So(ss.Len(), ShouldEqual, 2)
+		})
+}
