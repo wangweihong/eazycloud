@@ -215,18 +215,28 @@ type RawResponse struct {
 
 type Invoker func(ctx context.Context, method string, rawURL string, arg, reply interface{}, cc *Client, opt ...CallOption) (*RawResponse, error)
 
-//nolint: funlen,gocognit
-func invoke(
+func NewHttpRequest(
 	ctx context.Context,
+	addr string,
 	method string,
-	rawURL string,
-	arg, reply interface{},
-	cc *Client,
+	uri string,
+	arg interface{},
 	opt ...CallOption,
-) (*RawResponse, error) {
+)(*http.Request,error) {
+	return newHttpRequest(ctx,addr,method,uri,arg,opt...)
+}
+
+func newHttpRequest(
+	ctx context.Context,
+	addr string,
+	method string,
+	uri string,
+	arg interface{},
+	opt ...CallOption,
+)(*http.Request,error){
 	log.F(ctx).Debug("invoke call.",
 		log.String("method", method),
-		log.String("rawURL", rawURL),
+		log.String("uri", uri),
 		log.Every("arg", arg))
 
 	ci := &callInfo{}
@@ -234,7 +244,7 @@ func invoke(
 		o(ci)
 	}
 
-	reqURL := cc.addr + rawURL
+	reqURL := addr + uri
 	if ci.urlSetter != nil {
 		var err error
 		originURL := reqURL
@@ -245,6 +255,7 @@ func invoke(
 		}
 		log.F(ctx).Debugf("urlSetter change req url from %v to %v", originURL, reqURL)
 	}
+
 	if ci.query != nil {
 		values := url.Values{}
 		for k, v := range ci.query {
@@ -256,6 +267,9 @@ func invoke(
 				value = fmt.Sprintf("%d", v)
 			case float64, float32:
 				value = fmt.Sprintf("%v", v)
+			case bool:
+				value = fmt.Sprintf("%v", v)
+				//FIXME: should ignore no basic type ?
 			default:
 				value = fmt.Sprintf("%v", v)
 			}
@@ -265,26 +279,6 @@ func invoke(
 			reqURL = fmt.Sprintf("%s?%s", reqURL, values.Encode())
 		}
 	}
-	// refer to https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
-	var timeout time.Duration
-	var cancel context.CancelFunc
-	// 如果某个请求指定的超时时间, 则采用该超时时间
-	if ci.timeout != nil && *ci.timeout >= 0 {
-		timeout = *ci.timeout
-	} else {
-		// 如果客户设置了全局超时时间, 则采用该超时时间
-		if cc.timeout != nil && *cc.timeout >= 0 {
-			timeout = *cc.timeout
-		}
-	}
-
-	if timeout > 0 {
-		log.F(ctx).Debugf("request set timeout:%v", timeout)
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-	} else {
-		ctx, cancel = context.WithCancel(ctx)
-	}
-	defer cancel()
 
 	httpReq, err := http.NewRequestWithContext(ctx, method, reqURL, nil)
 	if err != nil {
@@ -334,6 +328,57 @@ func invoke(
 		}
 	}
 
+	return httpReq,nil
+}
+
+
+
+//nolint: funlen,gocognit
+func invoke(
+	ctx context.Context,
+	method string,
+	rawURL string,
+	arg, reply interface{},
+	cc *Client,
+	opt ...CallOption,
+) (*RawResponse, error) {
+	log.F(ctx).Debug("invoke call.",
+		log.String("method", method),
+		log.String("rawURL", rawURL),
+		log.Every("arg", arg))
+
+	ci := &callInfo{}
+	for _, o := range opt {
+		o(ci)
+	}
+
+	// refer to https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+	var timeout time.Duration
+	var cancel context.CancelFunc
+	// 如果某个请求指定的超时时间, 则采用该超时时间
+	if ci.timeout != nil && *ci.timeout >= 0 {
+		timeout = *ci.timeout
+	} else {
+		// 如果客户设置了全局超时时间, 则采用该超时时间
+		if cc.timeout != nil && *cc.timeout >= 0 {
+			timeout = *cc.timeout
+		}
+	}
+
+	if timeout > 0 {
+		log.F(ctx).Debugf("request set timeout:%v", timeout)
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+	} else {
+		ctx, cancel = context.WithCancel(ctx)
+	}
+	defer cancel()
+
+	httpReq, err:= newHttpRequest(ctx,cc.addr,method,rawURL,arg,opt...)
+	if err != nil {
+		log.F(ctx).Errorf("create new http request err:%s", err.Error())
+		return nil, err
+	}
+
 	conn, err := cc.GetConn(ctx)
 	if err != nil {
 		log.F(ctx).Errorf("get client conn err:%s", err.Error())
@@ -354,7 +399,7 @@ func invoke(
 	rawResp.Cookies = httpResp.Cookies()
 	rawResp.StatusCode = httpResp.StatusCode
 	rawResp.Status = httpResp.Status
-	rawResp.ReqURL = reqURL
+	rawResp.ReqURL = httpReq.URL.String()
 	rawResp.ReqAddr = cc.addr
 	rawResp.ReqHeader = httpReq.Header
 

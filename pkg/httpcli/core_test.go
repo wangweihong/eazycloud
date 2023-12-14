@@ -2,6 +2,9 @@ package httpcli_test
 
 import (
 	"context"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -115,6 +118,56 @@ func TestClient_Interceptor(t *testing.T) {
 
 			So(resp.Header.Get("inter1"), ShouldEqual, "bbbb")
 			So(resp.Header.Get("inter2"), ShouldEqual, "bbbb")
+		})
+	})
+}
+
+
+
+func testHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(r.URL.String()))
+		return
+	}
+	defer r.Body.Close()
+	d,err:=ioutil.ReadAll(r.Body)
+	if err!= nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(d)
+}
+
+func TestNewHttpRequest(t *testing.T){
+	ctx := context.Background()
+	Convey("Request测试", t ,func() {
+		Convey("不带参数Get",func() {
+			req,err := httpcli.NewHttpRequest(ctx, "", "GET","/test",nil )
+			So(err,ShouldBeNil)
+			rr := httptest.NewRecorder()
+			http.HandlerFunc(testHandler).ServeHTTP(rr, req)
+			So(rr.Code,ShouldEqual,http.StatusOK)
+			So(rr.Body.String(),ShouldEqual,"/test")
+		})
+
+		Convey("参数Get",func() {
+			s := map[string]interface{}{
+				"name":"test",
+				"number": 123,
+				"male": true,
+			}
+
+
+			req,err := httpcli.NewHttpRequest(ctx, "", "GET","/test",nil,httpcli.QueryCallOption(s) )
+			So(err,ShouldBeNil)
+			rr := httptest.NewRecorder()
+			http.HandlerFunc(testHandler).ServeHTTP(rr, req)
+			So(rr.Code,ShouldEqual,http.StatusOK)
+			So(rr.Body.String(),ShouldEqual,"/test?male=true&name=test&number=123")
 		})
 	})
 }
