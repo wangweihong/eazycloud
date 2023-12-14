@@ -72,3 +72,30 @@ func TestIntSlice_Sort(t *testing.T) {
 		So(sliceutil.IntSlice([]int{1, 3, 2}).SortDesc(), ShouldNotResemble, []int{1, 3, 2})
 	})
 }
+
+func TestIntSlice_RemoveIf(t *testing.T) {
+	Convey("TestIntSlice_RemoveIf", t, func() {
+		condition := func(s int) bool{
+			if s % 10 == 0{
+				return true
+			}
+			return false
+		}
+		So(sliceutil.IntSlice([]int{10,11,10}).RemoveIf(condition),ShouldResemble,[]int{11})
+	})
+}
+
+func TestIntSlice_AppendIf(t *testing.T) {
+	Convey("TestIntSlice_AppendIf", t, func() {
+		condition := func(s int) bool{
+			if s % 10 == 0{
+				return true
+			}
+			return false
+		}
+		s:= []int{20,22}
+		d:=sliceutil.IntSlice(s).AppendIf(condition,[]int{30,31})
+		So(s,ShouldResemble,[]int{20,22})
+		So(d,ShouldResemble,[]int{20,22,30})
+	})
+}

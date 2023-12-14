@@ -121,3 +121,31 @@ func TestStringSlice_TrimSpace(t *testing.T) {
 		So(sliceutil.StringSlice([]string{"a", "", " ", "  ", "b"}).TrimSpace(), ShouldResemble, []string{"a", "b"})
 	})
 }
+
+func TestStringSlice_RemoveIf(t *testing.T) {
+	Convey("TestStringSlice_RemoveIf", t, func() {
+		condition := func(s string) bool{
+			if s == "b"{
+				return true
+			}
+			return false
+		}
+		So(sliceutil.StringSlice([]string{"a","b","c"}).RemoveIf(condition),ShouldResemble,[]string{"a","c"})
+	})
+}
+
+func TestStringSlice_AppendIf(t *testing.T) {
+	Convey("TestStringSlice_AppendIf", t, func() {
+		condition := func(s string) bool{
+			if s == "b"{
+				return true
+			}
+			return false
+		}
+		s:= []string{"a","b"}
+		d:=sliceutil.StringSlice(s).AppendIf(condition,[]string{"a","b","c"})
+		So(s,ShouldResemble,[]string{"a","b"})
+		So(d,ShouldResemble,[]string{"a","b","b"})
+
+	})
+}

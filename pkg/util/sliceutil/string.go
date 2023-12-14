@@ -135,3 +135,46 @@ func (m StringSlice) TrimSpace() []string {
 	}
 	return n
 }
+
+//RemoveIf 移除符合数组中某个条件的元素
+func (m StringSlice)RemoveIf(condition func(string) bool) []string {
+	if m == nil {
+		return nil
+	}
+	// 第一次迭代：标记要删除的元素
+	marked := make([]bool, len(m))
+	for i, num := range m {
+		if condition(num) {
+			marked[i] = true
+		}
+	}
+
+	// 第二次迭代：删除标记为 true 的元素
+	result := make([]string, 0, len(m))
+	for i, num := range m {
+		if !marked[i] {
+			result = append(result, num)
+		}
+	}
+
+	return result
+}
+
+//AppendIf 追加符合莫格条件的元素到数组
+func (m StringSlice)AppendIf(condition func(string) bool,sl []string) []string {
+	if sl == nil {
+		return m
+	}
+
+	result := make([]string, 0, len(m))
+	for _, str := range m {
+		result =append(result,str)
+	}
+
+	for _,s:=range sl{
+		if condition(s) {
+			result = append(result,s)
+		}
+	}
+	return result
+}
