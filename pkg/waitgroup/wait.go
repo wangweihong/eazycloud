@@ -6,8 +6,8 @@ import (
 
 	"context"
 	"fmt"
-
 	"sync"
+	"time"
 )
 
 type WaitGroupRoutineFunc struct {
@@ -40,15 +40,22 @@ func NewWaitGroup(ctx context.Context) *Group {
 
 // Group allows to start a group of goroutines and wait for their completion.
 type Group struct {
-	ctx     context.Context
-	wg      sync.WaitGroup
-	results map[string]WaitGroupResult
-	retLock sync.Mutex
-	debug   bool
+	ctx         context.Context
+	wg          sync.WaitGroup
+	results     map[string]WaitGroupResult
+	retLock     sync.Mutex
+	debug       bool
+	printReturn bool
 }
 
-func (g *Group) Debug() {
+func (g *Group) Debug() *Group {
 	g.debug = true
+	return g
+}
+
+func (g *Group) DebugReturn() *Group {
+	g.printReturn = true
+	return g
 }
 
 func (g *Group) Wait() {
@@ -61,14 +68,16 @@ func (g *Group) Start(f WaitGroupRoutineFunc) {
 	g.wg.Add(1)
 	go func() {
 		ret := NewWaitGroupResult(nil, nil)
+		start := time.Now()
 		defer g.wg.Done()
-		defer g.setResult(f.Name, &ret)
+		defer g.setResult(f.Name, &ret, start)
 		defer g.handleWaitGroupCrash(&ret)
 		ret = f.Call()
 	}()
 }
 
-func (g *Group) setResult(name string, ret *WaitGroupResult) {
+func (g *Group) setResult(name string, ret *WaitGroupResult, startTime time.Time) {
+	ret.Cost = time.Since(startTime)
 	g.retLock.Lock()
 	defer g.retLock.Unlock()
 	g.results[name] = *ret
@@ -103,7 +112,11 @@ func (g *Group) PrintResults() {
 	if g.debug {
 		fmt.Printf("has start %v waitgroup routines\n", len(g.results))
 		for k, v := range g.results {
-			fmt.Printf("waitgroup routine %v, results:%v\n", k, v)
+			if g.printReturn {
+				fmt.Printf("waitgroup routine %v, results:%v, cost:%vs \n", k, v, v.Cost.Seconds())
+			} else {
+				fmt.Printf("waitgroup routine %v, cost:%vs \n", k, v.Cost.Seconds())
+			}
 		}
 	}
 }
@@ -132,6 +145,7 @@ func (g *Group) ConvertResultToBatchOutput() BatchOutput {
 }
 
 type WaitGroupResult struct {
+	Cost  time.Duration
 	Error error
 	Data  interface{}
 }
