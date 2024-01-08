@@ -372,6 +372,15 @@ func Int32Value(v *int32) int32 {
 	return 0
 }
 
+// Int32ValueToInt returns the value of the int32 pointer passed in or
+// 0 if the pointer is nil and convert to int type.
+func Int32ValueToInt(v *int32) int {
+	if v != nil {
+		return int(*v)
+	}
+	return 0
+}
+
 // Int32Slice converts a slice of int32 values into a slice of
 // int32 pointers
 func Int32Slice(src []int32) []*int32 {

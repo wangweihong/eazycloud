@@ -7,6 +7,21 @@ import (
 
 type StringSlice []string
 
+func (m StringSlice) String() string {
+	if m == nil {
+		return "nil"
+	}
+	s := "["
+	for i, v := range m {
+		s += v
+		if i != len(m)-1 {
+			s += ","
+		}
+	}
+	s += "]"
+	return s
+}
+
 func (m StringSlice) DeepCopy() StringSlice {
 	o := make([]string, 0, len(m))
 	o = append(o, m...)
@@ -22,7 +37,7 @@ func (m StringSlice) Append(target ...string) StringSlice {
 	return append(m, target...)
 }
 
-//HasRepeat slice has repeated data
+// HasRepeat slice has repeated data
 func (m StringSlice) HasRepeat() bool {
 	if m != nil {
 		s := make(map[string]struct{})
@@ -37,7 +52,7 @@ func (m StringSlice) HasRepeat() bool {
 	return false
 }
 
-//GetRepeat find slice repeat data and repeat num
+// GetRepeat find slice repeat data and repeat num
 func (m StringSlice) GetRepeat() (map[string]int, bool) {
 	if m != nil {
 		var r map[string]int
@@ -63,7 +78,7 @@ func (m StringSlice) GetRepeat() (map[string]int, bool) {
 	return nil, false
 }
 
-//SortDesc Descending sort
+// SortDesc Descending sort
 func (m StringSlice) SortDesc() []string {
 	if m != nil {
 		sort.Slice(m, func(i, j int) bool {
@@ -136,8 +151,8 @@ func (m StringSlice) TrimSpace() []string {
 	return n
 }
 
-//RemoveIf 移除符合数组中某个条件的元素
-func (m StringSlice)RemoveIf(condition func(string) bool) []string {
+// RemoveIf 移除符合数组中某个条件的元素
+func (m StringSlice) RemoveIf(condition func(string) bool) []string {
 	if m == nil {
 		return nil
 	}
@@ -160,21 +175,50 @@ func (m StringSlice)RemoveIf(condition func(string) bool) []string {
 	return result
 }
 
-//AppendIf 追加符合莫格条件的元素到数组
-func (m StringSlice)AppendIf(condition func(string) bool,sl []string) []string {
+// AppendIf 追加符合条件的元素到数组
+func (m StringSlice) AppendIf(condition func(string) bool, sl []string) []string {
 	if sl == nil {
 		return m
 	}
 
 	result := make([]string, 0, len(m))
 	for _, str := range m {
-		result =append(result,str)
+		result = append(result, str)
 	}
 
-	for _,s:=range sl{
+	for _, s := range sl {
 		if condition(s) {
-			result = append(result,s)
+			result = append(result, s)
 		}
 	}
+	return result
+}
+
+// Index 查找某个值的索引
+func (m StringSlice) Index(str string) int {
+	for k, v := range m {
+		if v == str {
+			return k
+		}
+	}
+
+	return -1
+}
+
+// MoveFirst 移动某个元素到队首
+func (m StringSlice) MoveFirst(str string) []string {
+	if str == "" {
+		return m
+	}
+	index := m.Index(str)
+	if index == -1 {
+		return m
+	}
+
+	result := make([]string, 0, len(m)+1)
+	result = append(result, str)
+	result = append(result, m[:index]...)
+	result = append(result, m[index+1:]...)
+
 	return result
 }

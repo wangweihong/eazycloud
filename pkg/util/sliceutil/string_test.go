@@ -124,28 +124,55 @@ func TestStringSlice_TrimSpace(t *testing.T) {
 
 func TestStringSlice_RemoveIf(t *testing.T) {
 	Convey("TestStringSlice_RemoveIf", t, func() {
-		condition := func(s string) bool{
-			if s == "b"{
+		condition := func(s string) bool {
+			if s == "b" {
 				return true
 			}
 			return false
 		}
-		So(sliceutil.StringSlice([]string{"a","b","c"}).RemoveIf(condition),ShouldResemble,[]string{"a","c"})
+		So(sliceutil.StringSlice([]string{"a", "b", "c"}).RemoveIf(condition), ShouldResemble, []string{"a", "c"})
 	})
 }
 
 func TestStringSlice_AppendIf(t *testing.T) {
 	Convey("TestStringSlice_AppendIf", t, func() {
-		condition := func(s string) bool{
-			if s == "b"{
+		condition := func(s string) bool {
+			if s == "b" {
 				return true
 			}
 			return false
 		}
-		s:= []string{"a","b"}
-		d:=sliceutil.StringSlice(s).AppendIf(condition,[]string{"a","b","c"})
-		So(s,ShouldResemble,[]string{"a","b"})
-		So(d,ShouldResemble,[]string{"a","b","b"})
+		s := []string{"a", "b"}
+		d := sliceutil.StringSlice(s).AppendIf(condition, []string{"a", "b", "c"})
+		So(s, ShouldResemble, []string{"a", "b"})
+		So(d, ShouldResemble, []string{"a", "b", "b"})
+	})
+}
 
+func TestStringSlice_Index(t *testing.T) {
+	Convey("TestStringSlice_Index", t, func() {
+		s := []string{"a", "b", "c"}
+		ss := sliceutil.StringSlice(s)
+		So(ss.Index("b"), ShouldEqual, 1)
+		So(ss.Index("d"), ShouldEqual, -1)
+	})
+}
+
+func TestStringSlice_MoveFirst(t *testing.T) {
+	Convey("TestStringSlice_MoveFirst", t, func() {
+		s := []string{"a", "b", "c"}
+		ss := sliceutil.StringSlice(s)
+		So(ss.MoveFirst("c"), ShouldResemble, []string{"c", "a", "b"})
+		So(ss.MoveFirst("a"), ShouldResemble, []string{"a", "b", "c"})
+		So(ss.MoveFirst("d"), ShouldResemble, []string{"a", "b", "c"})
+	})
+}
+
+func TestStringSlice_String(t *testing.T) {
+	Convey("TestStringSlice_String", t, func() {
+		s := []string{"a", "b", "c"}
+		ss := sliceutil.StringSlice(s)
+		So(ss.String(), ShouldResemble, "[a,b,c]")
+		So(sliceutil.StringSlice(nil).String(), ShouldResemble, "nil")
 	})
 }
