@@ -1,6 +1,10 @@
 package json
 
-import "encoding/json"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+)
 
 type RawMessage = json.RawMessage
 
@@ -18,3 +22,36 @@ var (
 	NewDecoder    = json.NewDecoder
 	NewEncoder    = json.NewEncoder
 )
+
+func PrintStructObject(data interface{}) {
+	output, err := json.MarshalIndent(data, "", "\t")
+	if err == nil {
+		fmt.Println(string(output))
+	} else {
+		fmt.Println(err)
+	}
+}
+
+// {"hello": "123"}
+//
+//		-->
+//	 {
+//		  "hello": "123"
+//		}
+func PrettyPrint(b []byte) {
+	var out bytes.Buffer
+	if err := json.Indent(&out, b, "", "  "); err != nil {
+		fmt.Println(string(b))
+		return
+	}
+	fmt.Printf("%s\n", out.Bytes())
+}
+
+func StructToString(obj interface{}) string {
+	b, err := json.Marshal(obj)
+	if err != nil {
+		fmt.Println(string(b))
+		return ""
+	}
+	return string(b)
+}
