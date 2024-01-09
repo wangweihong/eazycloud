@@ -7,6 +7,11 @@ import (
 	"time"
 )
 
+const (
+	// XRequestIDKey defines X-Request-ID key string.
+	XRequestIDKey = "X-Request-ID"
+)
+
 var (
 	incrNum uint64
 	pid     = os.Getpid()
