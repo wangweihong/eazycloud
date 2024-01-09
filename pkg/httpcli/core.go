@@ -37,6 +37,8 @@ type Client struct {
 	callOpts []CallOption
 	// 拦截器列表
 	chainInterceptors []Interceptor
+	// proxy
+	proxy func(*http.Request) (*url.URL, error)
 }
 
 func NewClient(addr string, options ...Option) (*Client, error) {
@@ -89,7 +91,7 @@ func (c *Client) GetConn(ctx context.Context) (*http.Client, error) {
 	// reuse conn
 	// lock?
 	if c.conn != nil {
-		log.F(ctx).Debug("connection has exist, reuse it.")
+		log.F(ctx).L(ctx).Debug("connection has exist, reuse it.")
 		return c.conn, nil
 	}
 
@@ -109,13 +111,19 @@ func (c *Client) GetConn(ctx context.Context) (*http.Client, error) {
 			}
 		}
 		if err != nil {
-			log.F(ctx).Errorf("generate tls credential fail:%w ", err)
+			log.F(ctx).L(ctx).Errorf("generate tls credential fail:%w ", err)
 			return nil, errors.WrapError(code.ErrHTTPClientGenerateError, err)
 		}
 	}
 	tr := &http.Transport{}
+
 	if c.transport != nil {
 		tr = c.transport
+	}
+
+	// 设置请求代理
+	if c.proxy != nil {
+		c.transport.Proxy = c.proxy
 	}
 
 	if creds != nil {
@@ -148,26 +156,36 @@ func (c *Client) Invoke(
 	file, line, fn := callerutil.CallerDepth(2)
 	callerMsg := fmt.Sprintf("%s:%s:%d", file, fn, line)
 
-	if c.chainInterceptors != nil {
-		rawResp, err := c.chainInterceptors[0](
+	//  允许特定请求单独设置拦截器
+	ci := &callInfo{}
+	for _, o := range opts {
+		o(ci)
+	}
+	chainInterceptors := c.chainInterceptors
+	if ci.chainInterceptors != nil {
+		chainInterceptors = ci.chainInterceptors
+	}
+
+	if chainInterceptors != nil {
+		rawResp, err := chainInterceptors[0](
 			ctx,
 			method,
 			rawURL,
 			arg,
 			reply,
 			c,
-			getChainUnaryInvoker(c.chainInterceptors, 0, invoke),
+			getChainUnaryInvoker(chainInterceptors, 0, invoke),
 			opts...)
 
-		log.F(ctx).
+		log.F(ctx).L(ctx).
 			Debug("Interceptor Invoked called.", log.String("caller", callerMsg), log.Err(err), log.Every("arg", arg), log.Every("reply", reply))
-		return rawResp, err
+		return rawResp, errors.UpdateStack(err)
 	}
 
 	rawResp, err := invoke(ctx, method, rawURL, arg, reply, c, opts...)
-	log.F(ctx).
+	log.F(ctx).L(ctx).
 		Debug("Invoked called.", log.String("caller", callerMsg), log.Err(err), log.Every("arg", arg), log.Every("reply", reply))
-	return rawResp, err
+	return rawResp, errors.UpdateStack(err)
 }
 
 func combine(o1 []CallOption, o2 []CallOption) []CallOption {
@@ -211,6 +229,7 @@ type RawResponse struct {
 	ReqURL     string
 	ReqAddr    string
 	ReqHeader  http.Header
+	ExtraData  interface{} // record extra data
 }
 
 type Invoker func(ctx context.Context, method string, rawURL string, arg, reply interface{}, cc *Client, opt ...CallOption) (*RawResponse, error)
@@ -222,8 +241,8 @@ func NewHttpRequest(
 	uri string,
 	arg interface{},
 	opt ...CallOption,
-)(*http.Request,error) {
-	return newHttpRequest(ctx,addr,method,uri,arg,opt...)
+) (*http.Request, error) {
+	return newHttpRequest(ctx, addr, method, uri, arg, opt...)
 }
 
 func newHttpRequest(
@@ -233,8 +252,8 @@ func newHttpRequest(
 	uri string,
 	arg interface{},
 	opt ...CallOption,
-)(*http.Request,error){
-	log.F(ctx).Debug("invoke call.",
+) (*http.Request, error) {
+	log.F(ctx).L(ctx).Debug("invoke call.",
 		log.String("method", method),
 		log.String("uri", uri),
 		log.Every("arg", arg))
@@ -244,22 +263,31 @@ func newHttpRequest(
 		o(ci)
 	}
 
+	if ci.endpoint != "" {
+		addr = ci.endpoint
+	}
+
 	reqURL := addr + uri
 	if ci.urlSetter != nil {
 		var err error
 		originURL := reqURL
 		reqURL, err = ci.urlSetter()
 		if err != nil {
-			log.F(ctx).Errorf("http Do urlSetter err:%s", err.Error())
+			log.F(ctx).L(ctx).Errorf("http Do urlSetter err:%s", err.Error())
 			return nil, err
 		}
-		log.F(ctx).Debugf("urlSetter change req url from %v to %v", originURL, reqURL)
+		log.F(ctx).L(ctx).Debugf("urlSetter change req url from %v to %v", originURL, reqURL)
 	}
 
 	if ci.query != nil {
 		values := url.Values{}
 		for k, v := range ci.query {
 			var value string
+
+			//ignore value if nil
+			if v == nil {
+				continue
+			}
 			switch v.(type) {
 			case string:
 				value = fmt.Sprintf("%s", v)
@@ -282,12 +310,14 @@ func newHttpRequest(
 
 	httpReq, err := http.NewRequestWithContext(ctx, method, reqURL, nil)
 	if err != nil {
-		log.F(ctx).Errorf("http.NewRequest error:%s", err.Error())
+		log.F(ctx).L(ctx).Errorf("http.NewRequest error:%s", err.Error())
 		return nil, err
 	}
 
-	for k, v := range ci.header {
-		httpReq.Header.Add(k, v)
+	for k, values := range ci.header {
+		for _, v := range values {
+			httpReq.Header.Add(k, v)
+		}
 	}
 
 	if arg != nil {
@@ -299,19 +329,19 @@ func newHttpRequest(
 		} else {
 			body, err = json.Marshal(arg)
 			if err != nil {
-				log.F(ctx).Errorf("marshal data err:%s", err.Error())
+				log.F(ctx).L(ctx).Errorf("marshal data err:%s", err.Error())
 				return nil, err
 			}
 		}
 
 		if httpReq.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
-			log.F(ctx).Debug("urlencoded body data")
+			log.F(ctx).L(ctx).Debug("urlencoded body data")
 
 			bf := bytes.NewBuffer(body)
 			httpReq.Body = ioutil.NopCloser(bf)
 			httpReq.ContentLength = int64(len(body))
 		} else {
-			log.F(ctx).Debug("json body data")
+			log.F(ctx).L(ctx).Debug("json body data")
 
 			httpReq.Header.Add("Content-Type", "application/json")
 			httpReq.Body = ioutil.NopCloser(bytes.NewReader(body))
@@ -323,17 +353,15 @@ func newHttpRequest(
 	if ci.httpRequestProcess != nil {
 		httpReq, err = ci.httpRequestProcess(httpReq)
 		if err != nil {
-			log.F(ctx).Errorf("httpRequestProcess err:%s", err.Error())
+			log.F(ctx).L(ctx).Errorf("httpRequestProcess err:%s", err.Error())
 			return nil, err
 		}
 	}
 
-	return httpReq,nil
+	return httpReq, nil
 }
 
-
-
-//nolint: funlen,gocognit
+// nolint: funlen,gocognit
 func invoke(
 	ctx context.Context,
 	method string,
@@ -342,7 +370,7 @@ func invoke(
 	cc *Client,
 	opt ...CallOption,
 ) (*RawResponse, error) {
-	log.F(ctx).Debug("invoke call.",
+	log.F(ctx).L(ctx).Debug("invoke call.",
 		log.String("method", method),
 		log.String("rawURL", rawURL),
 		log.Every("arg", arg))
@@ -366,29 +394,29 @@ func invoke(
 	}
 
 	if timeout > 0 {
-		log.F(ctx).Debugf("request set timeout:%v", timeout)
+		log.F(ctx).L(ctx).Debugf("request set timeout:%v", timeout)
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 	} else {
 		ctx, cancel = context.WithCancel(ctx)
 	}
 	defer cancel()
 
-	httpReq, err:= newHttpRequest(ctx,cc.addr,method,rawURL,arg,opt...)
+	httpReq, err := newHttpRequest(ctx, cc.addr, method, rawURL, arg, opt...)
 	if err != nil {
-		log.F(ctx).Errorf("create new http request err:%s", err.Error())
+		log.F(ctx).L(ctx).Errorf("create new http request err:%s", err.Error())
 		return nil, err
 	}
 
 	conn, err := cc.GetConn(ctx)
 	if err != nil {
-		log.F(ctx).Errorf("get client conn err:%s", err.Error())
+		log.F(ctx).L(ctx).Errorf("get client conn err:%s", err.Error())
 		return nil, err
 	}
 
-	log.F(ctx).Debug("Before Do", log.Any("headers", httpReq.Header), log.String("requrl", httpReq.URL.String()))
+	log.F(ctx).L(ctx).Debug("Before Do", log.Any("headers", httpReq.Header), log.String("requrl", httpReq.URL.String()))
 	httpResp, err := conn.Do(httpReq)
 	if err != nil {
-		log.F(ctx).Errorf("http Do err:%s", err.Error())
+		log.F(ctx).L(ctx).Errorf("http Do err:%s", err.Error())
 		return nil, err
 	}
 
@@ -402,26 +430,29 @@ func invoke(
 	rawResp.ReqURL = httpReq.URL.String()
 	rawResp.ReqAddr = cc.addr
 	rawResp.ReqHeader = httpReq.Header
+	if ci.data != nil {
+		rawResp.ExtraData = ci.data
+	}
 
-	log.F(ctx).Debug("After Do", log.Every("resp", rawResp))
+	log.F(ctx).L(ctx).Debug("After Do", log.Every("resp", rawResp))
 
 	bodyData, err := ioutil.ReadAll(httpResp.Body)
 	if err != nil {
-		log.F(ctx).Errorf("http read body err:%s", err.Error())
+		log.F(ctx).L(ctx).Errorf("http read body err:%s", err.Error())
 		return &rawResp, err
 	}
 
 	rawResp.Body = bodyData
-	log.F(ctx).Debug("After Do", log.String("body", string(rawResp.Body)))
+	log.F(ctx).L(ctx).Debug("After Do", log.String("body", string(rawResp.Body)))
 
 	// 由于无法覆盖服务器返回的状态码和返回请求体数据逻辑,因此提供选项允许调用者不在当前调用中进行数据解码
 	// 调用者可以自定义拦截器来根据具体场景解构状态码并解析数据。 示例见NoSuccessStatusCodeInterceptor
 	if !ci.responseNotParse && reply != nil {
 		if err := json.Unmarshal(bodyData, reply); err != nil {
-			log.F(ctx).Errorf("http decode  body err:%s", err.Error())
+			log.F(ctx).L(ctx).Errorf("http decode  body err:%s", err.Error())
 			return &rawResp, err
 		}
-		log.F(ctx).Debug("After Parse", log.Every("reply", reply))
+		log.F(ctx).L(ctx).Debug("After Parse", log.Every("reply", reply))
 	}
 	return &rawResp, nil
 }

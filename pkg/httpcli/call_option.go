@@ -7,14 +7,32 @@ import (
 
 type callInfo struct {
 	timeout            *time.Duration
-	header             map[string]string
+	header             http.Header
 	query              map[string]interface{}
 	responseNotParse   bool
 	httpRequestProcess func(req *http.Request) (*http.Request, error)
 	urlSetter          func() (string, error)
+	data               interface{}
+	endpoint           string
+	// 拦截器列表
+	chainInterceptors []Interceptor
 }
 
 type CallOption func(*callInfo)
+
+type CallOptions []CallOption
+
+func (cs CallOptions) Duplicate() []CallOption {
+	if cs == nil {
+		return nil
+	}
+
+	n := make([]CallOption, 0, len(cs))
+	for _, v := range cs {
+		n = append(n, v)
+	}
+	return n
+}
 
 // TimeoutCallOption 设置某个连接超时操作.
 func TimeoutCallOption(timeout time.Duration) CallOption {
@@ -23,10 +41,56 @@ func TimeoutCallOption(timeout time.Duration) CallOption {
 	}
 }
 
-// HeaderCallOption 设置某个请求的头部.
-func HeaderCallOption(header map[string]string) CallOption {
+// SetHeaderCallOption 设置请求头部，替换原来头部
+func SetHeaderCallOption(header http.Header) CallOption {
 	return func(c *callInfo) {
+		if c.header == nil {
+			c.header = make(map[string][]string)
+		}
+
 		c.header = header
+	}
+}
+
+// SetHeaderValueCallOption 设置请求头部指定值
+func SetHeaderValueCallOption(key string, value ...string) CallOption {
+	return func(c *callInfo) {
+		if c.header == nil {
+			c.header = make(map[string][]string)
+		}
+
+		c.header.Del(key)
+		for _, v := range value {
+			c.header.Add(key, v)
+		}
+	}
+}
+
+// AddHeaderCallOption 增加某个请求的头部.
+func AddHeaderCallOption(header http.Header) CallOption {
+	return func(c *callInfo) {
+		if c.header == nil {
+			c.header = make(map[string][]string)
+		}
+
+		for k, values := range header {
+			for _, v := range values {
+				c.header.Add(k, v)
+			}
+		}
+	}
+}
+
+// AddHeaderValueCallOption 增加某个请求的头部.
+func AddHeaderValueCallOption(key string, value ...string) CallOption {
+	return func(c *callInfo) {
+		if c.header == nil {
+			c.header = make(map[string][]string)
+		}
+
+		for _, v := range value {
+			c.header.Add(key, v)
+		}
 	}
 }
 
@@ -74,8 +138,29 @@ func HttpRequestProcessOption(fun ProcessRequestFunc) CallOption {
 type URLSetter func() (string, error)
 
 // 有可能需要根据资源/rawURL动态更改请求URL
-func URLOption(epf URLSetter) CallOption {
+func URLCallOption(epf URLSetter) CallOption {
 	return func(c *callInfo) {
 		c.urlSetter = epf
+	}
+}
+
+// 设置一些特殊处理的数据
+func DataCallOption(data interface{}) CallOption {
+	return func(c *callInfo) {
+		c.data = data
+	}
+}
+
+// 更改访问的服务器端点
+func EndpointCallOption(endpoint string) CallOption {
+	return func(c *callInfo) {
+		c.endpoint = endpoint
+	}
+}
+
+// 更改访问的拦截器列表
+func InterceptorsCallOption(chainInterceptors []Interceptor) CallOption {
+	return func(c *callInfo) {
+		c.chainInterceptors = chainInterceptors
 	}
 }

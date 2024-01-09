@@ -2,6 +2,7 @@ package logging
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/wangweihong/eazycloud/pkg/errors"
@@ -54,7 +55,16 @@ func LoggingInterceptor(skipperFunc ...skipper.SkipperFunc) httpcli.Interceptor 
 			fields["req_media_type"] = rawResp.Header.Get("Content-Type")
 			fields["req_addr"] = rawResp.ReqAddr
 		}
-		log.F(ctx).L(ctx).Infof("%3d - [%s] %v %s  %s", statusCode, reqAddr, Latency, method, reqURL)
+		simpleCallInfo := fmt.Sprintf(
+			"%3d - [%s] %v %s  %s",
+			statusCode,
+			reqAddr,
+			Latency,
+			method,
+			reqURL,
+		)
+		log.L(ctx).Fields(fields).Info(simpleCallInfo)
+
 		if err != nil {
 			return rawResp, errors.UpdateStack(err)
 		}

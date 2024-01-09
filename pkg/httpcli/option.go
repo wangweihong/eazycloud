@@ -2,6 +2,7 @@ package httpcli
 
 import (
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -68,5 +69,13 @@ func WithCallOption(copt ...CallOption) Option {
 func WithTransport(tp *http.Transport) Option {
 	return func(c *Client) {
 		c.transport = tp
+	}
+}
+
+// WithProxy 请求代理选项.
+// WithProxy(http.ProxyFromEnvironment)
+func WithProxy(proxy func(*http.Request) (*url.URL, error)) Option {
+	return func(c *Client) {
+		c.proxy = proxy
 	}
 }
