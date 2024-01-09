@@ -151,7 +151,6 @@ func Test_ZapType(t *testing.T) {
 	log.Info("This is object example", zap.Object("req", req))
 	log.Info("This is inline:object example", zap.Inline(req))
 	log.Info("This is Any:object example", log.Any("req", req))
-
 	_, _ = zap.NewDevelopment()
 }
 

@@ -587,6 +587,12 @@ func (l *zapLogger) F(ctx context.Context) *zapLogger {
 	return lg
 }
 
+func (l *zapLogger) Fields(fields map[string]interface{}) *zapLogger {
+	lg := l.clone()
+	lg.addLoggerField(fields)
+	return lg
+}
+
 func (l *zapLogger) addLoggerField(fieldMap map[string]interface{}) {
 	// 支持 field key排序
 	keys := make([]string, 0, len(fieldMap))
