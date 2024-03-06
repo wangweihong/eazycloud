@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/wangweihong/eazycloud/examples/httpcli/example"
 	"github.com/wangweihong/eazycloud/pkg/code"
@@ -29,9 +30,23 @@ func (p *user) Create(
 	}
 
 	resp := &example.UserResponse{}
-	_, err := p.c.Invoke(ctx, "POST", "/user/create", req, resp, opts...)
+	arg := httpcli.NewHttpRequestBuilder().
+		WithEndpoint(p.c.address).
+		WithMethod("POST").
+		WithPath("/user/create").
+		WithBody("", req).Build()
+
+	reply, err := p.c.Invoke(ctx, arg, req, resp, opts...)
 	if err != nil {
 		return nil, errors.WrapError(code.ErrHTTPError, err)
+	}
+
+	if reply.GetStatusCode() != http.StatusOK {
+		return nil, errors.Wrap(code.ErrHTTPError, "status code not 200")
+	}
+
+	if err = reply.Decode(resp); err != nil {
+		return nil, err
 	}
 	return resp, nil
 }

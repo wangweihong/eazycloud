@@ -26,7 +26,6 @@ func (m StringIntMap) Delete(key string) {
 	delete(m, key)
 }
 
-
 func (m StringIntMap) DeleteIfKey(condition func(string) bool) {
 	if m == nil {
 		return
@@ -44,7 +43,7 @@ func (m StringIntMap) DeleteIfValue(condition func(int) bool) {
 		return
 	}
 
-	for k,v := range m {
+	for k, v := range m {
 		if condition(v) {
 			delete(m, k)
 		}
@@ -94,8 +93,26 @@ func (m StringIntMap) ToSetString() sets.String {
 	if m == nil {
 		return ss
 	}
-	for k:=range m{
+	for k := range m {
 		ss.Insert(k)
 	}
 	return ss
+}
+
+func (m StringIntMap) Equal(m2 map[string]int) bool {
+	if len(m) != len(m2) {
+		return false
+	}
+
+	for k1, v1 := range m {
+		v2, ok := m2[k1]
+		if !ok {
+			return false
+		}
+
+		if v1 != v2 {
+			return false
+		}
+	}
+	return true
 }

@@ -6,14 +6,10 @@ import (
 )
 
 type callInfo struct {
-	timeout            *time.Duration
-	header             http.Header
-	query              map[string]interface{}
-	responseNotParse   bool
+	timeout            time.Duration
 	httpRequestProcess func(req *http.Request) (*http.Request, error)
 	urlSetter          func() (string, error)
-	data               interface{}
-	endpoint           string
+	httpTransport      *http.Transport
 	// 拦截器列表
 	chainInterceptors []Interceptor
 }
@@ -21,6 +17,18 @@ type callInfo struct {
 type CallOption func(*callInfo)
 
 type CallOptions []CallOption
+
+func Combine(o1 []CallOption, o2 []CallOption) []CallOption {
+	if len(o1) == 0 {
+		return o2
+	} else if len(o2) == 0 {
+		return o1
+	}
+	ret := make([]CallOption, len(o1)+len(o2))
+	copy(ret, o1)
+	copy(ret[len(o1):], o2)
+	return ret
+}
 
 func (cs CallOptions) Duplicate() []CallOption {
 	if cs == nil {
@@ -37,92 +45,10 @@ func (cs CallOptions) Duplicate() []CallOption {
 // TimeoutCallOption 设置某个连接超时操作.
 func TimeoutCallOption(timeout time.Duration) CallOption {
 	return func(c *callInfo) {
-		c.timeout = &timeout
-	}
-}
-
-// SetHeaderCallOption 设置请求头部，替换原来头部
-func SetHeaderCallOption(header http.Header) CallOption {
-	return func(c *callInfo) {
-		if c.header == nil {
-			c.header = make(map[string][]string)
-		}
-
-		c.header = header
-	}
-}
-
-// SetHeaderValueCallOption 设置请求头部指定值
-func SetHeaderValueCallOption(key string, value ...string) CallOption {
-	return func(c *callInfo) {
-		if c.header == nil {
-			c.header = make(map[string][]string)
-		}
-
-		c.header.Del(key)
-		for _, v := range value {
-			c.header.Add(key, v)
-		}
-	}
-}
-
-// AddHeaderCallOption 增加某个请求的头部.
-func AddHeaderCallOption(header http.Header) CallOption {
-	return func(c *callInfo) {
-		if c.header == nil {
-			c.header = make(map[string][]string)
-		}
-
-		for k, values := range header {
-			for _, v := range values {
-				c.header.Add(k, v)
-			}
-		}
-	}
-}
-
-// AddHeaderValueCallOption 增加某个请求的头部.
-func AddHeaderValueCallOption(key string, value ...string) CallOption {
-	return func(c *callInfo) {
-		if c.header == nil {
-			c.header = make(map[string][]string)
-		}
-
-		for _, v := range value {
-			c.header.Add(key, v)
-		}
-	}
-}
-
-// QueryCallOption 设置某个连接查询参数.
-func QueryCallOption(query map[string]interface{}) CallOption {
-	return func(c *callInfo) {
-		if c.query == nil {
-			c.query = make(map[string]interface{})
-		}
-		for k, v := range query {
-			c.query[k] = v
-		}
-	}
-}
-
-// OneQueryCallOption 设置某个连接查询参数.
-func OneQueryCallOption(key string, value interface{}) CallOption {
-	return func(c *callInfo) {
-		if key == "" {
+		if timeout < 0 {
 			return
 		}
-		if c.query == nil {
-			c.query = make(map[string]interface{})
-		}
-		c.query[key] = value
-	}
-}
-
-// ResponseNotParseCallOption 在invoke时不对http请求体数据进行解析.
-func ResponseNotParseCallOption() CallOption {
-	return func(c *callInfo) {
-		c.responseNotParse = true
+		c.timeout = timeout
 	}
 }
 
@@ -144,23 +70,16 @@ func URLCallOption(epf URLSetter) CallOption {
 	}
 }
 
-// 设置一些特殊处理的数据
-func DataCallOption(data interface{}) CallOption {
-	return func(c *callInfo) {
-		c.data = data
-	}
-}
-
-// 更改访问的服务器端点
-func EndpointCallOption(endpoint string) CallOption {
-	return func(c *callInfo) {
-		c.endpoint = endpoint
-	}
-}
-
 // 更改访问的拦截器列表
 func InterceptorsCallOption(chainInterceptors []Interceptor) CallOption {
 	return func(c *callInfo) {
 		c.chainInterceptors = chainInterceptors
+	}
+}
+
+// CallOptionTransport 通用请求选项.
+func CallOptionTransport(tp *http.Transport) CallOption {
+	return func(c *callInfo) {
+		c.httpTransport = tp
 	}
 }

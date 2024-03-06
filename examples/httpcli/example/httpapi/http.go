@@ -2,23 +2,23 @@ package httpapi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/wangweihong/eazycloud/pkg/httpcli"
+
+	"github.com/wangweihong/eazycloud/pkg/httpcli/interceptorcli"
+
 	"github.com/wangweihong/eazycloud/examples/httpcli/example/options"
 	"github.com/wangweihong/eazycloud/pkg/code"
 	"github.com/wangweihong/eazycloud/pkg/errors"
-	"github.com/wangweihong/eazycloud/pkg/httpcli/interceptorcli/logging"
-	"github.com/wangweihong/eazycloud/pkg/httpcli/interceptorcli/statuscode"
 	"github.com/wangweihong/eazycloud/pkg/log"
 	"github.com/wangweihong/eazycloud/pkg/skipper"
 
 	"github.com/wangweihong/eazycloud/examples/httpcli/example"
-	"github.com/wangweihong/eazycloud/pkg/httpcli"
 )
 
 type client struct {
@@ -62,15 +62,15 @@ func GetHttpApiFactoryOr(opts *options.BackendOptions) (example.Factory, error) 
 		}
 
 		c, err = httpcli.NewClient(
-			opts.Address,
+			nil,
 			httpcli.WithTransport(HTTPTransport),
 			httpcli.WithTimeout(30*time.Second),
 			httpcli.WithIntercepts(
 				// 注意顺序, 队列也靠后的越早执行调用后
 				// TokenInterceptor("TokenInterceptor", hc, skipper.AllowPathPrefixSkipper("/gettoken")),
 				// ErrorCodeInterceptor(),
-				statuscode.NoSuccessStatusCodeInterceptor(),
-				logging.LoggingInterceptor(),
+				interceptorcli.StatusCodeInterceptor(""),
+				interceptorcli.LoggingInterceptor(""),
 			),
 		)
 		hc.Client = c
@@ -88,14 +88,19 @@ func GetHttpApiFactoryOr(opts *options.BackendOptions) (example.Factory, error) 
 // 错误码拦截.
 func ErrorCodeInterceptor(skipperFunc ...skipper.SkipperFunc) httpcli.Interceptor {
 	name := "ErrorCode"
-	return func(ctx context.Context, method string, rawURL string, arg, reply interface{}, cc *httpcli.Client, invoker httpcli.Invoker, opts ...httpcli.CallOption) (*httpcli.RawResponse, error) {
+	return func(ctx context.Context, req *httpcli.HttpRequest, arg, reply interface{}, cc *httpcli.Client, invoker httpcli.Invoker, opts ...httpcli.CallOption) (*httpcli.HttpResponse, error) {
 		log.F(ctx).Debugf("Interceptor %s Enter", name)
 		defer log.F(ctx).Debugf("Interceptor %s Finish", name)
 
-		if skipper.Skip(rawURL, skipperFunc...) {
-			log.F(ctx).Debugf("skip interceptor %s for rawrurl %s", name, rawURL)
+		if skipper.Skip(req.GetPath(), skipperFunc...) {
+			log.F(ctx).Debugf("skip interceptor %s for rawrurl %s", name, req.GetHeaderParams())
 
-			return invoker(ctx, method, rawURL, arg, reply, cc, opts...)
+			return invoker(ctx, req, arg, reply, cc, opts...)
+		}
+
+		rawResp, err := invoker(ctx, req, arg, reply, cc, opts...)
+		if err != nil {
+			return rawResp, errors.UpdateStack(err)
 		}
 
 		type ErrorResponse struct {
@@ -103,11 +108,9 @@ func ErrorCodeInterceptor(skipperFunc ...skipper.SkipperFunc) httpcli.Intercepto
 			ErrorCode    int64  `json:"errcode"` // 返回码. 0表示成功
 		}
 
-		log.F(ctx).Debug("", log.Every("arg", arg))
 		var er ErrorResponse
-		rawResp, err := invoker(ctx, method, rawURL, arg, &er, cc, opts...)
-		if err != nil {
-			return rawResp, errors.UpdateStack(err)
+		if err := rawResp.Decode(&er); err != nil {
+			return rawResp, err
 		}
 
 		if er.ErrorCode != 0 {
@@ -116,14 +119,6 @@ func ErrorCodeInterceptor(skipperFunc ...skipper.SkipperFunc) httpcli.Intercepto
 				fmt.Errorf("got err code %d,msg:%s", er.ErrorCode, er.ErrorMessage),
 			)
 		}
-
-		if reply != nil {
-			if err := json.Unmarshal(rawResp.Body, reply); err != nil {
-				log.F(ctx).Errorf("decode  err:%s", err.Error())
-				return rawResp, err
-			}
-		}
-
 		return rawResp, nil
 	}
 }

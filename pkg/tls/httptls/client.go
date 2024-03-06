@@ -13,14 +13,14 @@ import (
 // 双向认证为在认证服务端证书时，将自己的证书交由服务端进行认证。
 
 // NewTlsClientSkipVerifiedCredentials generate tls-credentials skip server certificate verify for client.
-func NewTlsClientSkipVerifiedCredentials() (*tls.Config, error) {
+func NewTlsClientSkipVerifiedCredentials() *tls.Config {
 	config := &tls.Config{
 		// 跳过服务端证书检测
 		// 注意该标识在服务器开启mTLS时无效
 		InsecureSkipVerify: true,
 	}
 
-	return config, nil
+	return config
 }
 
 // NewTlsClientCredentials generate tls-credentials for client.

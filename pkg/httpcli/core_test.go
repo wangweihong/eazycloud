@@ -6,168 +6,69 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/httpsvr"
-
-	"github.com/wangweihong/eazycloud/pkg/httpcli"
-	"github.com/wangweihong/eazycloud/pkg/log"
-	"github.com/wangweihong/eazycloud/pkg/version"
+	"github.com/wangweihong/eazycloud/pkg/util/maputil"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/wangweihong/eazycloud/pkg/httpcli"
 )
 
-func init() {
-	opts := log.NewOptions()
-	opts.OutputPaths = nil
-	opts.ErrorOutputPaths = nil
-	opts.Level = "debug"
-	log.Init(opts)
-}
-
-func installServer(conf *httpsvr.Config) *httpsvr.GenericHTTPServer {
-	s, err := conf.Complete().New()
-	So(err, ShouldBeNil)
-	go func() {
-		s.Run()
-	}()
-	// Wait for the server to start (you can use a more sophisticated wait mechanism)
-	time.Sleep(5 * time.Second)
-	return s
-}
-
-func TestClient_Invoke(t *testing.T) {
-	Convey("客户端调用", t, func() {
-		conf := httpsvr.NewConfig()
-		conf.Healthz = true
-		conf.Version = true
-		conf.EnableMetrics = false
-		conf.InsecureServing = &httpsvr.InsecureServingInfo{
-			Address:  "0.0.0.0:57217",
-			Required: true,
-		}
-		s := installServer(conf)
-		defer s.Close()
-
-		Convey("GET请求", func() {
-			c, err := httpcli.NewClient("http://0.0.0.0:57217")
-			So(err, ShouldBeNil)
-			ctx := context.Background()
-
-			vi := version.Info{}
-			resp, err := c.Invoke(ctx, "GET", "/version", nil, &vi)
-			So(err, ShouldBeNil)
-			So(resp.StatusCode, ShouldEqual, 200)
-			So(vi.Platform, ShouldNotBeEmpty)
-		})
-
-	})
-}
-
 func TestClient_Interceptor(t *testing.T) {
-	Convey("拦截器", t, func() {
-		conf := httpsvr.NewConfig()
-		conf.Healthz = true
-		conf.Version = true
-		conf.EnableMetrics = false
-		conf.InsecureServing = &httpsvr.InsecureServingInfo{
-			Address:  "0.0.0.0:57218",
-			Required: true,
-		}
-		s := installServer(conf)
-		defer s.Close()
-		Convey("拦截器", func() {
-			inter1 := func(ctx context.Context, method string, rawURL string, arg, reply interface{}, cc *httpcli.Client, invoker httpcli.Invoker, opts ...httpcli.CallOption) (*httpcli.RawResponse, error) {
-				opt := httpcli.QueryCallOption(map[string]interface{}{
-					"inter1": "b",
-				})
-				opts = append(opts, opt)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Body != nil {
+			defer r.Body.Close()
 
-				resp, err := invoker(ctx, method, rawURL, arg, reply, cc, opts...)
+			b, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if _, err := w.Write(b); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	Convey("拦截器", t, func() {
+		Convey("拦截器添加查询参数，并修改返回头部", func() {
+			inter1 := func(ctx context.Context, req *httpcli.HttpRequest, arg, reply interface{}, cc *httpcli.Client, invoker httpcli.Invoker, opts ...httpcli.CallOption) (*httpcli.HttpResponse, error) {
+				req.Builder().AddQueryParam("inter1", "aaaa").Build()
+
+				resp, err := invoker(ctx, req, arg, reply, cc, opts...)
 				if err != nil {
 					return resp, err
 				}
-				resp.Header.Set("inter1", "bbbb")
+				resp.Response.Header.Set("inter1", "bbbb")
 				return resp, err
 			}
-			inter2 := func(ctx context.Context, method string, rawURL string, arg, reply interface{}, cc *httpcli.Client, invoker httpcli.Invoker, opts ...httpcli.CallOption) (*httpcli.RawResponse, error) {
-				opt := httpcli.QueryCallOption(map[string]interface{}{
-					"inter2": "bbbb",
-				})
-				opts = append(opts, opt)
+			inter2 := func(ctx context.Context, req *httpcli.HttpRequest, arg, reply interface{}, cc *httpcli.Client, invoker httpcli.Invoker, opts ...httpcli.CallOption) (*httpcli.HttpResponse, error) {
+				req.Builder().AddQueryParam("inter2", "bbbb").Build()
 
 				ctx = context.WithValue(ctx, "inter2", "bbbb")
-				resp, err := invoker(ctx, method, rawURL, arg, reply, cc, opts...)
+				resp, err := invoker(ctx, req, arg, reply, cc, opts...)
 				if err != nil {
 					return resp, err
 				}
-				resp.Header.Set("inter2", "bbbb")
+				resp.Response.Header.Set("inter2", "bbbb")
 				return resp, err
 			}
 
-			c, err := httpcli.NewClient("http://0.0.0.0:57218",
-				httpcli.WithIntercepts(inter1, inter2))
+			c, err := httpcli.NewClient(nil, httpcli.WithIntercepts(inter1, inter2))
 			So(err, ShouldBeNil)
 			ctx := context.Background()
 
-			vi := version.Info{}
-			resp, err := c.Invoke(ctx, "GET", "/version", nil, &vi)
+			req := httpcli.NewHttpRequestBuilder().WithEndpoint(server.URL).WithMethod("GET").WithPath("/version").Build()
+			resp, err := c.Invoke(ctx, req, nil, nil)
 			So(err, ShouldBeNil)
-			So(resp.StatusCode, ShouldEqual, 200)
-			So(vi.Platform, ShouldNotBeEmpty)
-
-			So(resp.Header.Get("inter1"), ShouldEqual, "bbbb")
-			So(resp.Header.Get("inter2"), ShouldEqual, "bbbb")
-		})
-	})
-}
-
-
-
-func testHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(r.URL.String()))
-		return
-	}
-	defer r.Body.Close()
-	d,err:=ioutil.ReadAll(r.Body)
-	if err!= nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(d)
-}
-
-func TestNewHttpRequest(t *testing.T){
-	ctx := context.Background()
-	Convey("Request测试", t ,func() {
-		Convey("不带参数Get",func() {
-			req,err := httpcli.NewHttpRequest(ctx, "", "GET","/test",nil )
-			So(err,ShouldBeNil)
-			rr := httptest.NewRecorder()
-			http.HandlerFunc(testHandler).ServeHTTP(rr, req)
-			So(rr.Code,ShouldEqual,http.StatusOK)
-			So(rr.Body.String(),ShouldEqual,"/test")
-		})
-
-		Convey("参数Get",func() {
-			s := map[string]interface{}{
-				"name":"test",
-				"number": 123,
-				"male": true,
-			}
-
-
-			req,err := httpcli.NewHttpRequest(ctx, "", "GET","/test",nil,httpcli.QueryCallOption(s) )
-			So(err,ShouldBeNil)
-			rr := httptest.NewRecorder()
-			http.HandlerFunc(testHandler).ServeHTTP(rr, req)
-			So(rr.Code,ShouldEqual,http.StatusOK)
-			So(rr.Body.String(),ShouldEqual,"/test?male=true&name=test&number=123")
+			So(resp.Response.StatusCode, ShouldEqual, 200)
+			So(resp.Response.Header.Get("inter1"), ShouldEqual, "bbbb")
+			So(resp.Response.Header.Get("inter2"), ShouldEqual, "bbbb")
+			So(maputil.StringInterfaceMap(resp.Request.GetQueryParams()).HasKeyAndValue("inter2", "bbbb"), ShouldBeTrue)
+			So(maputil.StringInterfaceMap(resp.Request.GetQueryParams()).HasKeyAndValue("inter1", "aaaa"), ShouldBeTrue)
 		})
 	})
 }

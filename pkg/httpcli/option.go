@@ -11,41 +11,34 @@ type Option func(*Client)
 // WithTimeout 设置所有连接超时操作.
 func WithTimeout(timeout time.Duration) Option {
 	return func(c *Client) {
-		c.timeout = &timeout
-	}
-}
-
-// WithReport 是否打印返参.
-func WithReport() Option {
-	return func(c *Client) {
-		c.report = true
+		c.config.Timeout = timeout
 	}
 }
 
 // WithInsecure 是否跳过服务端证书检测.
 func WithInsecure() Option {
 	return func(c *Client) {
-		c.tlsEnabled = true
-		c.skipTlsVerified = true
+		c.config.TlsEnabled = true
+		c.config.SkipTlsVerified = true
 	}
 }
 
 // WithServerCA 设置服务端CA证书数据.
 func WithServerCA(serverCAData string) Option {
 	return func(c *Client) {
-		c.tlsEnabled = true
-		c.serverCA = serverCAData
+		c.config.TlsEnabled = true
+		c.config.ServerCA = serverCAData
 	}
 }
 
 // WithMTLS 是否开启双向认证.
 func WithMTLS(serverCAData string, clientCertData string, clientKeyData string) Option {
 	return func(c *Client) {
-		c.mtlsEnabled = true
-		c.tlsEnabled = true
-		c.clientCertData = clientCertData
-		c.clientKeyData = clientKeyData
-		c.serverCA = serverCAData
+		c.config.MutualTlsEnabled = true
+		c.config.TlsEnabled = true
+		c.config.ClientCertData = clientCertData
+		c.config.ClientKeyData = clientKeyData
+		c.config.ServerCA = serverCAData
 	}
 }
 
@@ -57,18 +50,10 @@ func WithIntercepts(inters ...Interceptor) Option {
 	}
 }
 
-// WithCallOption 通用请求选项.
-// 用于对单独请求选项设置。
-func WithCallOption(copt ...CallOption) Option {
-	return func(c *Client) {
-		c.callOpts = copt
-	}
-}
-
 // WithTransport 通用请求选项.
 func WithTransport(tp *http.Transport) Option {
 	return func(c *Client) {
-		c.transport = tp
+		c.config.HttpTransport = tp
 	}
 }
 
@@ -76,6 +61,15 @@ func WithTransport(tp *http.Transport) Option {
 // WithProxy(http.ProxyFromEnvironment)
 func WithProxy(proxy func(*http.Request) (*url.URL, error)) Option {
 	return func(c *Client) {
-		c.proxy = proxy
+		c.config.HttpProxy = proxy
+	}
+}
+
+func WithURLProxy(proxyUrl string) Option {
+	return func(c *Client) {
+		proxy, err := url.Parse(proxyUrl)
+		if err == nil {
+			c.config.HttpProxy = http.ProxyURL(proxy)
+		}
 	}
 }

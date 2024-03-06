@@ -34,3 +34,12 @@ func PointerToString(p *string) string {
 func PrintUnescape(p string) {
 	fmt.Println(fmt.Sprintf("%#v", p))
 }
+
+func TrimAnyPrefix(str string, prefixes ...string) string {
+	if str != "" {
+		for _, p := range prefixes {
+			str = strings.TrimPrefix(str, p)
+		}
+	}
+	return str
+}

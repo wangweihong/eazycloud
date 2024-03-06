@@ -1,8 +1,9 @@
 package waitgroup
 
 import (
-	"github.com/wangweihong/eazycloud/pkg/util/randutil"
 	"runtime/debug"
+
+	"github.com/wangweihong/eazycloud/pkg/util/randutil"
 
 	"context"
 	"fmt"
@@ -13,11 +14,11 @@ import (
 type WaitGroupRoutineFunc struct {
 	Name string
 	Ctx  context.Context
-	Call func() WaitGroupResult //异步函数体
+	Call func() Result //异步函数体
 }
 
 // WARN:
-func NewWaitGroupHandleFunc(ctx context.Context, name string, call func() WaitGroupResult) WaitGroupRoutineFunc {
+func NewWaitGroupHandleFunc(ctx context.Context, name string, call func() Result) WaitGroupRoutineFunc {
 	if name == "" {
 		name = "async-routine"
 	}
@@ -33,7 +34,7 @@ func NewWaitGroup(ctx context.Context) *Group {
 	return &Group{
 		ctx:     ctx,
 		wg:      sync.WaitGroup{},
-		results: make(map[string]WaitGroupResult),
+		results: make(map[string]Result),
 		retLock: sync.Mutex{},
 	}
 }
@@ -42,7 +43,7 @@ func NewWaitGroup(ctx context.Context) *Group {
 type Group struct {
 	ctx         context.Context
 	wg          sync.WaitGroup
-	results     map[string]WaitGroupResult
+	results     map[string]Result
 	retLock     sync.Mutex
 	debug       bool
 	printReturn bool
@@ -67,7 +68,7 @@ func (g *Group) Wait() {
 func (g *Group) Start(f WaitGroupRoutineFunc) {
 	g.wg.Add(1)
 	go func() {
-		ret := NewWaitGroupResult(nil, nil)
+		ret := NewResult(nil, nil)
 		start := time.Now()
 		defer g.wg.Done()
 		defer g.setResult(f.Name, &ret, start)
@@ -76,14 +77,14 @@ func (g *Group) Start(f WaitGroupRoutineFunc) {
 	}()
 }
 
-func (g *Group) setResult(name string, ret *WaitGroupResult, startTime time.Time) {
+func (g *Group) setResult(name string, ret *Result, startTime time.Time) {
 	ret.Cost = time.Since(startTime)
 	g.retLock.Lock()
 	defer g.retLock.Unlock()
 	g.results[name] = *ret
 }
 
-func (g *Group) GetResults() map[string]WaitGroupResult {
+func (g *Group) GetResults() map[string]Result {
 	g.retLock.Lock()
 	defer g.retLock.Unlock()
 	return g.results
@@ -121,7 +122,7 @@ func (g *Group) PrintResults() {
 	}
 }
 
-func (g *Group) handleWaitGroupCrash(st *WaitGroupResult) {
+func (g *Group) handleWaitGroupCrash(st *Result) {
 	if x := recover(); x != nil {
 		st.Error = fmt.Errorf("runtime panic:%v, stack:%v", x, string(debug.Stack()))
 	}
@@ -144,14 +145,14 @@ func (g *Group) ConvertResultToBatchOutput() BatchOutput {
 	return bo
 }
 
-type WaitGroupResult struct {
+type Result struct {
 	Cost  time.Duration
 	Error error
 	Data  interface{}
 }
 
-func NewWaitGroupResult(data interface{}, err error) WaitGroupResult {
-	return WaitGroupResult{
+func NewResult(data interface{}, err error) Result {
+	return Result{
 		Data:  data,
 		Error: err,
 	}
