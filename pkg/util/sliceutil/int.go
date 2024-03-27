@@ -19,7 +19,7 @@ func (m IntSlice) Append(target ...int) IntSlice {
 	return append(m, target...)
 }
 
-//HasRepeat slice has repeated data
+// HasRepeat slice has repeated data
 func (m IntSlice) HasRepeat() bool {
 	if m != nil {
 		s := make(map[int]struct{})
@@ -34,7 +34,7 @@ func (m IntSlice) HasRepeat() bool {
 	return false
 }
 
-//GetRepeat find slice repeat data and repeat num
+// GetRepeat find slice repeat data and repeat num
 func (m IntSlice) GetRepeat() (map[int]int, bool) {
 	if m != nil {
 		var r map[int]int
@@ -60,7 +60,7 @@ func (m IntSlice) GetRepeat() (map[int]int, bool) {
 	return nil, false
 }
 
-//SortDesc Descending sort
+// SortDesc Descending sort
 func (m IntSlice) SortDesc() []int {
 	if m != nil {
 		sort.Slice(m, func(i, j int) bool {
@@ -84,9 +84,8 @@ func (m IntSlice) SortAsc() []int {
 	return nil
 }
 
-
-//RemoveIf 移除符合数组中某个条件的元素
-func (m IntSlice)RemoveIf(condition func(int) bool) []int {
+// RemoveIf 移除符合数组中某个条件的元素
+func (m IntSlice) RemoveIf(condition func(int) bool) []int {
 	if m == nil {
 		return nil
 	}
@@ -109,21 +108,32 @@ func (m IntSlice)RemoveIf(condition func(int) bool) []int {
 	return result
 }
 
-//AppendIf 追加符合莫格条件的元素到数组
-func (m IntSlice)AppendIf(condition func(int) bool,sl []int) []int {
+// AppendIf 追加符合莫格条件的元素到数组
+func (m IntSlice) AppendIf(condition func(int) bool, sl []int) []int {
 	if sl == nil {
 		return m
 	}
 
 	result := make([]int, 0, len(m))
 	for _, str := range m {
-		result =append(result,str)
+		result = append(result, str)
 	}
 
-	for _,s:=range sl{
+	for _, s := range sl {
 		if condition(s) {
-			result = append(result,s)
+			result = append(result, s)
 		}
 	}
 	return result
+}
+
+func (m IntSlice) Max() int {
+	max := 0
+	for _, v := range m {
+		if v > max {
+			max = v
+		}
+	}
+
+	return max
 }

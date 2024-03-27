@@ -283,7 +283,7 @@ func CheckIfBytesStructFieldMatch(apiObjectBytes []byte, tagValuePoint string, c
 	return nil
 }
 
-func GetStructField(object interface{}, tagValuePoint string) (interface{}, error) {
+func GetStructFieldValue(object interface{}, tagValuePoint string) (interface{}, error) {
 	if object == nil {
 		return nil, fmt.Errorf("object is nil")
 	}

@@ -23,7 +23,8 @@ import (
 // to a re-index. So it's not a good idea to directly modify the objects returned by
 // Get/List, in general.
 type ThreadSafeStore interface {
-	Add(key string, obj interface{}) // 增加对象，以指定key作为索引
+	Add(key string, obj interface{})          // 替换对象，以指定key作为索引
+	Inject(key string, obj interface{}) error // 增加对象，以指定key作为索引
 	Update(key string, obj interface{}) error
 	Delete(key string)
 	Get(key string) (item interface{}, exists bool)
@@ -65,6 +66,19 @@ func (c *threadSafeMap) Add(key string, obj interface{}) {
 	oldObject := c.items[key]
 	c.items[key] = obj
 	c.updateIndices(oldObject, obj, key)
+}
+
+func (c *threadSafeMap) Inject(key string, obj interface{}) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	oldObject := c.items[key]
+	if oldObject != nil {
+		return fmt.Errorf("object %v exist", key)
+	}
+
+	c.items[key] = obj
+	c.updateIndices(nil, obj, key)
+	return nil
 }
 
 // 添加某个对象，并基于索引器建立索引.

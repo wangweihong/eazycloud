@@ -222,3 +222,14 @@ func (m StringSlice) MoveFirst(str string) []string {
 
 	return result
 }
+
+func (m StringSlice) Max() string {
+	max := ""
+	for _, v := range m {
+		if v > max {
+			max = v
+		}
+	}
+
+	return max
+}

@@ -176,3 +176,11 @@ func TestStringSlice_String(t *testing.T) {
 		So(sliceutil.StringSlice(nil).String(), ShouldResemble, "nil")
 	})
 }
+
+func TestStringSlice_Max(t *testing.T) {
+	Convey("TestStringSlice_Max", t, func() {
+		s := []string{"1", "12", "15"}
+		ss := sliceutil.StringSlice(s)
+		So(ss.Max(), ShouldEqual, "15")
+	})
+}
