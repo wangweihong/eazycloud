@@ -30,3 +30,18 @@ func TestUnmarshal(t *testing.T) {
 		So(a.AA, ShouldEqual, 2700)
 	})
 }
+
+func TestRawMarshalData(t *testing.T) {
+	Convey("Raw Unmarshl", t, func() {
+		str := `\"highlight\"`
+		type Param struct {
+			Data string `json:"data"`
+		}
+		d := &Param{Data: str}
+		mp := json.ShouldDecode(d)
+
+		So(json.ShouldEncode(&Param{Data: str}), ShouldEqual, `{"data":"\\\"highlight\\\""}`)
+		So(json.RawMarshal(mp), ShouldEqual, `{"data": "\"highlight\""}`)
+
+	})
+}
