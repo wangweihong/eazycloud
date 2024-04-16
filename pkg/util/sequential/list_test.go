@@ -39,3 +39,30 @@ func TestNewSequentialList(t *testing.T) {
 		So(s.List(), ShouldResemble, []interface{}{"b"})
 	})
 }
+
+func TestNewLimitSequentialList(t *testing.T) {
+	Convey("TestNewLimitSequentialMap", t, func() {
+		s := sequential.NewLimitSequentialList(2, "a", "b", "c")
+		So(s.Len(), ShouldEqual, 2)
+		So(s.Has("a"), ShouldBeFalse)
+		So(s.Has("b"), ShouldBeTrue)
+		So(s.Has("c"), ShouldBeTrue)
+		So(s.Get(1), ShouldResemble, "c")
+		So(s.Get(2), ShouldBeNil)
+
+		s.Clear()
+		s.Inject("a")
+		s.Inject("a")
+		So(s.Len(), ShouldEqual, 2)
+		So(s.List(), ShouldResemble, []interface{}{"a", "a"})
+
+		s.Delete("a")
+		So(s.Len(), ShouldEqual, 0)
+
+		s.Clear()
+		So(s.Inject("a"), ShouldEqual, 0)
+		So(s.Inject("a"), ShouldEqual, 1)
+		So(s.Inject("a"), ShouldEqual, 1)
+		So(s.Indices("a"), ShouldResemble, []int{0, 1})
+	})
+}

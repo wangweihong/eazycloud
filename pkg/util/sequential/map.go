@@ -1,14 +1,20 @@
 package sequential
 
-import "sync"
+import (
+	"sync"
+)
 
 // 顺序表, 结合表的功能，提供插入数据的顺序
 type Map struct {
 	lock sync.RWMutex
+	// 存放键
 	data []interface{}
 	//用于记录插入的键的顺序
-	key     []interface{}
-	indices map[interface{}]int
+	key []interface{}
+	// 指定某个键的索引
+	indices map[ /*key*/ interface{}]int
+	// 控制表的长度
+	len int
 }
 
 func NewSequentialMap() *Map {
@@ -16,6 +22,19 @@ func NewSequentialMap() *Map {
 		data:    make([]interface{}, 0),
 		key:     make([]interface{}, 0),
 		indices: make(map[interface{}]int),
+	}
+}
+
+func NewLimitSequentialMap(len int) *Map {
+	if len < 0 {
+		len = 0
+	}
+
+	return &Map{
+		data:    make([]interface{}, 0),
+		key:     make([]interface{}, 0),
+		indices: make(map[interface{}]int),
+		len:     len,
 	}
 }
 
@@ -76,6 +95,11 @@ func (m *Map) Inject(key interface{}, value interface{}) {
 	m.data = append(m.data, value)
 	m.key = append(m.key, key)
 	m.indices[key] = len(m.data) - 1
+
+	//达到表的上限
+	if m.len != 0 && len(m.data) > m.len {
+		m.delete(m.key[0])
+	}
 }
 
 func (m *Map) Map() map[interface{}]interface{} {
@@ -98,6 +122,28 @@ func (m *Map) List() []interface{} {
 		nl = append(nl, v)
 	}
 	return nl
+}
+
+// Last return last inject element
+func (m *Map) Last() interface{} {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	if len(m.data) == 0 {
+		return nil
+	}
+	return m.data[len(m.data)-1]
+}
+
+// Last return first inject element
+func (m *Map) First() interface{} {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	if len(m.data) == 0 {
+		return nil
+	}
+	return m.data[0]
 }
 
 func (m *Map) Keys() []interface{} {
@@ -129,6 +175,10 @@ func (m *Map) Delete(key interface{}) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
+	m.delete(key)
+}
+
+func (m *Map) delete(key interface{}) {
 	if key == nil {
 		return
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewSequentialMap(t *testing.T) {
-	Convey("TestStringIntMap_Init", t, func() {
+	Convey("TestNewSequentialMap", t, func() {
 		nonexist := "nonexist"
 		s := sequential.NewSequentialMap()
 		s.Inject("a", 123)
@@ -49,5 +49,26 @@ func TestNewSequentialMap(t *testing.T) {
 		So(s.Len(), ShouldEqual, 3)
 		So(s.Keys(), ShouldResemble, []interface{}{"a", "c", "b"})
 		So(s.Values(), ShouldResemble, []interface{}{123, 456, 789})
+	})
+}
+
+func TestNewLimitSequentialMap(t *testing.T) {
+	Convey("TestNewLimitSequentialMap", t, func() {
+		s := sequential.NewLimitSequentialMap(2)
+		s.Inject("a", 123)
+		s.Inject("b", 321)
+		s.Inject("c", 456)
+
+		So(s.Len(), ShouldEqual, 2)
+		So(s.Has("a"), ShouldBeFalse)
+		So(s.Has("b"), ShouldBeTrue)
+		So(s.Has("c"), ShouldBeTrue)
+
+		s.Clear()
+		s.Inject("a", 123)
+		s.Inject("b", 321)
+		s.Inject("a", 123)
+		So(s.Len(), ShouldEqual, 2)
+		So(s.Keys(), ShouldResemble, []interface{}{"a", "b"})
 	})
 }

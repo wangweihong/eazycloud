@@ -10,7 +10,8 @@ import (
 type List struct {
 	lock    sync.RWMutex
 	data    []interface{}
-	indices map[interface{}][]int
+	indices map[ /*value*/ interface{}][]int
+	len     int
 }
 
 func NewSequentialList(datas ...interface{}) *List {
@@ -22,6 +23,34 @@ func NewSequentialList(datas ...interface{}) *List {
 		l.Inject(d)
 	}
 	return l
+}
+
+func NewLimitSequentialList(len int, datas ...interface{}) *List {
+	if len < 0 {
+		len = 0
+	}
+
+	l := &List{
+		data:    make([]interface{}, 0),
+		indices: make(map[interface{}][]int),
+		len:     len,
+	}
+	for _, d := range datas {
+		l.Inject(d)
+	}
+
+	return l
+}
+
+func (m *List) Get(index int) interface{} {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	if index < 0 || index > len(m.data)-1 {
+		return nil
+	}
+
+	return m.data[index]
 }
 
 func (m *List) Has(key interface{}) bool {
@@ -36,15 +65,15 @@ func (m *List) Has(key interface{}) bool {
 	return exist
 }
 
-func (m *List) Indices(key interface{}) []int {
+func (m *List) Indices(value interface{}) []int {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	if key == nil {
+	if value == nil {
 		return nil
 	}
 
-	indices, _ := m.indices[key]
+	indices, _ := m.indices[value]
 	return indices
 }
 
@@ -61,15 +90,16 @@ func (m *List) ForEach(f func(value interface{}) error) error {
 	return nil
 }
 
-func (m *List) Inject(value interface{}) {
+func (m *List) Inject(value interface{}) int {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
 	if value == nil {
-		return
+		return -1
 	}
 
 	m.data = append(m.data, value)
+	index := len(m.data) - 1
 
 	indices, exist := m.indices[value]
 	if !exist {
@@ -77,6 +107,12 @@ func (m *List) Inject(value interface{}) {
 	}
 	indices = append(indices, len(m.data)-1)
 	m.indices[value] = indices
+
+	if m.len != 0 && len(m.data) > m.len {
+		m.deleteAtIndex(0)
+		index = index - 1
+	}
+	return index
 }
 
 func (m *List) List() []interface{} {
@@ -101,6 +137,11 @@ func (m *List) DeleteAtIndex(i int) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
+	m.deleteAtIndex(i)
+}
+
+func (m *List) deleteAtIndex(i int) {
+
 	if i < -1 || i > len(m.data)-1 {
 		return
 	}
@@ -115,17 +156,21 @@ func (m *List) DeleteAtIndex(i int) {
 	m.indices = nm.indices
 }
 
-func (m *List) Delete(key interface{}) {
+func (m *List) Delete(value interface{}) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	if key == nil {
+	m.delete(value)
+}
+
+func (m *List) delete(value interface{}) {
+	if value == nil {
 		return
 	}
 
 	nm := NewSequentialList()
 	for _, v := range m.data {
-		if v == key {
+		if v == value {
 			continue
 		}
 		nm.Inject(v)
