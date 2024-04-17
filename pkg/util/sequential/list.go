@@ -1,6 +1,7 @@
 package sequential
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/wangweihong/eazycloud/pkg/sets"
@@ -42,6 +43,34 @@ func NewLimitSequentialList(len int, datas ...interface{}) *List {
 	return l
 }
 
+func (m *List) DeepCopy() *List {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	if m == nil {
+		return nil
+	}
+
+	nm := &List{
+		data:    make([]interface{}, 0, m.len),
+		indices: make(map[interface{}][]int, m.len),
+		len:     m.len,
+	}
+
+	for k, v := range m.indices {
+		indices := make([]int, 0, len(v))
+		for _, j := range v {
+			indices = append(indices, j)
+		}
+		nm.indices[k] = indices
+	}
+
+	for _, v := range m.data {
+		nm.data = append(nm.data, v)
+	}
+	return nm
+}
+
 func (m *List) Get(index int) interface{} {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
@@ -53,25 +82,17 @@ func (m *List) Get(index int) interface{} {
 	return m.data[index]
 }
 
-func (m *List) Has(key interface{}) bool {
+func (m *List) Has(value interface{}) bool {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	if key == nil {
-		return false
-	}
-
-	_, exist := m.indices[key]
+	_, exist := m.indices[value]
 	return exist
 }
 
 func (m *List) Indices(value interface{}) []int {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
-
-	if value == nil {
-		return nil
-	}
 
 	indices, _ := m.indices[value]
 	return indices
@@ -90,14 +111,22 @@ func (m *List) ForEach(f func(value interface{}) error) error {
 	return nil
 }
 
+func (m *List) InjectList(values ...interface{}) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	for _, value := range values {
+		m.inject(value)
+	}
+}
+
 func (m *List) Inject(value interface{}) int {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	if value == nil {
-		return -1
-	}
+	return m.inject(value)
+}
 
+func (m *List) inject(value interface{}) int {
 	m.data = append(m.data, value)
 	index := len(m.data) - 1
 
@@ -113,6 +142,40 @@ func (m *List) Inject(value interface{}) int {
 		index = index - 1
 	}
 	return index
+}
+
+func (m *List) Update(index int, value interface{}) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if index < 0 || index > len(m.data)-1 {
+		return
+	}
+
+	oldValue := m.data[index]
+	if oldValue == value {
+		return
+	}
+
+	oldIndices := m.indices[oldValue]
+	oldIndicesClean := sets.NewInt(oldIndices...).Delete(index).List()
+	m.indices[oldValue] = oldIndicesClean
+	if len(oldIndicesClean) == 0 {
+		delete(m.indices, oldValue)
+	}
+
+	indices, exist := m.indices[value]
+	if !exist {
+		indices = make([]int, 0)
+	}
+	indices = append(indices, index)
+	// 索引排序
+	sort.SliceStable(indices, func(i, j int) bool {
+		return indices[i] < indices[j]
+	})
+
+	m.data[index] = value
+	m.indices[value] = indices
 }
 
 func (m *List) List() []interface{} {
@@ -156,6 +219,17 @@ func (m *List) deleteAtIndex(i int) {
 	m.indices = nm.indices
 }
 
+func (m *List) DeleteIf(condition func(value interface{}) bool) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	for _, v := range m.data {
+		if condition(v) {
+			m.delete(v)
+		}
+	}
+}
+
 func (m *List) Delete(value interface{}) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -164,10 +238,6 @@ func (m *List) Delete(value interface{}) {
 }
 
 func (m *List) delete(value interface{}) {
-	if value == nil {
-		return
-	}
-
 	nm := NewSequentialList()
 	for _, v := range m.data {
 		if v == value {

@@ -72,3 +72,56 @@ func TestNewLimitSequentialMap(t *testing.T) {
 		So(s.Keys(), ShouldResemble, []interface{}{"a", "b"})
 	})
 }
+
+func TestNewSequentialMap_Update(t *testing.T) {
+	Convey("TestNewSequentialMap", t, func() {
+		s := sequential.NewSequentialMap()
+		s.Inject("a", 123)
+		s.Inject("b", 321)
+		s.Inject("a", 456)
+
+		So(s.Len(), ShouldEqual, 2)
+		So(s.Get("a"), ShouldEqual, 456)
+	})
+}
+
+func TestNewSequentialMap_DeepCopy(t *testing.T) {
+	Convey("TestNewSequentialMap_DeepCopy", t, func() {
+		s := sequential.NewSequentialMap()
+		s.Inject("a", 123)
+		s.Inject("b", 321)
+		s.Inject("a", 456)
+
+		s1 := s.DeepCopy()
+		So(s, ShouldResemble, s1)
+	})
+}
+
+func TestNewSequentialMap_DeleteIf(t *testing.T) {
+	Convey("TestNewSequentialMap_DeleteIf", t, func() {
+		s := sequential.NewSequentialMap()
+		s.Inject("a", 123)
+		s.Inject("b", 321)
+		s.Inject("c", 456)
+		s.Inject("d", nil)
+
+		So(s.Len(), ShouldEqual, 4)
+		So(s.HasValue(123), ShouldBeTrue)
+		s.DeleteIfValue(func(value interface{}) bool {
+			if value == nil {
+				return true
+			}
+			return false
+		})
+		So(s.Len(), ShouldEqual, 3)
+		s.DeleteIfKey(func(key interface{}) bool {
+			if key == "a" {
+				return true
+			}
+			return false
+		})
+		So(s.Len(), ShouldEqual, 2)
+		So(s.Keys(), ShouldResemble, []interface{}{"b", "c"})
+		So(s.Values(), ShouldResemble, []interface{}{321, 456})
+	})
+}

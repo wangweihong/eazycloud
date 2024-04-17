@@ -64,5 +64,53 @@ func TestNewLimitSequentialList(t *testing.T) {
 		So(s.Inject("a"), ShouldEqual, 1)
 		So(s.Inject("a"), ShouldEqual, 1)
 		So(s.Indices("a"), ShouldResemble, []int{0, 1})
+
+		l := make([]*string, 0)
+		l = append(l, nil)
+		m := make(map[*string]struct{})
+		m[nil] = struct{}{}
+	})
+}
+
+func TestNewSequentialList_Update(t *testing.T) {
+	Convey("TestNewSequentialList_Update", t, func() {
+		s := sequential.NewSequentialList("a", "b", "c")
+		s.Update(0, "c")
+		So(s.List(), ShouldResemble, []interface{}{"c", "b", "c"})
+		So(s.Has("a"), ShouldBeFalse)
+		So(s.Indices("c"), ShouldResemble, []int{0, 2})
+		So(s.Indices("b"), ShouldResemble, []int{1})
+
+		s.Clear()
+		s.InjectList("a", "b", "c")
+		s.Update(0, "a")
+		So(s.Has("a"), ShouldBeTrue)
+		So(s.Indices("c"), ShouldResemble, []int{2})
+		So(s.Indices("b"), ShouldResemble, []int{1})
+		So(s.Indices("a"), ShouldResemble, []int{0})
+	})
+}
+
+func TestNewSequentialList_DeepCopy(t *testing.T) {
+	Convey("TestNewSequentialList_DeepCopy", t, func() {
+		s := sequential.NewSequentialList("a", "b", "c")
+		s1 := s.DeepCopy()
+		So(s, ShouldResemble, s1)
+	})
+}
+
+func TestNewSequentialList_DeleteIf(t *testing.T) {
+	Convey("TestNewSequentialList_DeleteIf", t, func() {
+		s := sequential.NewSequentialList("a", "b", "c", nil, nil)
+		So(s.Len(), ShouldEqual, 5)
+		s.DeleteIf(func(value interface{}) bool {
+			if value == nil {
+				return true
+			}
+			return false
+		})
+
+		So(s.Len(), ShouldEqual, 3)
+		So(s.List(), ShouldResemble, []interface{}{"a", "b", "c"})
 	})
 }

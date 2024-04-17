@@ -51,6 +51,34 @@ func (m *Map) Get(value interface{}) interface{} {
 	return nil
 }
 
+func (m *Map) DeepCopy() *Map {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	if m == nil {
+		return nil
+	}
+
+	nm := &Map{
+		data:    make([]interface{}, 0, m.len),
+		key:     make([]interface{}, 0, m.len),
+		indices: make(map[interface{}]int, m.len),
+		len:     m.len,
+	}
+	for k, v := range m.indices {
+		nm.indices[k] = v
+	}
+
+	for _, v := range m.key {
+		nm.key = append(nm.key, v)
+	}
+
+	for _, v := range m.data {
+		nm.data = append(nm.data, v)
+	}
+	return nm
+}
+
 func (m *Map) Has(key interface{}) bool {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
@@ -61,6 +89,19 @@ func (m *Map) Has(key interface{}) bool {
 
 	_, exist := m.indices[key]
 	return exist
+}
+
+func (m *Map) HasValue(value interface{}) bool {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	for _, v := range m.data {
+		if v == value {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (m *Map) ForEach(f func(value interface{}) error) error {
@@ -80,13 +121,13 @@ func (m *Map) Inject(key interface{}, value interface{}) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	if key == nil || value == nil {
+	if key == nil {
 		return
 	}
 
 	i, exist := m.indices[key]
 	if exist {
-		// update new value
+		// update new value if exist
 		m.data[i] = value
 
 		return
@@ -111,17 +152,6 @@ func (m *Map) Map() map[interface{}]interface{} {
 		nm[k] = m.data[v]
 	}
 	return nm
-}
-
-func (m *Map) List() []interface{} {
-	m.lock.RLock()
-	defer m.lock.RUnlock()
-
-	nl := make([]interface{}, 0, len(m.data))
-	for _, v := range m.data {
-		nl = append(nl, v)
-	}
-	return nl
 }
 
 // Last return last inject element
@@ -176,6 +206,29 @@ func (m *Map) Delete(key interface{}) {
 	defer m.lock.Unlock()
 
 	m.delete(key)
+}
+
+func (m *Map) DeleteIfKey(condition func(key interface{}) bool) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	for _, v := range m.key {
+		if condition(v) {
+			m.delete(v)
+		}
+	}
+}
+
+func (m *Map) DeleteIfValue(condition func(value interface{}) bool) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	for i, v := range m.data {
+		if condition(v) {
+			key := m.key[i]
+			m.delete(key)
+		}
+	}
 }
 
 func (m *Map) delete(key interface{}) {
