@@ -120,6 +120,9 @@ func JitterUntil(f func(), period time.Duration, jitterFactor float64, sliding b
 //
 // If sliding is true, the period is computed after f runs. If it is false then
 // period includes the runtime for f.
+// sliding: 用于控制计时器在f运行前还是运行后启动。
+//  1. 如果是运行前启动, 则f的执行时间也会算到倒计时中。如果f执行时间超过倒计时,则f执行完后会立即执行下一次循环，而不睡眠。
+//  2. 如果是运行后启动，则f执行完后,倒计时才开始。保证每次循环执行至少间隔倒计时时间
 func BackoffUntil(f func(), backoff BackoffManager, sliding bool, stopCh <-chan struct{}) {
 	var t Timer
 	for {

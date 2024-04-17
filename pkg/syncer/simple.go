@@ -6,22 +6,22 @@ import (
 	"github.com/wangweihong/eazycloud/pkg/wait"
 )
 
-type Syncer struct {
+type SimpleSyncer struct {
 	period     time.Duration
 	syncAction func()
 }
 
-func New(
+func NewSimpleSyncer(
 	internal time.Duration,
 	action func(),
-) *Syncer {
-	return &Syncer{
+) *SimpleSyncer {
+	return &SimpleSyncer{
 		period:     internal,
 		syncAction: action,
 	}
 }
 
-func (u *Syncer) Run(stop <-chan struct{}) {
+func (u *SimpleSyncer) Run(stop <-chan struct{}) {
 	go func() {
 		wait.Until(u.syncAction, u.period, stop)
 	}()
