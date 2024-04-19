@@ -49,22 +49,25 @@ func NewWorkequeueSyncer(
 
 // Run 运行后台定时同步器
 func (u *WorkequeueSyncer) Run(stop <-chan struct{}) {
-	// 停止时关闭掉
-	defer u.queue.ShutDown()
+	go func() {
+		// 停止时关闭掉
+		defer u.queue.ShutDown()
 
-	// 从协程池中运行消费者
-	for i := 0; i < u.threadiness; i++ {
-		// 之所以使用wait.Until来执行消费者是runWorker有可能会panic
-		// wait.Unit会panic recover, 然后重建消费者线程。
-		go wait.Until(u.runWorker, time.Second, stop)
-	}
+		// 从协程池中运行消费者
+		for i := 0; i < u.threadiness; i++ {
+			// 之所以使用wait.Until来执行消费者是runWorker有可能会panic
+			// wait.Unit会panic recover, 然后重建消费者线程。
+			go wait.Until(u.runWorker, time.Second, stop)
+		}
 
-	<-stop
+		<-stop
+	}()
 }
 
 // Trigger trigger syncer action
-func (u *WorkequeueSyncer) Trigger(arg interface{}) {
+func (u *WorkequeueSyncer) Trigger(arg interface{}, auto bool) bool {
 	u.queue.Add(arg)
+	return false
 }
 
 func (u *WorkequeueSyncer) runWorker() {

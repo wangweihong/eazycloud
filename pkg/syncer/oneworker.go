@@ -41,13 +41,13 @@ func NewOneWorkerSyncer(
 func (u *OneWorkerSyncer) Run(stop <-chan struct{}) {
 	go func() {
 		wait.Until(func() {
-			u.Trigger(true)
+			u.Trigger(nil, true)
 		}, u.period, stop)
 	}()
 }
 
 // Trigger trigger syncer action
-func (u *OneWorkerSyncer) Trigger(auto bool) bool {
+func (u *OneWorkerSyncer) Trigger(arg interface{}, auto bool) bool {
 	u.lock.Lock()
 	defer u.lock.Unlock()
 
@@ -55,9 +55,7 @@ func (u *OneWorkerSyncer) Trigger(auto bool) bool {
 		return true
 	}
 	u.working = true
-	// key doesn't matter.
-	key := "worker"
-	go u.processNextItem(auto, key)
+	go u.processNextItem(auto, arg)
 	return false
 }
 
