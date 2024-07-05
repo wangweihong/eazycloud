@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 )
 
 func DefaultPanicHandler(ctx context.Context, p interface{}) (interface{}, error) {

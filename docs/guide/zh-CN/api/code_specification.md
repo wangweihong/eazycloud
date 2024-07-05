@@ -44,7 +44,7 @@ func doSomething() error {
 // 保留原错误码
 func call()error{
     if err:= doSomething();err!=nil{
-        return errors.UpdateStack(err)
+        return errors.WithStack(err)
     }
 }
 

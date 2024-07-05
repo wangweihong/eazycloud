@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/debug"
+	"github.com/wangweihong/gotoolbox/pkg/debug"
 
 	"github.com/wangweihong/eazycloud/pkg/httpsvr/profiling"
 
@@ -19,8 +19,8 @@ import (
 
 	ginprometheus "github.com/zsais/go-gin-prometheus"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
-	"github.com/wangweihong/eazycloud/pkg/version"
+	"github.com/wangweihong/gotoolbox/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/version"
 
 	cryptotls "crypto/tls"
 

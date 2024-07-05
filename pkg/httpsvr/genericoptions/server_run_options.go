@@ -6,16 +6,17 @@ import (
 
 	"github.com/wangweihong/eazycloud/pkg/httpsvr"
 
-	"github.com/wangweihong/eazycloud/pkg/debug"
+	"github.com/wangweihong/gotoolbox/pkg/debug"
 
-	"github.com/wangweihong/eazycloud/pkg/util/maputil"
+	"github.com/wangweihong/gotoolbox/pkg/maputil"
 
-	"github.com/wangweihong/eazycloud/pkg/util/sliceutil"
+	"github.com/wangweihong/gotoolbox/pkg/sliceutil"
 
 	"github.com/spf13/pflag"
 
+	"github.com/wangweihong/gotoolbox/pkg/sets"
+
 	"github.com/wangweihong/eazycloud/pkg/httpsvr/genericmiddleware"
-	"github.com/wangweihong/eazycloud/pkg/sets"
 )
 
 // ServerRunOptions contains the options while running a generic api server.

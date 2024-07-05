@@ -6,7 +6,7 @@
 # 代码根目录
 ROOT_PACKAGE=github.com/wangweihong/eazycloud
 # 程序版本代码所在目录
-VERSION_PACKAGE=github.com/wangweihong/eazycloud/pkg/version
+VERSION_PACKAGE=github.com/wangweihong/gotoolbox/pkg/version
 
 .PHONY: all
 all: tidy gen proto format lint cover build

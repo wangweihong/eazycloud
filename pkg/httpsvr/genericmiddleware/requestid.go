@@ -5,11 +5,11 @@ import (
 	"io"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/gotoolbox/pkg/skipper"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/wangweihong/eazycloud/pkg/tracectx"
+	"github.com/wangweihong/gotoolbox/pkg/tracectx"
 )
 
 const (

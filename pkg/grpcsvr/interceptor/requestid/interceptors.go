@@ -3,13 +3,13 @@ package requestid
 import (
 	"context"
 
-	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 
 	"google.golang.org/grpc"
 
-	"github.com/wangweihong/eazycloud/pkg/tracectx"
+	"github.com/wangweihong/gotoolbox/pkg/tracectx"
 )
 
 // UnaryServerInterceptor returns a new unary server interceptor for trace.
@@ -24,7 +24,7 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		ctx = tracectx.WithTraceIDContext(ctx)
 		// 调用下一个拦截器或最终的RPC处理程序
 		resp, err := handler(ctx, req)
-		return resp, errors.UpdateStack(err)
+		return resp, errors.WithStack(err)
 	}
 }
 

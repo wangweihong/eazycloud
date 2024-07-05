@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/gotoolbox/pkg/skipper"
 
 	"github.com/wangweihong/eazycloud/pkg/grpccli/interceptorcli"
 
@@ -14,9 +14,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/wangweihong/eazycloud/pkg/errors"
-	"github.com/wangweihong/eazycloud/pkg/log"
-	"github.com/wangweihong/eazycloud/pkg/tls/grpctls"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/tls/grpctls"
 )
 
 // type CallerHandler func(ctx context.Context, conn *grpc.ClientConn) (interface{}, error).
@@ -102,11 +102,11 @@ func (c *Client) Call(ctx context.Context, call CallerHandler) error {
 
 	conn, err := c.getClientConn(ctx, c.addr, c.callOpts...)
 	if err != nil {
-		return errors.UpdateStack(err)
+		return errors.WithStack(err)
 	}
 	// defer conn.Close()
 	if err := call(ctx, conn); err != nil {
-		return errors.UpdateStack(err)
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -138,8 +138,7 @@ func (c *Client) getClientConn(ctx context.Context, addr string, copt ...grpc.Ca
 			}
 		}
 		if err != nil {
-			log.F(ctx).Errorf("generate tls credential fail:%w ", err)
-			return nil, err
+			return nil, errors.Wrap(err, "generate tls credential fail")
 		}
 	} else {
 		creds = insecure.NewCredentials()
@@ -166,10 +165,9 @@ func (c *Client) getClientConn(ctx context.Context, addr string, copt ...grpc.Ca
 	// custom dial options
 	opt = append(opt, c.dialOpts...)
 
-	conn, err := grpc.DialContext(ctx, addr, opt...)
+	conn, err := grpc.NewClient(addr, opt...)
 	if err != nil {
-		log.F(ctx).Errorf("dial to addr %s error: %w ", addr, err)
-		return nil, err
+		return nil, errors.Wrapf(err, "dial to addr %s error", addr)
 	}
 
 	c.conn = conn

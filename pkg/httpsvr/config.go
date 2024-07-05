@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/debug"
+	"github.com/wangweihong/gotoolbox/pkg/debug"
 
-	"github.com/wangweihong/eazycloud/pkg/tls"
+	"github.com/wangweihong/gotoolbox/pkg/tls"
 
 	"github.com/wangweihong/eazycloud/pkg/httpsvr/genericmiddleware"
 

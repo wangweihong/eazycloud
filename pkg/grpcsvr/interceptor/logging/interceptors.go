@@ -7,15 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/util/errorutil"
-
-	"github.com/wangweihong/eazycloud/pkg/errors"
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/skipper"
 
 	"google.golang.org/grpc/peer"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
-	"github.com/wangweihong/eazycloud/pkg/util/netutil"
+	"github.com/wangweihong/gotoolbox/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/netutil"
 
 	"google.golang.org/grpc"
 )
@@ -38,7 +36,7 @@ func UnaryServerInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryServer
 			log.F(ctx).Debugf("skip interceptor %s for %s", name, info.FullMethod)
 
 			resp, err := handler(ctx, req)
-			return resp, errors.UpdateStack(err)
+			return resp, errors.WithStack(err)
 		}
 
 		// 调用下一个拦截器或最终的RPC处理程序
@@ -64,14 +62,14 @@ func UnaryServerInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryServer
 
 		fields["req_latency_ms"] = Latency
 		fields["req_time_end"] = end.Format("2006-01-02 15:04:05.000000")
-		fields["resp_err"] = errorutil.ErrorMsg(err)
+		fields["resp_err"] = errors.Message(err)
 		if !DisableCopy {
 			fields["resp_body"] = resp
 		}
 
 		simpleCallInfo := fmt.Sprintf("[%s] %v %s", clientIP, Latency, info.FullMethod)
 		log.F(ctx).Info(simpleCallInfo, log.Every("call-detail", fields))
-		return resp, errors.UpdateStack(err)
+		return resp, errors.WithStack(err)
 	}
 }
 

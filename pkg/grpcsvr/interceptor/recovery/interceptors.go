@@ -3,13 +3,13 @@ package recovery
 import (
 	"context"
 
-	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 )
 
 // RecoveryHandlerFunc is a function that recovers from the panic `p` by returning an `error`.
@@ -39,7 +39,7 @@ func UnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 
 		resp, err = handler(ctx, req)
 		panicked = false
-		return resp, errors.UpdateStack(err)
+		return resp, errors.WithStack(err)
 	}
 }
 

@@ -8,15 +8,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/gotoolbox/pkg/skipper"
 
 	"github.com/mattn/go-isatty"
 
-	"github.com/wangweihong/eazycloud/pkg/util/netutil"
+	"github.com/wangweihong/gotoolbox/pkg/netutil"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 )
 
 const (
@@ -53,7 +53,7 @@ func LoggerMiddleware(skippers ...skipper.SkipperFunc) gin.HandlerFunc {
 		fields["req_content_length"] = c.Request.ContentLength
 		fields["req_media_type"] = c.GetHeader("Content-Type")
 
-		if !DisableCopy { // nolint: nestif
+		if !DisableCopy { //nolint: nestif
 			if method == http.MethodPost || method == http.MethodPut {
 				mediaType, _, _ := mime.ParseMediaType(c.GetHeader("Content-Type"))
 				if mediaType != "multipart/form-data" {

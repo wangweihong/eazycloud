@@ -33,8 +33,8 @@ var errCodeDocPrefix = `# 错误码
 {{.}}{{.}}{{.}}json
 {
   "code": 100101,
-  "messageEN": "Database error",
-  "messageCN": "数据库出错"
+  "EN": "Database error",
+  "CN": "数据库出错"
 }
 {{.}}{{.}}{{.}}
 
@@ -51,8 +51,8 @@ var errCodeDocPrefix = `# 错误码
 const (
 	commentKeyExtPrefix = "@"
 	commentKeyHTTP      = "HTTP"
-	commentKeyDescCN    = "MessageCN"
-	commentKeyDescEN    = "MessageEN"
+	commentKeyDescCN    = "CN"
+	commentKeyDescEN    = "EN"
 )
 
 var (
@@ -198,8 +198,7 @@ type Package struct {
 // parsePackage exits if there is an error.
 func (g *Generator) parsePackage(patterns []string, tags []string) {
 	cfg := &packages.Config{
-		// nolint: staticcheck
-		Mode: packages.LoadSyntax,
+		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedTypes | packages.NeedTypesSizes | packages.NeedSyntax | packages.NeedTypesInfo,
 		// TODO: Need to think about constants in test files. Maybe write type_string_test.go
 		// in a separate pass? For later.
 		Tests:      false,

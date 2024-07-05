@@ -1,10 +1,11 @@
 package examplegrpc
 
 import (
+	"github.com/wangweihong/gotoolbox/pkg/log"
+
 	"github.com/wangweihong/eazycloud/internal/examplegrpc/config"
 	"github.com/wangweihong/eazycloud/internal/examplegrpc/options"
 	"github.com/wangweihong/eazycloud/pkg/app"
-	"github.com/wangweihong/eazycloud/pkg/log"
 )
 
 const commandDesc = `Example of simple gRPC server`

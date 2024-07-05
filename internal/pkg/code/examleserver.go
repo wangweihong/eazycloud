@@ -1,4 +1,9 @@
 package code
 
 // example-server: example-server related code.
-const ()
+//
+//go:generate codegen -type=int
+
+const (
+	ErrUserNotFound int = iota + 110001
+)
