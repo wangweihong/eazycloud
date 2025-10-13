@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/debug"
+	"github.com/wangweihong/gotoolbox/pkg/debug"
 
-	"github.com/wangweihong/eazycloud/pkg/tls"
+	"github.com/wangweihong/gotoolbox/pkg/tls"
 
 	"github.com/wangweihong/eazycloud/pkg/httpsvr/genericmiddleware"
 
@@ -63,7 +63,7 @@ type JwtInfo struct {
 type FeatureProfilingInfo struct {
 	// enable profiling
 	EnableProfiling bool
-	// standalone profiling api
+	// standalone profiling apis
 	StandAloneProfiling bool
 	// standalone profiling address
 	ProfileAddress string

@@ -11,11 +11,11 @@ import (
 // FeatureOptions contains configuration items related to server features.
 type FeatureOptions struct {
 	// profile
-	EnableProfiling     bool   `json:"profiling"            mapstructure:"profiling"`            // 是否安装/debug/prof/* api
+	EnableProfiling     bool   `json:"profiling"            mapstructure:"profiling"`            // 是否安装/debug/prof/* apis
 	StandAloneProfiling bool   `json:"standalone-profiling" mapstructure:"standalone-profiling"` // prof api是否采用独立的服务
 	ProfileAddress      string `json:"profile-address"      mapstructure:"profile-address"`      // prof地址,采取独立服务时需指定
 	// metrics
-	EnableMetrics bool `json:"enable-metrics"       mapstructure:"enable-metrics"` // 是否启动/metrics api
+	EnableMetrics bool `json:"enable-metrics"       mapstructure:"enable-metrics"` // 是否启动/metrics apis
 }
 
 // NewFeatureOptions creates a FeatureOptions object with default parameters.
@@ -56,7 +56,7 @@ func (o *FeatureOptions) Validate() []error {
 	return errs
 }
 
-// AddFlags adds flags related to features for a specific api server to the
+// AddFlags adds flags related to features for a specific apis server to the
 // specified FlagSet.
 func (o *FeatureOptions) AddFlags(fs *pflag.FlagSet) {
 	if fs == nil {

@@ -12,7 +12,7 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/wangweihong/eazycloud/pkg/tls"
+	"github.com/wangweihong/gotoolbox/pkg/tls"
 )
 
 const (

@@ -8,20 +8,20 @@ import (
 	"os"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/gotoolbox/pkg/skipper"
 
 	"github.com/mattn/go-isatty"
 
-	"github.com/wangweihong/eazycloud/pkg/util/netutil"
+	"github.com/wangweihong/gotoolbox/pkg/netutil"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 )
 
 const (
-	MaxRequestLoggerLength  = 4096
-	MaxResponseLoggerLength = 4096
+	MaxRequestLoggerLength  = 40960
+	MaxResponseLoggerLength = 40960
 )
 
 // Request logger
@@ -34,12 +34,11 @@ func LoggerMiddleware(skippers ...skipper.SkipperFunc) gin.HandlerFunc {
 			c.Next()
 			return
 		}
-
 		p := c.Request.URL.Path
 		method := c.Request.Method
 
 		start := time.Now()
-		fields := make(map[string]interface{})
+		fields := make(map[string]any)
 		// log会根据key的排序来依次打印，调整key的命名以达到控制输出顺序
 		fields["req_time_begin"] = start.Format("2006-01-02 15:04:05.000000")
 		fields["host_pid"] = os.Getpid()
@@ -53,13 +52,19 @@ func LoggerMiddleware(skippers ...skipper.SkipperFunc) gin.HandlerFunc {
 		fields["req_content_length"] = c.Request.ContentLength
 		fields["req_media_type"] = c.GetHeader("Content-Type")
 
-		if !DisableCopy { // nolint: nestif
+		if !DisableCopy { //nolint: nestif
 			if method == http.MethodPost || method == http.MethodPut {
 				mediaType, _, _ := mime.ParseMediaType(c.GetHeader("Content-Type"))
 				if mediaType != "multipart/form-data" {
 					if v, ok := c.Get(RequestBodyKey); ok {
 						if b, ok := v.([]byte); ok && len(b) <= MaxRequestLoggerLength {
 							fields["z_request_body"] = string(b)
+						}
+					}
+				} else {
+					if v, ok := c.Get(RequestBodyKey); ok {
+						if b, ok := v.([]byte); ok && len(b) <= MaxRequestLoggerLength {
+							fields["z_form_body"] = string(b)
 						}
 					}
 				}

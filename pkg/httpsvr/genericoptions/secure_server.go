@@ -6,7 +6,7 @@ import (
 
 	"github.com/wangweihong/eazycloud/pkg/httpsvr"
 
-	"github.com/wangweihong/eazycloud/pkg/tls"
+	"github.com/wangweihong/gotoolbox/pkg/tls"
 
 	"github.com/wangweihong/eazycloud/pkg/app"
 
