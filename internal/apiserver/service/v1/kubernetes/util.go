@@ -456,33 +456,31 @@ func convertResourceLimitToPersistentUnit(containerName string, requests, limits
 		Limits:    make(map[string]int64),
 		Request:   make(map[string]int64),
 	}
-	if requests != nil {
-		for i, j := range requests {
-			if string(i) == "memory" {
-				ResourceConvert.Request[string(i)] = j.Value() / 1024 / 1024 // convert to memory
-				continue
-			}
-			if string(i) == "cpu" { // if use Value(), 0.1 cpu/100m cpu will convert to 1 cpu
-				ResourceConvert.Request[string(i)] = j.MilliValue()
-				continue
-			}
-			ResourceConvert.Request[string(i)] = j.Value()
+
+	for i, j := range requests {
+		if string(i) == "memory" {
+			ResourceConvert.Request[string(i)] = j.Value() / 1024 / 1024 // convert to memory
+			continue
 		}
+		if string(i) == "cpu" { // if use Value(), 0.1 cpu/100m cpu will convert to 1 cpu
+			ResourceConvert.Request[string(i)] = j.MilliValue()
+			continue
+		}
+		ResourceConvert.Request[string(i)] = j.Value()
 	}
 
-	if limits != nil {
-		for i, j := range limits {
-			if string(i) == "memory" {
-				ResourceConvert.Limits[string(i)] = j.Value() / 1024 / 1024 // convert to memory
-				continue
-			}
-			if string(i) == "cpu" { // if use Value(), 0.1 cpu/100m cpu will convert to 1 cpu
-				ResourceConvert.Limits[string(i)] = j.MilliValue()
-				continue
-			}
-			ResourceConvert.Limits[string(i)] = j.Value()
+	for i, j := range limits {
+		if string(i) == "memory" {
+			ResourceConvert.Limits[string(i)] = j.Value() / 1024 / 1024 // convert to memory
+			continue
 		}
+		if string(i) == "cpu" { // if use Value(), 0.1 cpu/100m cpu will convert to 1 cpu
+			ResourceConvert.Limits[string(i)] = j.MilliValue()
+			continue
+		}
+		ResourceConvert.Limits[string(i)] = j.Value()
 	}
+
 	return ResourceConvert
 }
 

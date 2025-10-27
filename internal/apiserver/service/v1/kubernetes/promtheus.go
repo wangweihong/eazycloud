@@ -615,7 +615,7 @@ func (m *Combiner) GetTypeString() string {
 }
 
 func (m *Combiner) GetInsert() []iprometheus.Point {
-	resp := make([]iprometheus.Point, len(m.meta), len(m.meta))
+	resp := make([]iprometheus.Point,0, len(m.meta))
 
 	var i, j int
 	for k, v := range m.meta {

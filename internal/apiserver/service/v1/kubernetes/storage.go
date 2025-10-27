@@ -299,7 +299,7 @@ func (k *kubernetesService) storageClassGlusterfsCreateCheck(req *iapiserver.Sto
 		}
 		decoded, err := base64.StdEncoding.DecodeString(userkey)
 		if err != nil {
-			return errors.Errorf(err.Error())
+			return errors.WithStack(err)
 		}
 		decodestr := string(decoded)
 		req.Resource.Parameters["restuserkey"] = decodestr
