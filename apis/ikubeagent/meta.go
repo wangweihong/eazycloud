@@ -1,6 +1,13 @@
 package ikubeagent
 
-import "github.com/wangweihong/eazycloud/apis/imachinery"
+import (
+	"github.com/wangweihong/eazycloud/apis/imachinery"
+	"gorm.io/gorm"
+)
+
+const (
+	KubernetesInstallStateUniqueName = "kubernetes"
+)
 
 type InstallState struct {
 	imachinery.ObjectMeta
@@ -10,4 +17,9 @@ type InstallState struct {
 	StartTime     imachinery.Time `json:"start_time"`
 	EndTime       imachinery.Time `json:"end_time"`
 	ErrorMessage  string          `json:"error_message"`
+}
+
+func (obj *InstallState) BeforeCreate(tx *gorm.DB) error {
+	obj.State = string(KubernetesDeployStateUninitialized)
+	return obj.ObjectMeta.BeforeCreate(tx)
 }

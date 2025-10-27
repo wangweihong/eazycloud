@@ -35,7 +35,7 @@ const (
 	KubernetesResourceKindNetworkPolicy           = "NetworkPolicy"
 	//
 	KubernetesResourceKindServiceMonitor = "serviceMonitor"
-	KubernetesResourceKindPodMoniotr     = "podMonitor"
+	KubernetesResourceKindPodMonitor     = "podMonitor"
 	KubernetesResourceKindAlertManager   = "alertManager"
 	KubernetesResourceKindPrometheus     = "prometheus"
 	KubernetesResourceKindPrometheusRule = "prometheusRule"
@@ -45,3 +45,8 @@ type ResourceMeta struct {
 	metav1.TypeMeta
 	Config any // 指针
 }
+
+const (
+	MonitorNamespace    = "monitoring"
+	KubeSystemNamespace = "kube-system"
+)

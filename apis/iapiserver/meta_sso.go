@@ -165,7 +165,7 @@ func (s *IdentityProvider) BeforeCreate(tx *gorm.DB) error {
 	}
 
 	if err := s.ObjectMeta.BeforeCreate(tx); err != nil {
-		return errors.Errorf("failed to run `BeforeCreate` hook: %w", err)
+		return errors.Errorf("failed to run `BeforeCreate` hook: %v", err)
 	}
 	return nil
 }
@@ -185,7 +185,7 @@ func (s *IdentityProvider) BeforeUpdate(tx *gorm.DB) error {
 		s.SetExtendValue("oauth2", s.Oauth2)
 	}
 	if err := s.ObjectMeta.BeforeUpdate(tx); err != nil {
-		return fmt.Errorf("failed to run `BeforeUpdate` hook: %w", err)
+		return fmt.Errorf("failed to run `BeforeUpdate` hook: %v", err)
 	}
 	return nil
 }
@@ -323,7 +323,7 @@ func (s *ServiceProvider) BeforeCreate(tx *gorm.DB) error {
 	}
 
 	if err := s.ObjectMeta.BeforeCreate(tx); err != nil {
-		return errors.Errorf("failed to run `BeforeCreate` hook: %w", err)
+		return errors.Errorf("failed to run `BeforeCreate` hook: %v", err)
 	}
 	return nil
 }

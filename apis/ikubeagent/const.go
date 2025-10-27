@@ -4,14 +4,17 @@ import (
 	"regexp"
 
 	"github.com/wangweihong/gotoolbox/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/statemachine"
 )
 
 const (
-	KubernetesDeployStateUninitialized = "uninitialized"
-	KubernetesDeployStateDeploying     = "deploying"
-	KubernetesDeployStateSuccess       = "success"
-	KubernetesDeployStateError         = "error"
+	KubernetesDeployStateUninitialized statemachine.State = "uninitialized"
+	KubernetesDeployStateDeploying                        = "deploying"
+	KubernetesDeployStateSuccess                          = "success"
+	KubernetesDeployStateError                            = "error"
+)
 
+const (
 	NetworkPluginCalico = "calico"
 
 	CalicoV3_14 = "v3.14"

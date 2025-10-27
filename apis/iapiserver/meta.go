@@ -87,7 +87,7 @@ func (s *AppStore) FuzzyFields() []string {
 // BeforeCreate run before create database record.
 func (s *AppStore) BeforeCreate(tx *gorm.DB) error {
 	if err := s.ObjectMeta.BeforeCreate(tx); err != nil {
-		return errors.Errorf("failed to run `BeforeCreate` hook: %w", err)
+		return errors.Errorf("failed to run `BeforeCreate` hook: %v", err)
 	}
 
 	if s.Extend == nil {
@@ -112,7 +112,7 @@ func (s *AppStore) AfterCreate(tx *gorm.DB) error {
 // BeforeUpdate run before update database record.
 func (s *AppStore) BeforeUpdate(tx *gorm.DB) error {
 	if err := s.ObjectMeta.BeforeUpdate(tx); err != nil {
-		return fmt.Errorf("failed to run `BeforeUpdate` hook: %w", err)
+		return fmt.Errorf("failed to run `BeforeUpdate` hook: %v", err)
 	}
 
 	if s.Extend == nil {

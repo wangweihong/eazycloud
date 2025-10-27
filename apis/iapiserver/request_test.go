@@ -135,6 +135,26 @@ func TestBatchRequestValidateObjectParam(t *testing.T) {
 			)
 
 		})
+	})
+}
+
+func TestValidatePort(t *testing.T) {
+	val := gvalidator.New(gvalidator.WithRequiredStructEnabled())
+	val.SetTagName("binding")
+	val.RegisterValidation("ports", validator.ValidatePorts)
+
+	type PortRequest struct {
+		Ports []int `json:"resources" binding:"ports"` // dive设置递归
+	}
+
+	Convey("Test ports Validator ", t, func() {
+		conditionOk := PortRequest{}
+		conditionOk.Ports = append(conditionOk.Ports, 2345, 355, 123)
+		So(val.Struct(&conditionOk), ShouldBeNil)
+
+		conditionFail := PortRequest{}
+		conditionFail.Ports = append(conditionFail.Ports, -1, 653355)
+		So(val.Struct(&conditionFail), ShouldNotBeNil)
 
 	})
 }

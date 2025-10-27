@@ -1,14 +1,11 @@
 package iapiserver
 
 import (
-	"fmt"
-	"strconv"
-
 	"strings"
 
-	jsoniter "github.com/json-iterator/go"
 	snapshotv1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v3/apis/volumesnapshot/v1beta1"
 	"github.com/wangweihong/gotoolbox/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/sets"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -23,14 +20,25 @@ import (
 
 	"github.com/wangweihong/eazycloud/apis/ikubernetes"
 	"github.com/wangweihong/eazycloud/apis/imachinery"
+	"github.com/wangweihong/eazycloud/apis/iprometheus"
 )
 
 const (
-	StorageClassDriverNfs       = "nfs.topke.io"
+	NamespaceKubeSystem = "kube-system"
+	NamespaceMonitoring = "monitoring"
+)
+const (
+	StorageClassDriverNfs       = "nfs.eazycloud.io"
 	StorageClassDriverGlusterFs = "kubernetes.io/glusterfs"
 )
 
 type (
+	ResourceGetRequest struct {
+		Cluster   string `json:"cluster"   form:"cluster" binding:"required"`
+		Namespace string `json:"namespace" form:"namespace"`
+		Name      string `json:"name"      form:"name" binding:"required"`
+		Yaml      bool   `json:"yaml" 		form:"yaml"`
+	}
 	ResourceRequest struct {
 		Cluster          string               `json:"cluster"           binding:"required"`
 		CreateOpts       metav1.CreateOptions `json:"create_opts"`
@@ -43,8 +51,7 @@ type (
 		Data             []byte               `json:"data"`
 		SubResources     []string             `json:"sub_resources"`
 		DeleteCollection bool                 `json:"delete_collection"`
-
-		Yaml bool `json:"yaml" form:"yaml"`
+		Yaml             bool                 `json:"yaml"`
 	}
 
 	ResourceListRequest struct {
@@ -59,7 +66,7 @@ type (
 		FieldSelector string `json:"field_selector" form:"field_selector"`
 		LabelSelector string `json:"label_selector" form:"label_selector"`
 	}
-
+	// general kubernetes info, include cluster info
 	ResourceInfo[T any] struct {
 		Resource T        `json:"resource"`
 		Cluster  *Cluster `json:"cluster"`
@@ -106,11 +113,8 @@ func (r ResourceListRequest) ToListOpts() metav1.ListOptions {
 	return opt
 }
 
-type ResourceGetRequest struct {
-	Cluster   string `json:"cluster"   form:"cluster" binding:"required"`
-	Namespace string `json:"namespace" form:"namespace"`
-	Name      string `json:"name"      form:"name" binding:"required"`
-	Yaml      bool   `json:"yaml"      form:"yaml"`
+func (r ResourceListRequest) FuzzyFields() []string {
+	return strings.Split(r.Fuzzy, " ")
 }
 
 func (r ResourceGetRequest) ToGetOpts() metav1.GetOptions {
@@ -180,71 +184,6 @@ func NewEachResourceRangeListState[T any](uuid, name string) EachResourceRangeLi
 	}
 }
 
-type NodeOverview struct {
-	// 节点名
-	NodeName string `json:"node_name"`
-	// 节点地址
-	NodeAddr string `json:"node_addr"`
-	// 总CPU
-	CpuCapacity float64 `json:"cpu_capacity"`
-	// 已使用CPU
-	CpuUsed float64 `json:"cpu_used"`
-	// CPU使用率
-	CpuUsedRatio float64 `json:"cpu_used_ratio"`
-	// CPU资源请求
-	CpuResourceRequest int64 `json:"cpu_resource_request"`
-	// CPU资源请求率
-	CpuResourceRequestRatio float64 `json:"cpu_resource_request_ratio"`
-	// CPU资源限制
-	CpuResourceLimit int64 `json:"cpu_resource_limit"`
-	// CPU资源限制率ListRequestG
-	CpuResourceLimitRatio float64 `json:"cpu_resource_limit_ratio"`
-	// 总内存
-	MemoryCapacity float64 `json:"memory_capacity"`
-	// 已使用内存
-	MemoryUsed float64 `json:"memory_used"`
-	// 内存使用率
-	MemoryUsedRatio float64 `json:"memory_used_ratio"`
-	// 内存资源请求
-	MemoryResourceRequest int64 `json:"memory_resource_request"`
-	// 内存资源请求率
-	MemoryResourceRequestRatio float64 `json:"memory_resource_request_ratio"`
-	// 内存资源限制
-	MemoryResourceLimit int64 `json:"memory_resource_limit"`
-	// 内存资源限制
-	MemoryResourceLimitRatio float64 `json:"memory_resource_limit_ratio"`
-	// 总存储容量
-	DiskCapacity float64 `json:"disk_capacity"`
-	// 已使用存储容量
-	DiskUsed float64 `json:"disk_used"`
-	// 存储容量使用率
-	DiskUsedRatio float64 `json:"disk_used_ratio"`
-	// Pod总数
-	PodCapacity int `json:"pod_capacity"`
-	// 已使用Pod总数
-	PodUsed int `json:"pod_used"`
-	// Pod使用率
-	PodUsedRatio float64 `json:"pod_used_ratio"`
-	// 是否网关节点
-	IsGateway bool `json:"is_gateway"`
-	// 运行状态
-	Status string `json:"status"`
-	// 节点角色
-	Role string `json:"role"`
-	// 系统镜像
-	OsImage string `json:"os_image"`
-	// 容器运行时
-	ContainerRuntimeVersion string `json:"container_runtime_version"`
-	// 错误信息
-	ErrorMsg string `json:"error_msg"`
-	// 创建时间
-	CreateTime int64             `json:"create_time"`
-	Extra      map[string]string `json:"extra"`
-
-	ClusterName string `json:"cluster_name"`
-	ClusterUUID string `json:"cluster_uuid"`
-}
-
 // cluster service request
 type (
 	ServiceRequest struct {
@@ -259,17 +198,17 @@ type (
 	ServiceGetRequest struct {
 		ResourceGetRequest
 	}
-	// ServiceInfo struct {
-	// 	Resource *v1.Service `json:"resource"`
-	// }
+	ServiceInfo struct {
+		*ResourceInfo[*v1.Service]
+	}
 	ServiceResponse struct {
-		Info *ResourceInfo[*v1.Service] `json:"info"`
+		Info *ServiceInfo `json:"info"`
 	}
 
 	ServiceListResponse struct {
-		TotalCount         int                                                      `json:"total_count"`
-		List               []*ResourceInfo[*v1.Service]                             `json:"list"`
-		EachRangeListState []EachResourceRangeListState[*ResourceInfo[*v1.Service]] `json:"each_range_list_state"`
+		TotalCount         int                                        `json:"total_count"`
+		List               []*ServiceInfo                             `json:"list"`
+		EachRangeListState []EachResourceRangeListState[*ServiceInfo] `json:"each_range_list_state"`
 	}
 
 	ServiceBatchRequest struct {
@@ -277,42 +216,56 @@ type (
 	}
 )
 
-// cluster endpoints request
-type EndpointsRequest struct {
-	ResourceRequest
-	FilterName string        `json:"filter_name" form:"filter_name"`
-	Endpoints  *v1.Endpoints `json:"endpoints"` // endpoints name is equal to service name
-}
-
-type EndpointsGetRequest struct {
-	ResourceGetRequest
+func NewServiceInfo(meta *v1.Service, cluster *Cluster) *ServiceInfo {
+	return &ServiceInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
 }
 
 // cluster endpoints request
-type EndpointListRequest struct {
-	ResourceListRequest
-}
+type (
+	EndpointsRequest struct {
+		ResourceRequest
+		FilterName string        `json:"filter_name" form:"filter_name"`
+		Endpoints  *v1.Endpoints `json:"endpoints"` // endpoints name is equal to service name
+	}
 
-type EndpointGetRequest struct {
-	ResourceGetRequest
-	FilterName string `json:"filter_name" form:"filter_name"`
-}
+	EndpointsGetRequest struct {
+		ResourceGetRequest
+	}
 
-// cluster endpoints info
-type EndpointsInfo struct {
-	Resource *v1.Endpoints `json:"resource"`
-}
+	// cluster endpoints request
+	EndpointListRequest struct {
+		ResourceListRequest
+	}
 
-// cluster endpoints response
-type EndpointsResponse struct {
-	Info *EndpointsInfo `json:"info,omitempty"`
-}
+	EndpointGetRequest struct {
+		ResourceGetRequest
+		FilterName string `json:"filter_name" form:"filter_name"`
+	}
 
-// cluster endpoints response
-type EndpointsListResponse struct {
-	TotalCount         int                                          `json:"total_count"`
-	List               []*EndpointsInfo                             `json:"list"`
-	EachRangeListState []EachResourceRangeListState[*EndpointsInfo] `json:"each_range_list_state,omitempty"`
+	// cluster endpoints info
+	EndpointsInfo struct {
+		*ResourceInfo[*v1.Endpoints]
+	}
+
+	// cluster endpoints response
+	EndpointsResponse struct {
+		Info *EndpointsInfo `json:"info,omitempty"`
+	}
+
+	// cluster endpoints response
+	EndpointsListResponse struct {
+		TotalCount         int                                          `json:"total_count"`
+		List               []*EndpointsInfo                             `json:"list"`
+		EachRangeListState []EachResourceRangeListState[*EndpointsInfo] `json:"each_range_list_state,omitempty"`
+	}
+)
+
+func NewEndpointsInfo(meta *v1.Endpoints, cluster *Cluster) *EndpointsInfo {
+	return &EndpointsInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
 }
 
 const (
@@ -465,74 +418,56 @@ type (
 		ResourceListRequest
 	}
 	SecretListResponse struct {
-		TotalCount         int                                                     `json:"total_count"`
-		List               []*ResourceInfo[*v1.Secret]                             `json:"list"`
-		EachRangeListState []EachResourceRangeListState[*ResourceInfo[*v1.Secret]] `json:"each_range_list_state"`
+		TotalCount         int                                       `json:"total_count"`
+		List               []*SecretInfo                             `json:"list"`
+		EachRangeListState []EachResourceRangeListState[*SecretInfo] `json:"each_range_list_state"`
+	}
+
+	SecretInfo struct {
+		*ResourceInfo[*v1.Secret]
 	}
 	SecretBatchRequest struct {
 		Resources []*SecretRequest `json:"resources" binding:"dive"`
 	}
 )
 
-type RouterRequest struct {
-	ResourceRequest
-	// 容器镜像
-	Image     string `json:"image"`
-	Namespace string `json:"namespace" binding:"required"`
+func NewSecretInfo(meta *v1.Secret, cluster *Cluster) *SecretInfo {
+	return &SecretInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
 }
 
-type RouterGetRequest struct {
-	ResourceGetRequest
+type (
+	RouterRequest struct {
+		ResourceRequest
+		// 容器镜像
+		Image     string `json:"image"`
+		Namespace string `json:"namespace" binding:"required"`
+	}
+
+	RouterGetRequest struct {
+		ResourceGetRequest
+	}
+
+	RouterListRequest struct {
+		ResourceListRequest
+	}
+
+	RouterResponse     ServiceResponse
+	RouterListResponse ServiceListResponse
+)
+
+func (r RouterGetRequest) Validate() error {
+	if r.Namespace == "" {
+		return errors.Errorf("namespace is empty")
+	}
+	return nil
 }
 
 var (
 	KubernetesSystemNamespaces = []string{"kube-system"}
 )
 
-type (
-	ResourceQuotaRequest struct {
-		ResourceRequest
-		ResourceQuota  *v1.ResourceQuota `json:"resource_quota" binding:"required,namespaced"`
-		UpdateIfExists bool              `json:"update_if_exists" description:"存在则更新"`
-	}
-
-	ResourceQuotaListRequest struct {
-		ResourceListRequest
-	}
-
-	ResourceQuotaGetRequest struct {
-		ResourceGetRequest
-	}
-
-	ResourceQuotaResponse struct {
-		Info *ResourceQuotaInfo `json:"info"`
-	}
-
-	ResourceQuotaListResponse struct {
-		TotalCount         int                                              `json:"total_count"`
-		List               []*ResourceQuotaInfo                             `json:"list"`
-		EachRangeListState []EachResourceRangeListState[*ResourceQuotaInfo] `json:"each_range_list_state,omitempty"`
-	}
-
-	ResourceQuotaInfo struct {
-		Resource *v1.ResourceQuota     `json:"resource"`
-		Convert  *ResourceQuotaConvert `json:"convert,omitempty"`
-	}
-
-	ResourceQuotaConvert struct {
-		Spec   ResourceQuotaSpec   `json:"spec,omitempty"`
-		Status ResourceQuotaStatus `json:"status,omitempty"`
-	}
-
-	ResourceQuotaSpec struct {
-		Hard map[string]int64 `json:"hard,omitempty"`
-	}
-
-	ResourceQuotaStatus struct {
-		Hard map[string]int64 `json:"hard,omitempty"`
-		Used map[string]int64 `json:"used,omitempty"`
-	}
-)
 type (
 	JobRequest struct {
 		Resource *batchv1.Job `json:"resource" binding:"required,namespaced"`
@@ -562,58 +497,15 @@ type (
 	}
 
 	JobInfo struct {
-		Resource        *batchv1.Job       `json:"resource"`
+		*ResourceInfo[*batchv1.Job]
 		ResourceConvert []*ResourceConvert `json:"resource_convert,omitempty"`
 	}
 )
 
-type MonitorData struct {
-	Namespace    string            `json:"namespace"`
-	Name         string            `json:"name"`
-	Addr         string            `json:"addr"`
-	Type         string            `json:"type"`
-	Cpu          float64           `json:"cpu"`
-	CpuUsed      float64           `json:"cpu_used"`
-	CpuTotal     float64           `json:"cpu_total"`
-	Memory       float64           `json:"memory"`
-	MemoryUsed   float64           `json:"memory_used"`
-	MemoryTotal  float64           `json:"memory_total"`
-	DiskRatio    float64           `json:"disk_ratio"`
-	DiskUsed     float64           `json:"disk_used"`
-	DiskTotal    float64           `json:"disk_total"`
-	DiskRead     float64           `json:"disk_read"`
-	DiskWrite    float64           `json:"disk_write"`
-	PodRatio     float64           `json:"pod_ratio"`
-	PodCount     float64           `json:"pod_count"` // 当前有多少的pod
-	PodTotal     float64           `json:"pod_total"` // 集群总共可以创建多少个pod
-	NetworkRead  float64           `json:"network_read"`
-	NetworkWrite float64           `json:"network_write"`
-	Extra        map[string]string `json:"extra"`
-}
-
-type MonitorDataResponse struct {
-	Status       error             `json:"status"`
-	Namespace    string            `json:"namespace,omitempty"`
-	Name         string            `json:"name"`
-	Addr         string            `json:"addr"`
-	Type         string            `json:"type"`
-	Cpu          float64           `json:"cpu"`
-	CpuUsed      float64           `json:"cpu_used"`
-	CpuTotal     float64           `json:"cpu_total"`
-	Memory       float64           `json:"memory"`
-	MemoryUsed   float64           `json:"memory_used"`
-	MemoryTotal  float64           `json:"memory_total"`
-	DiskRatio    float64           `json:"disk_ratio"`
-	DiskUsed     float64           `json:"disk_used"`
-	DiskTotal    float64           `json:"disk_total"`
-	DiskRead     float64           `json:"disk_read"`
-	DiskWrite    float64           `json:"disk_write"`
-	PodRatio     float64           `json:"pod_ratio"`
-	PodCount     float64           `json:"pod_count"`
-	PodTotal     float64           `json:"pod_total"`
-	NetworkRead  float64           `json:"network_read"`
-	NetworkWrite float64           `json:"network_write"`
-	Extra        map[string]string `json:"extra"`
+func NewJobInfo(meta *batchv1.Job, cluster *Cluster) *JobInfo {
+	return &JobInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
 }
 
 const (
@@ -678,17 +570,18 @@ type (
 		TypeMeta   metav1.TypeMeta   `json:"type_meta"`
 	}
 
+	// +gen:sortfields
 	PodInfo struct {
-		Resource        *v1.Pod             `json:"resource"`
-		Metric          []Metric            `json:"metric,omitempty"`
-		ResourceRequest v1.ResourceList     `json:"resource_request,omitempty"`
-		ResourceLimit   v1.ResourceList     `json:"resource_limit,omitempty"`
-		PodStatus       *PodStatus          `json:"pod_status,omitempty"`
-		MaxRestarts     *int                `json:"max_restarts,omitempty"`
-		Controller      *ObjectTypeMeta     `json:"controller,omitempty"`
-		NodeInfo        *v1.ObjectReference `json:"node_info,omitempty"`
-		ResourceConvert []*ResourceConvert  `json:"resource_convert,omitempty"`
-		Cluster         *Cluster            `json:"cluster"`
+		Resource        *v1.Pod              `json:"resource"`
+		Metric          []iprometheus.Metric `json:"metric,omitempty"`
+		ResourceRequest v1.ResourceList      `json:"resource_request,omitempty"`
+		ResourceLimit   v1.ResourceList      `json:"resource_limit,omitempty"`
+		PodStatus       *PodStatus           `json:"pod_status,omitempty"`
+		MaxRestarts     *int                 `json:"max_restarts,omitempty"`
+		Controller      *ObjectTypeMeta      `json:"controller,omitempty"`
+		NodeInfo        *v1.ObjectReference  `json:"node_info,omitempty"`
+		ResourceConvert []*ResourceConvert   `json:"resource_convert,omitempty"`
+		Cluster         *Cluster             `json:"cluster"`
 	}
 )
 
@@ -759,85 +652,6 @@ type Metadata struct {
 	Help   string `json:"help"`
 }
 
-type Metric struct {
-	MetricData
-	MetricName string `json:"metric_name"`
-	Error      string `json:"error"`
-}
-
-type MetricOne struct {
-	MetricName string  `json:"metric_name"`
-	Series     []Point `json:"series"`
-	Sample     *Point  `json:"sample"`
-	Error      string  `json:"error"`
-}
-
-type MetricData struct {
-	MetricType   string        `json:"metric_type"`
-	MetricValues []MetricValue `json:"metric_values"`
-}
-
-type MetricValue struct {
-	Name     string            `json:"name"`
-	Max      float64           `json:"max"`
-	Metadata map[string]string `json:"metadata"`
-	Sample   *Point            `json:"sample"`
-	Series   []Point           `json:"series"`
-}
-type Point [2]float64
-
-func (p Point) Timestamp() float64 {
-	return p[0]
-}
-
-func (p Point) Value() float64 {
-	return p[1]
-}
-
-func (p Point) MarshalJSON() ([]byte, error) {
-	t, err := jsoniter.Marshal(p.Timestamp())
-	if err != nil {
-		return nil, err
-	}
-	v, err := jsoniter.Marshal(strconv.FormatFloat(p.Value(), 'f', -1, 64))
-	if err != nil {
-		return nil, err
-	}
-	return []byte(fmt.Sprintf("[%s,%s]", t, v)), nil
-}
-
-func (p *Point) UnmarshalJSON(b []byte) error {
-	var v []interface{}
-	if err := jsoniter.Unmarshal(b, &v); err != nil {
-		return err
-	}
-
-	if v == nil {
-		return nil
-	}
-
-	if len(v) != 2 {
-		return errors.Errorf("unsupported array length")
-	}
-
-	ts, ok := v[0].(float64)
-	if !ok {
-		return errors.Errorf("failed to unmarshal [timestamp]")
-	}
-	valstr, ok := v[1].(string)
-	if !ok {
-		return errors.Errorf("failed to unmarshal [value]")
-	}
-	valf, err := strconv.ParseFloat(valstr, 64)
-	if err != nil {
-		return err
-	}
-
-	p[0] = ts
-	p[1] = valf
-	return nil
-}
-
 type (
 	ConfigMapRequest struct {
 		ResourceRequest
@@ -863,9 +677,15 @@ type (
 	}
 
 	ConfigMapInfo struct {
-		Resource *v1.ConfigMap `json:"resource"`
+		*ResourceInfo[*v1.ConfigMap]
 	}
 )
+
+func NewConfigMapInfo(meta *v1.ConfigMap, cluster *Cluster) *ConfigMapInfo {
+	return &ConfigMapInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
 
 type (
 	CronJobRequest struct {
@@ -897,10 +717,17 @@ type (
 	}
 
 	CronJobInfo struct {
-		Resource        *batchv1.CronJob   `json:"resource"`
+		*ResourceInfo[*batchv1.CronJob]
 		ResourceConvert []*ResourceConvert `json:"resource_convert,omitempty"`
 	}
 )
+
+func NewCronJobInfo(meta *batchv1.CronJob, cluster *Cluster) *CronJobInfo {
+	return &CronJobInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
+
 type (
 	NetworkPolicyRequest struct {
 		ResourceRequest
@@ -930,9 +757,17 @@ type (
 	}
 
 	NetworkPolicyInfo struct {
-		Resource *networkingv1.NetworkPolicy `json:"resource"`
+		*ResourceInfo[*networkingv1.NetworkPolicy]
+		// Resource *networkingv1.NetworkPolicy `json:"resource"`
 	}
 )
+
+func NewNetworkPolicyInfo(meta *networkingv1.NetworkPolicy, cluster *Cluster) *NetworkPolicyInfo {
+	return &NetworkPolicyInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
+
 type (
 	IngressRequest struct {
 		ResourceRequest
@@ -963,7 +798,7 @@ type (
 	}
 
 	IngressInfo struct {
-		Resource *networkingv1.Ingress `json:"resource"`
+		*ResourceInfo[*networkingv1.Ingress]
 		// 控制器
 		Controller v1.ObjectReference `json:"controller"`
 		// 控制器是否健康
@@ -971,31 +806,44 @@ type (
 	}
 )
 
-type EventRequest struct {
-	ResourceRequest
-	Resource *v1.Event `json:"resource" binding:"required,namespaced"`
+func NewIngressInfo(meta *networkingv1.Ingress, cluster *Cluster) *IngressInfo {
+	return &IngressInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
 }
 
-type EventGetRequest struct {
-	ResourceGetRequest
-}
+type (
+	EventRequest struct {
+		ResourceRequest
+		Resource *v1.Event `json:"resource" binding:"required,namespaced"`
+	}
 
-type EventListRequest struct {
-	ResourceListRequest
-}
+	EventGetRequest struct {
+		ResourceGetRequest
+	}
 
-type EventResponse struct {
-	Status error      `json:"status"`
-	Info   *EventInfo `json:"info"`
-}
+	EventListRequest struct {
+		ResourceListRequest
+	}
 
-type EventListResponse struct {
-	TotalCount int          `json:"total_count"`
-	List       []*EventInfo `json:"list"`
-}
+	EventResponse struct {
+		Info *EventInfo `json:"info"`
+	}
 
-type EventInfo struct {
-	Resource *v1.Event `json:"resource"`
+	EventListResponse struct {
+		TotalCount int          `json:"total_count"`
+		List       []*EventInfo `json:"list"`
+	}
+
+	EventInfo struct {
+		*ResourceInfo[*v1.Event]
+	}
+)
+
+func NewEventInfo(meta *v1.Event, cluster *Cluster) *EventInfo {
+	return &EventInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
 }
 
 type (
@@ -1047,6 +895,12 @@ type (
 	}
 )
 
+func NewDaemonSetInfo(meta *appsv1.DaemonSet, cluster *Cluster) *DaemonSetInfo {
+	return &DaemonSetInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
+
 type VersionInfo struct {
 	Namespace   string              `json:"namespace"`
 	Name        string              `json:"name"`
@@ -1072,8 +926,7 @@ type (
 	}
 
 	ReplicaSetResponse struct {
-		Status error           `json:"status"`
-		Info   *ReplicaSetInfo `json:"info"`
+		Info *ReplicaSetInfo `json:"info"`
 	}
 
 	ReplicaSetListResponse struct {
@@ -1083,9 +936,15 @@ type (
 	}
 
 	ReplicaSetInfo struct {
-		Resource *appsv1.ReplicaSet `json:"resource"`
+		*ResourceInfo[*appsv1.ReplicaSet]
 	}
 )
+
+func NewReplicaSetInfo(meta *appsv1.ReplicaSet, cluster *Cluster) *ReplicaSetInfo {
+	return &ReplicaSetInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
 
 type (
 	HpaRequest struct {
@@ -1103,8 +962,7 @@ type (
 	}
 
 	HpaResponse struct {
-		Status error    `json:"status"`
-		Info   *HpaInfo `json:"info"`
+		Info *HpaInfo `json:"info"`
 	}
 
 	HpaListResponse struct {
@@ -1114,9 +972,15 @@ type (
 	}
 
 	HpaInfo struct {
-		Resource *autoscalingv1.HorizontalPodAutoscaler `json:"resource"`
+		*ResourceInfo[*autoscalingv1.HorizontalPodAutoscaler]
 	}
 )
+
+func NewHpaInfo(meta *autoscalingv1.HorizontalPodAutoscaler, cluster *Cluster) *HpaInfo {
+	return &HpaInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
 
 type (
 	StatefulSetRequest struct {
@@ -1157,15 +1021,20 @@ type (
 	}
 
 	StatefulSetResponse struct {
-		Status error            `json:"status"`
-		Info   *StatefulSetInfo `json:"info,omitempty"`
+		Info *StatefulSetInfo `json:"info,omitempty"`
 	}
 
 	StatefulSetInfo struct {
-		Resource        *appsv1.StatefulSet `json:"resource"`
-		ResourceConvert []*ResourceConvert  `json:"resource_convert,omitempty"`
+		*ResourceInfo[*appsv1.StatefulSet]
+		ResourceConvert []*ResourceConvert `json:"resource_convert,omitempty"`
 	}
 )
+
+func NewStatefulSetInfo(meta *appsv1.StatefulSet, cluster *Cluster) *StatefulSetInfo {
+	return &StatefulSetInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
 
 type (
 
@@ -1194,13 +1063,6 @@ type (
 		Reason  string `json:"reason"`
 	}
 
-	DeploymentInfo struct {
-		Resource        *appsv1.Deployment `json:"resource"`
-		CurrentVersion  *VersionInfo       `json:"current_version,omitempty"`
-		Warning         *ReasonMessage     `json:"warning,omitempty"` // return warn message if condition fail
-		ResourceConvert []*ResourceConvert `json:"resource_convert,omitempty"`
-	}
-
 	//deployment response
 	DeploymentResponse struct {
 		Info *DeploymentInfo `json:"info"`
@@ -1223,7 +1085,19 @@ type (
 		List               []*DeploymentInfo                             `json:"list"`
 		EachRangeListState []EachResourceRangeListState[*DeploymentInfo] `json:"each_range_list_state,omitempty"`
 	}
+	DeploymentInfo struct {
+		*ResourceInfo[*appsv1.Deployment]
+		CurrentVersion  *VersionInfo       `json:"current_version,omitempty"`
+		Warning         *ReasonMessage     `json:"warning,omitempty"` // return warn message if condition fail
+		ResourceConvert []*ResourceConvert `json:"resource_convert,omitempty"`
+	}
 )
+
+func NewDeploymentInfo(meta *appsv1.Deployment, cluster *Cluster) *DeploymentInfo {
+	return &DeploymentInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
 
 type (
 	PodDisruptionBudgetRequest struct {
@@ -1255,9 +1129,15 @@ type (
 	}
 
 	PodDisruptionBudgetInfo struct {
-		Resource *policyv1.PodDisruptionBudget `json:"resource"`
+		*ResourceInfo[*policyv1.PodDisruptionBudget]
 	}
 )
+
+func NewPodDisruptionBudgetInfo(meta *policyv1.PodDisruptionBudget, cluster *Cluster) *PodDisruptionBudgetInfo {
+	return &PodDisruptionBudgetInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
 
 type (
 	StorageClassRequest struct {
@@ -1292,9 +1172,15 @@ type (
 	}
 
 	StorageClassInfo struct {
-		Resource *storagev1.StorageClass `json:"resource"`
+		*ResourceInfo[*storagev1.StorageClass]
 	}
 )
+
+func NewStorageClassInfo(meta *storagev1.StorageClass, cluster *Cluster) *StorageClassInfo {
+	return &StorageClassInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
 
 type (
 	VolumeSnapshotClassRequest struct {
@@ -1426,21 +1312,25 @@ type (
 	}
 
 	PersistentVolumeResponse struct {
-		Status error                 `json:"status"`
-		Info   *PersistentVolumeInfo `json:"info"`
+		Info *PersistentVolumeInfo `json:"info"`
 	}
 
 	PersistentVolumeListResponse struct {
-		Status             error                                               `json:"status"`
 		TotalCount         int                                                 `json:"total_count"`
 		List               []*PersistentVolumeInfo                             `json:"list"`
 		EachRangeListState []EachResourceRangeListState[*PersistentVolumeInfo] `json:"each_range_list_state,omitempty"`
 	}
 
 	PersistentVolumeInfo struct {
-		Resource *v1.PersistentVolume `json:"resource,omitempty"`
+		*ResourceInfo[*v1.PersistentVolume]
 	}
 )
+
+func NewPersistentVolumeInfo(meta *v1.PersistentVolume, cluster *Cluster) *PersistentVolumeInfo {
+	return &PersistentVolumeInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
+}
 
 var _ imachinery.PostBinder = &PersistentVolumeListRequest{}
 
@@ -1465,39 +1355,227 @@ func (r *PersistentVolumeListRequest) PostBind() error {
 	return nil
 }
 
-type PersistentVolumeClaimListRequest struct {
-	ResourceListRequest
+type (
+	PersistentVolumeClaimListRequest struct {
+		ResourceListRequest
+	}
+
+	PersistentVolumeClaimGetRequest struct {
+		ResourceGetRequest `binding:"namespaced"`
+	}
+
+	PersistentVolumeClaimRequest struct {
+		ResourceRequest
+		Resource *v1.PersistentVolumeClaim `json:"resource" binding:"required,namespaced"`
+	}
+
+	PersistentVolumeClaimBatchRequest struct {
+		Resources []*PersistentVolumeClaimRequest `json:"resources" binding:"dive"`
+	}
+
+	PersistentVolumeClaimListResponse struct {
+		TotalCount         int                                                      `json:"total_count"`
+		List               []*PersistentVolumeClaimInfo                             `json:"list"`
+		EachRangeListState []EachResourceRangeListState[*PersistentVolumeClaimInfo] `json:"each_range_list_state,omitempty"`
+	}
+
+	PersistentVolumeClaimResponse struct {
+		Info *PersistentVolumeClaimInfo `json:"info"`
+	}
+
+	PersistentVolumeClaimInfo struct {
+		*ResourceInfo[*v1.PersistentVolumeClaim]
+		// 支持扩展
+		AllowExpansion *bool `json:"allow_expansion,omitempty"`
+		// 支持快照
+		AllowSnapshot *bool `json:"allow_snapshot,omitempty"`
+	}
+)
+
+func NewPersistentVolumeClaimInfo(meta *v1.PersistentVolumeClaim, cluster *Cluster) *PersistentVolumeClaimInfo {
+	return &PersistentVolumeClaimInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
 }
 
-type PersistentVolumeClaimGetRequest struct {
-	ResourceGetRequest `binding:"namespaced"`
+var (
+	KubernetesBuiltInNamespace = sets.NewString(
+		"kube-system",
+		"kube-public",
+		IngressControllerNamespace,
+	)
+)
+
+type (
+	NamespaceRequest struct {
+		ResourceRequest
+		Resource *v1.Namespace `json:"namespace" binding:"required,clusterd"`
+	}
+
+	NamespaceListRequest struct {
+		ResourceListRequest
+	}
+
+	NamespaceGetRequest struct {
+		ResourceGetRequest
+	}
+
+	NamespaceInfo struct {
+		*ResourceInfo[*v1.Namespace]
+		GatewayEnable *bool `json:"gateway_enable,omitempty"` // 用来标识namespace的网关是否已经开启
+	}
+
+	NamespaceListResponse struct {
+		TotalCount         int                                          `json:"total_count"`
+		List               []*NamespaceInfo                             `json:"list"`
+		EachRangeListState []EachResourceRangeListState[*NamespaceInfo] `json:"each_range_list_state,omitempty"`
+	}
+
+	// ClusterNamespaceInfo struct {
+	// 	Cluster    *ClusterInfo     `json:"cluster"`
+	// 	Namespaces []*NamespaceInfo `json:"namespaces"`
+	// }
+
+	// NamespaceTreeResponse struct {
+	// 	List               []*ClusterNamespaceInfo      `json:"list"`
+	// 	EachRangeListState []EachResourceRangeListState `json:"each_range_list_state,omitempty"`
+	// }
+
+	NamespaceGatewayResponse struct {
+		Gateway string `json:"gateway"` // 命名空间的网关地址
+	}
+)
+
+func NewNamespaceInfo(meta *v1.Namespace, cluster *Cluster) *NamespaceInfo {
+	return &NamespaceInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
 }
 
-type PersistentVolumeClaimRequest struct {
-	ResourceRequest
-	Resource *v1.PersistentVolumeClaim `json:"resource" binding:"required,namespaced"`
+type (
+	NodePortRequest struct {
+		ResourceRequest
+		Ports []int `json:"ports" binding:"required,ports"`
+	}
+
+	NodePortListRequest struct {
+		ResourceListRequest
+	}
+
+	NodePortResponse struct {
+		TotalCount int         `json:"total_count"`
+		List       []*NodePort `json:"list,omitempty"`
+	}
+
+	NodePortListResponse struct {
+		TotalCount int         `json:"total_count"`
+		List       []*NodePort `json:"list,omitempty"`
+	}
+
+	NodePort struct {
+		Service  *ServiceInfo `json:"service"`
+		Port     int32        `json:"port"`
+		Endpoint string       `json:"endpoint"`
+	}
+)
+
+type (
+	LimitRangeRequest struct {
+		ResourceRequest
+		Resource       *v1.LimitRange `json:"resource"`
+		UpdateIfExists bool           `json:"update_if_exists"`
+	}
+
+	LimitRangeListRequest struct {
+		ResourceListRequest
+	}
+
+	LimitRangeGetRequest struct {
+		ResourceGetRequest
+	}
+
+	LimitRangeResponse struct {
+		Info *LimitRangeInfo `json:"info"`
+	}
+
+	LimitRangeListResponse struct {
+		TotalCount         int                                           `json:"total_count"`
+		List               []*LimitRangeInfo                             `json:"list"`
+		EachRangeListState []EachResourceRangeListState[*LimitRangeInfo] `json:"each_range_list_state,omitempty"`
+	}
+
+	LimitRangeInfo struct {
+		*ResourceInfo[*v1.LimitRange]
+		Convert *LimitRangeLimitConvert `json:"convert,omitempty"`
+	}
+
+	LimitRangeLimitConvert struct {
+		Limits []LimitRangeConvert `json:"limits"`
+	}
+
+	LimitRangeConvert struct {
+		Type                 string           `json:"type" `
+		Max                  map[string]int64 `json:"max,omitempty"`
+		Min                  map[string]int64 `json:"min,omitempty"`
+		Default              map[string]int64 `json:"default,omitempty"`
+		DefaultRequest       map[string]int64 `json:"defaultRequest,omitempty"`
+		MaxLimitRequestRatio map[string]int64 `json:"maxLimitRequestRatio,omitempty"`
+	}
+)
+
+func NewLimitRangeInfo(meta *v1.LimitRange, cluster *Cluster) *LimitRangeInfo {
+	return &LimitRangeInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
 }
 
-type PersistentVolumeClaimBatchRequest struct {
-	Resources []*PersistentVolumeClaimRequest `json:"resources" binding:"dive"`
-}
+type (
+	ResourceQuotaRequest struct {
+		ResourceRequest
+		Resource       *v1.ResourceQuota `json:"resource"`
+		UpdateIfExists bool              `json:"update_if_exists"`
+	}
 
-type PersistentVolumeClaimListResponse struct {
-	Status             error                                                    `json:"status"`
-	TotalCount         int                                                      `json:"total_count"`
-	List               []*PersistentVolumeClaimInfo                             `json:"list"`
-	EachRangeListState []EachResourceRangeListState[*PersistentVolumeClaimInfo] `json:"each_range_list_state,omitempty"`
-}
+	ResourceQuotaListRequest struct {
+		ResourceListRequest
+	}
 
-type PersistentVolumeClaimResponse struct {
-	Status error                      `json:"status"`
-	Info   *PersistentVolumeClaimInfo `json:"info"`
-}
+	ResourceQuotaGetRequest struct {
+		ResourceGetRequest
+	}
 
-type PersistentVolumeClaimInfo struct {
-	Resource *v1.PersistentVolumeClaim `json:"resource"`
-	// 支持扩展
-	AllowExpansion *bool `json:"allow_expansion,omitempty"`
-	// 支持快照
-	AllowSnapshot *bool `json:"allow_snapshot,omitempty"`
+	ResourceQuotaResponse struct {
+		Info *ResourceQuotaInfo `json:"info"`
+	}
+
+	ResourceQuotaListResponse struct {
+		TotalCount         int                                              `json:"total_count"`
+		List               []*ResourceQuotaInfo                             `json:"list"`
+		EachRangeListState []EachResourceRangeListState[*ResourceQuotaInfo] `json:"each_range_list_state,omitempty"`
+	}
+
+	ResourceQuotaInfo struct {
+		*ResourceInfo[*v1.ResourceQuota]
+		Convert *ResourceQuotaConvert `json:"convert,omitempty"`
+	}
+
+	ResourceQuotaConvert struct {
+		Spec   ResourceQuotaSpec   `json:"spec,omitempty"`
+		Status ResourceQuotaStatus `json:"status,omitempty"`
+	}
+
+	ResourceQuotaSpec struct {
+		Hard map[string]int64 `json:"hard,omitempty"`
+	}
+
+	ResourceQuotaStatus struct {
+		Hard map[string]int64 `json:"hard,omitempty"`
+		Used map[string]int64 `json:"used,omitempty"`
+	}
+)
+
+func NewResourceQuotaInfo(meta *v1.ResourceQuota, cluster *Cluster) *ResourceQuotaInfo {
+	return &ResourceQuotaInfo{
+		ResourceInfo: NewResourceInfo(meta, cluster),
+	}
 }
