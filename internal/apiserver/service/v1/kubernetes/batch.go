@@ -19,15 +19,15 @@ import (
 func (k *kubernetesService) JobCreate(ctx context.Context, req *iapiserver.JobRequest) (*iapiserver.JobInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.JobCreate(ctx, cluster, req.Resource.Namespace, req.Resource, req.CreateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sJobToApiJob(meta, cluster, req.Yaml), nil
+	return convertK8sJobToApiJob(meta, cluster), nil
 }
 
 func (k *kubernetesService) JobDelete(ctx context.Context, req *iapiserver.JobRequest) error {
@@ -85,7 +85,7 @@ func (k *kubernetesService) JobGet(ctx context.Context, req *iapiserver.JobGetRe
 		return nil, errors.WithStack(err)
 	}
 
-	resp.Info = convertK8sJobToApiJob(meta, cluster, req.Yaml)
+	resp.Info = convertK8sJobToApiJob(meta, cluster)
 	return resp, nil
 }
 
@@ -102,7 +102,7 @@ func (k *kubernetesService) JobList(ctx context.Context, req *iapiserver.JobList
 
 			var resInfos []*iapiserver.JobInfo
 			for i := range resList.Items {
-				resInfo := convertK8sJobToApiJob(&resList.Items[i], c, req.Yaml)
+				resInfo := convertK8sJobToApiJob(&resList.Items[i], c)
 				resInfos = append(resInfos, resInfo)
 			}
 			clusterListOne.TotalCount = len(resInfos)
@@ -140,16 +140,14 @@ func (k *kubernetesService) JobList(ctx context.Context, req *iapiserver.JobList
 	return resp, err
 }
 
-func convertK8sJobToApiJob(meta *batchv1.Job, cluster *iapiserver.Cluster, yaml bool) *iapiserver.JobInfo {
-	resp := &iapiserver.JobInfo{
-		Resource: meta,
+func convertK8sJobToApiJob(meta *batchv1.Job, cluster *iapiserver.Cluster) *iapiserver.JobInfo {
+	resp := iapiserver.NewJobInfo(meta, cluster)
+
+	resp.ResourceConvert = make([]*iapiserver.ResourceConvert, 0)
+	for _, container := range meta.Spec.Template.Spec.Containers {
+		resp.ResourceConvert = append(resp.ResourceConvert, convertResourceLimitToPersistentUnit(container.Name, container.Resources.Requests, container.Resources.Limits))
 	}
-	if !yaml {
-		resp.ResourceConvert = make([]*iapiserver.ResourceConvert, 0)
-		for _, container := range meta.Spec.Template.Spec.Containers {
-			resp.ResourceConvert = append(resp.ResourceConvert, convertResourceLimitToPersistentUnit(container.Name, container.Resources.Requests, container.Resources.Limits))
-		}
-	}
+
 	return resp
 }
 
@@ -171,7 +169,7 @@ func (k *kubernetesService) CronJobCreate(ctx context.Context, req *iapiserver.C
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sCronJobToApiCronJob(meta, cluster, req.Yaml), nil
+	return convertK8sCronJobToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) CronJobUpdate(ctx context.Context, req *iapiserver.CronJobRequest) (*iapiserver.CronJobInfo, error) {
@@ -191,7 +189,7 @@ func (k *kubernetesService) CronJobUpdate(ctx context.Context, req *iapiserver.C
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sCronJobToApiCronJob(meta, cluster, req.Yaml), nil
+	return convertK8sCronJobToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) CronJobUpdateSuspend(ctx context.Context, req *iapiserver.CronJobRequest) (*iapiserver.CronJobInfo, error) {
@@ -209,7 +207,7 @@ func (k *kubernetesService) CronJobUpdateSuspend(ctx context.Context, req *iapis
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sCronJobToApiCronJob(meta, cluster, req.Yaml), nil
+	return convertK8sCronJobToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) CronJobUpdateSchedule(ctx context.Context, req *iapiserver.CronJobRequest) (*iapiserver.CronJobInfo, error) {
@@ -236,7 +234,7 @@ func (k *kubernetesService) CronJobUpdateSchedule(ctx context.Context, req *iapi
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sCronJobToApiCronJob(meta, cluster, req.Yaml), nil
+	return convertK8sCronJobToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) CronJobDelete(ctx context.Context, req *iapiserver.CronJobRequest) error {
@@ -274,7 +272,7 @@ func (k *kubernetesService) CronJobGet(ctx context.Context, req *iapiserver.Cron
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sCronJobToApiCronJob(meta, cluster, req.Yaml), nil
+	return convertK8sCronJobToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) CronJobList(ctx context.Context, req *iapiserver.CronJobListRequest) (*iapiserver.CronJobListResponse, error) {
@@ -290,7 +288,7 @@ func (k *kubernetesService) CronJobList(ctx context.Context, req *iapiserver.Cro
 
 			var resInfos []*iapiserver.CronJobInfo
 			for i := range resList.Items {
-				resInfo := convertK8sCronJobToApiCronJob(&resList.Items[i], c, req.Yaml)
+				resInfo := convertK8sCronJobToApi(&resList.Items[i], c)
 				resInfos = append(resInfos, resInfo)
 			}
 			clusterListOne.TotalCount = len(resInfos)
@@ -324,7 +322,7 @@ func (k *kubernetesService) CronJobTrigger(ctx context.Context, req *iapiserver.
 
 	meta, err := clientset.CronJobGet(ctx, cluster, req.Resource.Namespace, req.Resource.Name, req.GetOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	triggerJob := &batchv1.Job{
@@ -341,21 +339,19 @@ func (k *kubernetesService) CronJobTrigger(ctx context.Context, req *iapiserver.
 
 	job, err := clientset.JobCreate(ctx, cluster, req.Resource.Namespace, triggerJob, metav1.CreateOptions{})
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sJobToApiJob(job, cluster, req.Yaml), nil
+	return convertK8sJobToApiJob(job, cluster), nil
 }
 
-func convertK8sCronJobToApiCronJob(meta *batchv1.CronJob, cluster *iapiserver.Cluster, yaml bool) *iapiserver.CronJobInfo {
-	resp := &iapiserver.CronJobInfo{
-		Resource: meta,
+func convertK8sCronJobToApi(meta *batchv1.CronJob, cluster *iapiserver.Cluster) *iapiserver.CronJobInfo {
+	resp := iapiserver.NewCronJobInfo(meta, cluster)
+
+	resp.ResourceConvert = make([]*iapiserver.ResourceConvert, len(meta.Spec.JobTemplate.Spec.Template.Spec.Containers))
+	for _, container := range meta.Spec.JobTemplate.Spec.Template.Spec.Containers {
+		resp.ResourceConvert = append(resp.ResourceConvert, convertResourceLimitToPersistentUnit(container.Name, container.Resources.Requests, container.Resources.Limits))
 	}
-	if !yaml {
-		resp.ResourceConvert = make([]*iapiserver.ResourceConvert, 0)
-		for _, container := range meta.Spec.JobTemplate.Spec.Template.Spec.Containers {
-			resp.ResourceConvert = append(resp.ResourceConvert, convertResourceLimitToPersistentUnit(container.Name, container.Resources.Requests, container.Resources.Limits))
-		}
-	}
+
 	return resp
 }

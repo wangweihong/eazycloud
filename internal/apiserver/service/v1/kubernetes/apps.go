@@ -17,7 +17,6 @@ import (
 	"github.com/wangweihong/gotoolbox/pkg/typeutil"
 	"github.com/wangweihong/gotoolbox/pkg/waitgroup"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -301,7 +300,7 @@ func (k *kubernetesService) ReplicaSetCreate(ctx context.Context, req *iapiserve
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sReplicaSetToApiReplicaSet(meta, cluster, req.Yaml), nil
+	return iapiserver.NewReplicaSetInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) ReplicaSetDelete(ctx context.Context, req *iapiserver.ReplicaSetRequest) error {
@@ -329,7 +328,7 @@ func (k *kubernetesService) ReplicaSetUpdate(ctx context.Context, req *iapiserve
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sReplicaSetToApiReplicaSet(meta, cluster, req.Yaml), nil
+	return iapiserver.NewReplicaSetInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) ReplicaSetGet(ctx context.Context, req *iapiserver.ReplicaSetGetRequest) (*iapiserver.ReplicaSetInfo, error) {
@@ -342,7 +341,7 @@ func (k *kubernetesService) ReplicaSetGet(ctx context.Context, req *iapiserver.R
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sReplicaSetToApiReplicaSet(meta, cluster, req.Yaml), nil
+	return iapiserver.NewReplicaSetInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) ReplicaSetList(ctx context.Context, req *iapiserver.ReplicaSetListRequest) (*iapiserver.ReplicaSetListResponse, error) {
@@ -359,7 +358,7 @@ func (k *kubernetesService) ReplicaSetList(ctx context.Context, req *iapiserver.
 
 			var resInfos []*iapiserver.ReplicaSetInfo
 			for i := range resList.Items {
-				resInfo := convertK8sReplicaSetToApiReplicaSet(&resList.Items[i], c, req.Yaml)
+				resInfo := iapiserver.NewReplicaSetInfo(&resList.Items[i], c)
 				resInfos = append(resInfos, resInfo)
 			}
 			clusterListOne.TotalCount = len(resInfos)
@@ -369,12 +368,6 @@ func (k *kubernetesService) ReplicaSetList(ctx context.Context, req *iapiserver.
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
 	return resp, err
-}
-
-func convertK8sReplicaSetToApiReplicaSet(meta *appsv1.ReplicaSet, cluster *iapiserver.Cluster, yaml bool) *iapiserver.ReplicaSetInfo {
-	return &iapiserver.ReplicaSetInfo{
-		Resource: meta,
-	}
 }
 
 func (k *kubernetesService) HpaCreate(ctx context.Context, req *iapiserver.HpaRequest) (*iapiserver.HpaInfo, error) {
@@ -387,7 +380,7 @@ func (k *kubernetesService) HpaCreate(ctx context.Context, req *iapiserver.HpaRe
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sHpaToApiHpa(meta, cluster, req.Yaml), nil
+	return iapiserver.NewHpaInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) HpaDelete(ctx context.Context, req *iapiserver.HpaRequest) error {
@@ -414,7 +407,7 @@ func (k *kubernetesService) HpaUpdate(ctx context.Context, req *iapiserver.HpaRe
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sHpaToApiHpa(meta, cluster, req.Yaml), nil
+	return iapiserver.NewHpaInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) HpaGet(ctx context.Context, req *iapiserver.HpaGetRequest) (*iapiserver.HpaInfo, error) {
@@ -428,7 +421,7 @@ func (k *kubernetesService) HpaGet(ctx context.Context, req *iapiserver.HpaGetRe
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sHpaToApiHpa(meta, cluster, req.Yaml), nil
+	return iapiserver.NewHpaInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) HpaList(ctx context.Context, req *iapiserver.HpaListRequest) (*iapiserver.HpaListResponse, error) {
@@ -445,7 +438,7 @@ func (k *kubernetesService) HpaList(ctx context.Context, req *iapiserver.HpaList
 
 			var resInfos []*iapiserver.HpaInfo
 			for i := range resList.Items {
-				resInfo := convertK8sHpaToApiHpa(&resList.Items[i], c, req.Yaml)
+				resInfo := iapiserver.NewHpaInfo(&resList.Items[i], c)
 				resInfos = append(resInfos, resInfo)
 			}
 			clusterListOne.TotalCount = len(resInfos)
@@ -455,10 +448,6 @@ func (k *kubernetesService) HpaList(ctx context.Context, req *iapiserver.HpaList
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
 	return resp, err
-}
-
-func convertK8sHpaToApiHpa(meta *autoscalingv1.HorizontalPodAutoscaler, cluster *iapiserver.Cluster, yaml bool) *iapiserver.HpaInfo {
-	return &iapiserver.HpaInfo{Resource: meta}
 }
 
 func (k *kubernetesService) StatefulSetCreate(ctx context.Context, req *iapiserver.StatefulSetRequest) (*iapiserver.StatefulSetInfo, error) {
@@ -472,7 +461,7 @@ func (k *kubernetesService) StatefulSetCreate(ctx context.Context, req *iapiserv
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sStatefulSetToApiStatefulSet(meta, cluster, req.Yaml), nil
+	return convertK8sStatefulSetToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) StatefulSetVersionUpdate(ctx context.Context, req *iapiserver.StatefulSetRequest) (*iapiserver.StatefulSetInfo, error) {
@@ -524,7 +513,7 @@ func (k *kubernetesService) StatefulSetVersionUpdate(ctx context.Context, req *i
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sStatefulSetToApiStatefulSet(sts, cluster, req.Yaml), nil
+	return convertK8sStatefulSetToApi(sts, cluster), nil
 }
 
 // 获取版本列表
@@ -644,7 +633,7 @@ func (k *kubernetesService) StatefulSetRecreate(ctx context.Context, req *iapise
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sStatefulSetToApiStatefulSet(meta, cluster, req.Yaml), nil
+	return convertK8sStatefulSetToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) StatefulSetUpdate(ctx context.Context, req *iapiserver.StatefulSetRequest) (*iapiserver.StatefulSetInfo, error) {
@@ -658,7 +647,7 @@ func (k *kubernetesService) StatefulSetUpdate(ctx context.Context, req *iapiserv
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sStatefulSetToApiStatefulSet(meta, cluster, req.Yaml), nil
+	return convertK8sStatefulSetToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) StatefulSetDelete(ctx context.Context, req *iapiserver.StatefulSetRequest) error {
@@ -699,7 +688,7 @@ func (k *kubernetesService) StatefulSetGet(ctx context.Context, req *iapiserver.
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sStatefulSetToApiStatefulSet(meta, cluster, req.Yaml), nil
+	return convertK8sStatefulSetToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) StatefulSetList(ctx context.Context, req *iapiserver.StatefulSetListRequest) (*iapiserver.StatefulSetListResponse, error) {
@@ -715,7 +704,7 @@ func (k *kubernetesService) StatefulSetList(ctx context.Context, req *iapiserver
 
 			var resInfos []*iapiserver.StatefulSetInfo
 			for i := range resList.Items {
-				resInfo := convertK8sStatefulSetToApiStatefulSet(&resList.Items[i], c, req.Yaml)
+				resInfo := convertK8sStatefulSetToApi(&resList.Items[i], c)
 				resInfos = append(resInfos, resInfo)
 			}
 			clusterListOne.TotalCount = len(resInfos)
@@ -740,16 +729,14 @@ func (k *kubernetesService) StatefulSetList(ctx context.Context, req *iapiserver
 	return resp, err
 }
 
-func convertK8sStatefulSetToApiStatefulSet(meta *appsv1.StatefulSet, cluster *iapiserver.Cluster, yaml bool) *iapiserver.StatefulSetInfo {
-	resp := &iapiserver.StatefulSetInfo{
-		Resource: meta,
+func convertK8sStatefulSetToApi(meta *appsv1.StatefulSet, cluster *iapiserver.Cluster) *iapiserver.StatefulSetInfo {
+	resp := iapiserver.NewStatefulSetInfo(meta, cluster)
+
+	resp.ResourceConvert = make([]*iapiserver.ResourceConvert, 0)
+	for _, container := range meta.Spec.Template.Spec.Containers {
+		resp.ResourceConvert = append(resp.ResourceConvert, convertResourceLimitToPersistentUnit(container.Name, container.Resources.Requests, container.Resources.Limits))
 	}
-	if !yaml {
-		resp.ResourceConvert = make([]*iapiserver.ResourceConvert, 0)
-		for _, container := range meta.Spec.Template.Spec.Containers {
-			resp.ResourceConvert = append(resp.ResourceConvert, convertResourceLimitToPersistentUnit(container.Name, container.Resources.Requests, container.Resources.Limits))
-		}
-	}
+
 	return resp
 }
 
@@ -757,10 +744,8 @@ var (
 	deploymentVersionFlag = "deployment.kubernetes.io/revision"
 )
 
-func (k *kubernetesService) DeploymentUpdate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentResponse, error) {
-	resp := &iapiserver.DeploymentResponse{}
+func (k *kubernetesService) DeploymentUpdate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentInfo, error) {
 	req.Resource.ResourceVersion = ""
-
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -771,13 +756,11 @@ func (k *kubernetesService) DeploymentUpdate(ctx context.Context, req *iapiserve
 		return nil, errors.WithStack(err)
 	}
 
-	resp.Info = convertK8sDeploymentToApiDeployment(meta, cluster, req.Yaml)
-	return resp, nil
+	return convertK8sDeploymentToApi(meta, cluster), nil
+
 }
 
-func (k *kubernetesService) DeploymentCreate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentResponse, error) {
-	resp := &iapiserver.DeploymentResponse{}
-
+func (k *kubernetesService) DeploymentCreate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -787,8 +770,8 @@ func (k *kubernetesService) DeploymentCreate(ctx context.Context, req *iapiserve
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	resp.Info = convertK8sDeploymentToApiDeployment(meta, cluster, req.Yaml)
-	return resp, nil
+
+	return convertK8sDeploymentToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) DeploymentDelete(ctx context.Context, req *iapiserver.DeploymentRequest) error {
@@ -798,7 +781,6 @@ func (k *kubernetesService) DeploymentDelete(ctx context.Context, req *iapiserve
 	}
 
 	if req.DeleteCollection {
-
 		meta, err := clientset.DeploymentGet(ctx, cluster, req.Resource.Namespace, req.Resource.Name, req.GetOpts)
 		if err != nil {
 			return errors.WithStack(err)
@@ -836,8 +818,7 @@ func (k *kubernetesService) DeploymentBatchDelete(ctx context.Context, req *iapi
 }
 
 // TODO: rewrite logic
-func (k *kubernetesService) DeploymentRecreate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentResponse, error) {
-	resp := &iapiserver.DeploymentResponse{}
+func (k *kubernetesService) DeploymentRecreate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -855,14 +836,12 @@ func (k *kubernetesService) DeploymentRecreate(ctx context.Context, req *iapiser
 
 	if err := clientset.PodDeleteCollection(ctx, cluster, req.Resource.Namespace, metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector.String()}); err != nil {
 		return nil, errors.WithStack(err)
-
 	}
-	resp.Info = convertK8sDeploymentToApiDeployment(meta, cluster, req.Yaml)
-	return resp, nil
+
+	return convertK8sDeploymentToApi(meta, cluster), nil
 }
 
-func (k *kubernetesService) DeploymentGet(ctx context.Context, req *iapiserver.DeploymentGetRequest) (*iapiserver.DeploymentResponse, error) {
-	resp := &iapiserver.DeploymentResponse{}
+func (k *kubernetesService) DeploymentGet(ctx context.Context, req *iapiserver.DeploymentGetRequest) (*iapiserver.DeploymentInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -872,8 +851,8 @@ func (k *kubernetesService) DeploymentGet(ctx context.Context, req *iapiserver.D
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	resp.Info = convertK8sDeploymentToApiDeployment(meta, cluster, req.Yaml)
-	return resp, nil
+
+	return convertK8sDeploymentToApi(meta, cluster), nil
 }
 
 func (k *kubernetesService) DeploymentList(ctx context.Context, req *iapiserver.DeploymentListRequest) (*iapiserver.DeploymentListResponse, error) {
@@ -892,7 +871,7 @@ func (k *kubernetesService) DeploymentList(ctx context.Context, req *iapiserver.
 
 			var resInfos []*iapiserver.DeploymentInfo
 			for i := range resList.Items {
-				resInfo := convertK8sDeploymentToApiDeployment(&resList.Items[i], cluster, req.Yaml)
+				resInfo := convertK8sDeploymentToApi(&resList.Items[i], cluster)
 				if NewObjectCommonFieldFilter(resInfo.Resource).Filter(req.Fuzzy) {
 					continue
 				}
@@ -939,7 +918,6 @@ func getDependencyCurrentVersion(ctx context.Context, cluster *iapiserver.Cluste
 
 	for _, v := range rsList.Items {
 		if v.Status.AvailableReplicas != 0 {
-
 			version, ok := v.Annotations[deploymentVersionFlag]
 			if ok {
 				return version
@@ -1084,7 +1062,6 @@ func deploymentToRevision(ctx context.Context, cluster *iapiserver.Cluster, depl
 	}
 
 	for _, v := range rsList {
-
 		if v.Annotations[deploymentVersionFlag] == toRevision {
 			return v, nil
 		}
@@ -1162,24 +1139,23 @@ func deploymentCopy(deploy *appsv1.Deployment) (*appsv1.Deployment, error) {
 	return resp, nil
 }
 
-func convertK8sDeploymentToApiDeployment(meta *appsv1.Deployment, cluster *iapiserver.Cluster, yaml bool) *iapiserver.DeploymentInfo {
-	resp := &iapiserver.DeploymentInfo{Resource: meta}
+func convertK8sDeploymentToApi(meta *appsv1.Deployment, cluster *iapiserver.Cluster) *iapiserver.DeploymentInfo {
+	resp := iapiserver.NewDeploymentInfo(meta, cluster)
 
-	if !yaml {
-		var warn *iapiserver.ReasonMessage
-		for _, v := range meta.Status.Conditions {
-			if v.Type == appsv1.DeploymentReplicaFailure && v.Status == corev1.ConditionTrue {
-				warn = &iapiserver.ReasonMessage{
-					Message: v.Message,
-					Reason:  v.Reason,
-				}
+	var warn *iapiserver.ReasonMessage
+	for _, v := range meta.Status.Conditions {
+		if v.Type == appsv1.DeploymentReplicaFailure && v.Status == corev1.ConditionTrue {
+			warn = &iapiserver.ReasonMessage{
+				Message: v.Message,
+				Reason:  v.Reason,
 			}
 		}
-		resp.Warning = warn
-		resp.ResourceConvert = make([]*iapiserver.ResourceConvert, 0)
-		for _, container := range meta.Spec.Template.Spec.Containers {
-			resp.ResourceConvert = append(resp.ResourceConvert, convertResourceLimitToPersistentUnit(container.Name, container.Resources.Requests, container.Resources.Limits))
-		}
 	}
+	resp.Warning = warn
+	resp.ResourceConvert = make([]*iapiserver.ResourceConvert, 0, len(meta.Spec.Template.Spec.Containers))
+	for _, container := range meta.Spec.Template.Spec.Containers {
+		resp.ResourceConvert = append(resp.ResourceConvert, convertResourceLimitToPersistentUnit(container.Name, container.Resources.Requests, container.Resources.Limits))
+	}
+
 	return resp
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/wangweihong/gotoolbox/pkg/async"
+	//"github.com/wangweihong/gotoolbox/pkg/async"
 	"github.com/wangweihong/gotoolbox/pkg/compareutil"
 	"github.com/wangweihong/gotoolbox/pkg/errors"
 	"github.com/wangweihong/gotoolbox/pkg/log"
@@ -232,13 +232,13 @@ func (k *kubernetesService) NodeGet(ctx context.Context, req *iapiserver.NodeGet
 	}
 
 	nodeInfo := convertK8sNodeToNodeInfo(node, cluster, req.Yaml)
-	if req.ShowResourceUsage {
-		nodeInfo.ResourceUsage = k.getNodeRealtimeResourceUsage(ctx, cluster, node, 5)
-		if nodeInfo.ResourceUsage != nil {
-			nodeInfo.ResourceUsage.CpuUsed = nodeInfo.ResourceUsage.CpuUsed / 1000
-			nodeInfo.ResourceUsage.CpuUsedRatio = nodeInfo.ResourceUsage.CpuUsedRatio / 1000
-		}
-	}
+	// if req.ShowResourceUsage {
+	// 	nodeInfo.ResourceUsage = k.getNodeRealtimeResourceUsage(ctx, cluster, node, 5)
+	// 	if nodeInfo.ResourceUsage != nil {
+	// 		nodeInfo.ResourceUsage.CpuUsed = nodeInfo.ResourceUsage.CpuUsed / 1000
+	// 		nodeInfo.ResourceUsage.CpuUsedRatio = nodeInfo.ResourceUsage.CpuUsedRatio / 1000
+	// 	}
+	// }
 
 	return nodeInfo, nil
 }
@@ -367,11 +367,11 @@ func (k *kubernetesService) NodeList(ctx context.Context, req *iapiserver.NodeLi
 // 		}
 // 		if v.Data != nil {
 // 			switch ret := v.Data.(type) {
-// 			case *topke.NodeRealTimePhysicalResourceUsage:
+// 			case *iapiserver.NodeRealTimePhysicalResourceUsage:
 // 				nrr.NodeRealTimePhysicalResourceUsage = ret
-// 			case *topke.NodePodListResourceRequestAndLimit:
+// 			case *iapiserver.NodePodListResourceRequestAndLimit:
 // 				nrr.NodePodListResourceRequestAndLimit = ret
-// 			case *topke.NodeRealTimePodUsage:
+// 			case *iapiserver.NodeRealTimePodUsage:
 // 				nrr.NodeRealTimePodUsage = ret
 // 			}
 // 		}
@@ -476,7 +476,7 @@ func (k *kubernetesService) NodeEvent(ctx context.Context, req *iapiserver.NodeE
 
 	var resInfos []*iapiserver.EventInfo
 	for i := range resList.Items {
-		resInfo := convertK8sEventTopApiEvent(&resList.Items[i], cluster, req.Yaml)
+		resInfo := convertK8sEventTopApi(&resList.Items[i], cluster)
 		if NewObjectCommonFieldFilter(resInfo.Resource).Filter(req.Fuzzy) {
 			continue
 		}
@@ -487,102 +487,102 @@ func (k *kubernetesService) NodeEvent(ctx context.Context, req *iapiserver.NodeE
 	return resInfos[s:e], nil
 }
 
-func (ks *kubernetesService) getNodeRealtimeResourceUsage(ctx context.Context, clusterInfo *iapiserver.Cluster, node *v1.Node, timeout int64, ignoreMonitor ...string) *iapiserver.NodeRealtimeResource {
-	nrr := &iapiserver.NodeRealtimeResource{}
-	wg := waitgroup.NewWaitGroup(ctx)
-	// only work  when monitor service is ready
-	if clientset.IsMonitorServiceReady(clusterInfo.ID) {
-		wg.Start(waitgroup.NewWaitGroupHandleFunc(ctx, "", func() waitgroup.Result {
-			done := make(chan waitgroup.Result, 1)
-			async.GoRoutineCustomPanicCover(ctx, func() {
-				done <- waitgroup.NewResult(nil, fmt.Errorf("panic"))
-			}, func(ctx context.Context) {
-				ret, err := ks.getNodeRealTimeMonitorResourceUsage(ctx, clusterInfo, node, 0)
-				if err != nil {
-					done <- waitgroup.NewResult(nil, err)
-				}
-				done <- waitgroup.NewResult(ret, nil)
-			})
-			select {
-			case ret := <-done:
-				return ret
+// func (ks *kubernetesService) getNodeRealtimeResourceUsage(ctx context.Context, clusterInfo *iapiserver.Cluster, node *v1.Node, timeout int64, ignoreMonitor ...string) *iapiserver.NodeRealtimeResource {
+// 	nrr := &iapiserver.NodeRealtimeResource{}
+// 	wg := waitgroup.NewWaitGroup(ctx)
+// 	// only work  when monitor service is ready
+// 	if clientset.IsMonitorServiceReady(clusterInfo.ID) {
+// 		wg.Start(waitgroup.NewWaitGroupHandleFunc(ctx, "", func() waitgroup.Result {
+// 			done := make(chan waitgroup.Result, 1)
+// 			async.GoRoutineCustomPanicCover(ctx, func() {
+// 				done <- waitgroup.NewResult(nil, fmt.Errorf("panic"))
+// 			}, func(ctx context.Context) {
+// 				ret, err := ks.getNodeRealTimeMonitorResourceUsage(ctx, clusterInfo, node, 0)
+// 				if err != nil {
+// 					done <- waitgroup.NewResult(nil, err)
+// 				}
+// 				done <- waitgroup.NewResult(ret, nil)
+// 			})
+// 			select {
+// 			case ret := <-done:
+// 				return ret
 
-			case <-time.After(time.Duration(timeout) * time.Second):
-				log.Errorf("getNodeRealTimeMonitorResourceUsage timeout, %v second has pass ", timeout)
-				return waitgroup.NewResult(nil, fmt.Errorf("timeout"))
-			}
-		}))
-	}
-	wg.Start(waitgroup.NewWaitGroupHandleFunc(ctx, "", func() waitgroup.Result {
-		podList, err := nodeNonTerminatedPodsList(ctx, clusterInfo, node, timeout)
-		if err != nil {
-			log.Errorf("PodListTimeout error: %v", err)
-			return waitgroup.NewResult(nil, err)
-		}
-		podsRequestAndLimit := calculateNodesPodsResourceRequestAndLimit(podList, node)
-		return waitgroup.NewResult(podsRequestAndLimit, nil)
-	}))
-	// don't not use monitor to get pod usage. when monitor broken, it will broke pod usage
-	wg.Start(waitgroup.NewWaitGroupHandleFunc(ctx, "", func() waitgroup.Result {
-		podList, err := nodeAllPodsList(nil, clusterInfo, node)
-		if err != nil {
-			log.Errorf("PodListTimeout error:%v", err)
-			return waitgroup.NewResult(nil, err)
-		}
-		podUsage := calculateNodesPodsUsage(podList, node)
-		return waitgroup.NewResult(podUsage, nil)
-	}))
-	wg.Wait()
+// 			case <-time.After(time.Duration(timeout) * time.Second):
+// 				log.Errorf("getNodeRealTimeMonitorResourceUsage timeout, %v second has pass ", timeout)
+// 				return waitgroup.NewResult(nil, fmt.Errorf("timeout"))
+// 			}
+// 		}))
+// 	}
+// 	wg.Start(waitgroup.NewWaitGroupHandleFunc(ctx, "", func() waitgroup.Result {
+// 		podList, err := nodeNonTerminatedPodsList(ctx, clusterInfo, node, timeout)
+// 		if err != nil {
+// 			log.Errorf("PodListTimeout error: %v", err)
+// 			return waitgroup.NewResult(nil, err)
+// 		}
+// 		podsRequestAndLimit := calculateNodesPodsResourceRequestAndLimit(podList, node)
+// 		return waitgroup.NewResult(podsRequestAndLimit, nil)
+// 	}))
+// 	// don't not use monitor to get pod usage. when monitor broken, it will broke pod usage
+// 	wg.Start(waitgroup.NewWaitGroupHandleFunc(ctx, "", func() waitgroup.Result {
+// 		podList, err := nodeAllPodsList(nil, clusterInfo, node)
+// 		if err != nil {
+// 			log.Errorf("PodListTimeout error:%v", err)
+// 			return waitgroup.NewResult(nil, err)
+// 		}
+// 		podUsage := calculateNodesPodsUsage(podList, node)
+// 		return waitgroup.NewResult(podUsage, nil)
+// 	}))
+// 	wg.Wait()
 
-	for _, v := range wg.GetResults() {
-		if v.Error != nil {
-			continue
-		}
-		if v.Data != nil {
-			switch ret := v.Data.(type) {
-			case *iapiserver.NodeRealTimePhysicalResourceUsage:
-				nrr.NodeRealTimePhysicalResourceUsage = ret
-			case *iapiserver.NodePodListResourceRequestAndLimit:
-				nrr.NodePodListResourceRequestAndLimit = ret
-			case *iapiserver.NodeRealTimePodUsage:
-				nrr.NodeRealTimePodUsage = ret
-			}
-		}
-	}
+// 	for _, v := range wg.GetResults() {
+// 		if v.Error != nil {
+// 			continue
+// 		}
+// 		if v.Data != nil {
+// 			switch ret := v.Data.(type) {
+// 			case *iapiserver.NodeRealTimePhysicalResourceUsage:
+// 				nrr.NodeRealTimePhysicalResourceUsage = ret
+// 			case *iapiserver.NodePodListResourceRequestAndLimit:
+// 				nrr.NodePodListResourceRequestAndLimit = ret
+// 			case *iapiserver.NodeRealTimePodUsage:
+// 				nrr.NodeRealTimePodUsage = ret
+// 			}
+// 		}
+// 	}
 
-	if nrr.NodeRealTimePhysicalResourceUsage == nil {
-		nrr.NodeRealTimePhysicalResourceUsage = &iapiserver.NodeRealTimePhysicalResourceUsage{}
-		nrr.CpuCapacity, nrr.MemoryCapacity = getCpuMemoryCapacityFromNode(node)
-	}
+// 	if nrr.NodeRealTimePhysicalResourceUsage == nil {
+// 		nrr.NodeRealTimePhysicalResourceUsage = &iapiserver.NodeRealTimePhysicalResourceUsage{}
+// 		nrr.CpuCapacity, nrr.MemoryCapacity = getCpuMemoryCapacityFromNode(node)
+// 	}
 
-	return nrr
-}
+// 	return nrr
+// }
 
 func getCpuMemoryCapacityFromNode(node *v1.Node) (float64, float64) {
 	return float64(node.Status.Capacity.Cpu().MilliValue()), float64(node.Status.Capacity.Memory().Value())
 }
 
-func (k *kubernetesService) getNodeRealTimeMonitorResourceUsage(ctx context.Context, clusterInfo *iapiserver.Cluster, node *v1.Node, timeout int64) (*iapiserver.NodeRealTimePhysicalResourceUsage, error) {
-	resourceUsage := &iapiserver.NodeRealTimePhysicalResourceUsage{}
-	ret, err := k.NodeState(clusterInfo, node.Name, timeout)
-	if err != nil {
-		log.Errorf("MonitorGetNodeState err:%v", err)
-		return nil, err
-	}
-	ret.Addr = getNodeAddr(node)
-	resourceUsage.CpuCapacity = float64(node.Status.Capacity.Cpu().MilliValue())
-	resourceUsage.MemoryCapacity = float64(node.Status.Capacity.Memory().Value())
-	resourceUsage.CpuUsed = ret.CpuUsed * 1000
-	resourceUsage.MemoryUsed = ret.MemoryUsed
-	resourceUsage.DiskUsed = ret.DiskUsed
-	resourceUsage.DiskCapacity = ret.DiskTotal
+// func (k *kubernetesService) getNodeRealTimeMonitorResourceUsage(ctx context.Context, clusterInfo *iapiserver.Cluster, node *v1.Node, timeout int64) (*iapiserver.NodeRealTimePhysicalResourceUsage, error) {
+// 	resourceUsage := &iapiserver.NodeRealTimePhysicalResourceUsage{}
+// 	ret, err := k.NodeState(clusterInfo, node.Name, timeout)
+// 	if err != nil {
+// 		log.Errorf("MonitorGetNodeState err:%v", err)
+// 		return nil, err
+// 	}
+// 	ret.Addr = getNodeAddr(node)
+// 	resourceUsage.CpuCapacity = float64(node.Status.Capacity.Cpu().MilliValue())
+// 	resourceUsage.MemoryCapacity = float64(node.Status.Capacity.Memory().Value())
+// 	resourceUsage.CpuUsed = ret.CpuUsed * 1000
+// 	resourceUsage.MemoryUsed = ret.MemoryUsed
+// 	resourceUsage.DiskUsed = ret.DiskUsed
+// 	resourceUsage.DiskCapacity = ret.DiskTotal
 
-	resourceUsage.CpuUsedRatio = mathutil.Divide(resourceUsage.CpuUsed, resourceUsage.CpuCapacity) * 100
-	resourceUsage.MemoryUsedRatio = mathutil.Divide(resourceUsage.MemoryUsed, resourceUsage.MemoryCapacity) * 100
-	resourceUsage.DiskUsedRatio = mathutil.Divide(resourceUsage.DiskUsed, resourceUsage.DiskCapacity) * 100
+// 	resourceUsage.CpuUsedRatio = mathutil.Divide(resourceUsage.CpuUsed, resourceUsage.CpuCapacity) * 100
+// 	resourceUsage.MemoryUsedRatio = mathutil.Divide(resourceUsage.MemoryUsed, resourceUsage.MemoryCapacity) * 100
+// 	resourceUsage.DiskUsedRatio = mathutil.Divide(resourceUsage.DiskUsed, resourceUsage.DiskCapacity) * 100
 
-	return resourceUsage, nil
-}
+// 	return resourceUsage, nil
+// }
 
 // func (k *kubernetesService) NodeState(ctx context.Context, clusterInfo *iapiserver.Cluster, nodeName string, timeout int64) (*iapiserver.MonitorData, error) {
 // 	resp := &iapiserver.MonitorData{Name: nodeName}

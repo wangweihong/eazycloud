@@ -4,14 +4,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/wangweihong/eazycloud/apis/iapiserver"
 	"github.com/wangweihong/gotoolbox/pkg/compareutil"
 	"github.com/wangweihong/gotoolbox/pkg/paging"
 	"github.com/wangweihong/gotoolbox/pkg/sets"
+	"github.com/wangweihong/gotoolbox/pkg/sortutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
-
-	"github.com/wangweihong/eazycloud/apis/iapiserver"
 )
 
 // import (
@@ -589,6 +589,26 @@ func CutPagingSliceResourceList[T any](eachClusterResources []iapiserver.EachRes
 	total := len(*list)
 	if total > 0 {
 		sort.SliceStable(*list, lessFunc)
+		s, index := paging.Index(total, pageNum, pageSize)
+		plist := *list
+		plist = plist[s:index]
+		*list = plist
+	}
+	return total
+}
+
+func CutPagingSliceResourceList2[T any](eachClusterResources []iapiserver.EachResourceRangeListState[T], list *[]T,
+	pageNum, pageSize int,
+	sortBy string, asc bool,
+) int {
+	for _, ret := range eachClusterResources {
+		*list = append(*list, ret.List...)
+	}
+
+	total := len(*list)
+	if total > 0 {
+		sortutil.StructSliceSort(*list, sortBy, asc)
+		//sort.SliceStable(*list, lessFunc)
 		s, index := paging.Index(total, pageNum, pageSize)
 		plist := *list
 		plist = plist[s:index]

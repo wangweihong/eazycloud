@@ -25,7 +25,7 @@ func (k *kubernetesService) NetworkPolicyCreate(ctx context.Context, req *iapise
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sNetworkPolicyToApiNetworkPolicy(meta, cluster, req.Yaml), nil
+	return iapiserver.NewNetworkPolicyInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) NetworkPolicyUpdate(ctx context.Context, req *iapiserver.NetworkPolicyRequest) (*iapiserver.NetworkPolicyInfo, error) {
@@ -39,20 +39,20 @@ func (k *kubernetesService) NetworkPolicyUpdate(ctx context.Context, req *iapise
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sNetworkPolicyToApiNetworkPolicy(meta, cluster, req.Yaml), nil
+	return iapiserver.NewNetworkPolicyInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) NetworkPolicyDelete(ctx context.Context, req *iapiserver.NetworkPolicyRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if err := clientset.NetworkPolicyDelete(ctx, cluster, req.Resource.Namespace, req.Resource, req.DeleteOpts); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
-	return err
+	return nil
 }
 
 func (k *kubernetesService) NetworkPolicyBatchDelete(ctx context.Context, req *iapiserver.NetworkPolicyBatchRequest) waitgroup.BatchGenericOutput[*iapiserver.NetworkPolicyRequest] {
@@ -81,7 +81,7 @@ func (k *kubernetesService) NetworkPolicyGet(ctx context.Context, req *iapiserve
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sNetworkPolicyToApiNetworkPolicy(meta, cluster, req.Yaml), nil
+	return iapiserver.NewNetworkPolicyInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) NetworkPolicyListAll(ctx context.Context, req *iapiserver.NetworkPolicyListRequest) (*iapiserver.NetworkPolicyListResponse, error) {
@@ -98,7 +98,7 @@ func (k *kubernetesService) NetworkPolicyListAll(ctx context.Context, req *iapis
 
 			var resInfos []*iapiserver.NetworkPolicyInfo
 			for i := range resList.Items {
-				resInfo := convertK8sNetworkPolicyToApiNetworkPolicy(&resList.Items[i], c, req.Yaml)
+				resInfo := iapiserver.NewNetworkPolicyInfo(&resList.Items[i], c)
 				resInfos = append(resInfos, resInfo)
 			}
 			clusterListOne.TotalCount = len(resInfos)
@@ -108,12 +108,6 @@ func (k *kubernetesService) NetworkPolicyListAll(ctx context.Context, req *iapis
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
 	return resp, err
-}
-
-func convertK8sNetworkPolicyToApiNetworkPolicy(meta *networkingv1.NetworkPolicy, cluster *iapiserver.Cluster, yaml bool) *iapiserver.NetworkPolicyInfo {
-	return &iapiserver.NetworkPolicyInfo{
-		Resource: meta,
-	}
 }
 
 func (k *kubernetesService) IngressCreate(ctx context.Context, req *iapiserver.IngressRequest) (*iapiserver.IngressInfo, error) {
@@ -127,7 +121,7 @@ func (k *kubernetesService) IngressCreate(ctx context.Context, req *iapiserver.I
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sIngressToApiIngress(meta, cluster, req.Yaml), nil
+	return convertK8sIngressToApi(meta, cluster, req.Yaml), nil
 }
 
 func (k *kubernetesService) IngressUpdate(ctx context.Context, req *iapiserver.IngressRequest) (*iapiserver.IngressInfo, error) {
@@ -141,7 +135,7 @@ func (k *kubernetesService) IngressUpdate(ctx context.Context, req *iapiserver.I
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sIngressToApiIngress(meta, cluster, req.Yaml), nil
+	return convertK8sIngressToApi(meta, cluster, req.Yaml), nil
 }
 
 func (k *kubernetesService) IngressGet(ctx context.Context, req *iapiserver.IngressRequest) (*iapiserver.IngressInfo, error) {
@@ -155,7 +149,7 @@ func (k *kubernetesService) IngressGet(ctx context.Context, req *iapiserver.Ingr
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sIngressToApiIngress(meta, cluster, req.Yaml), nil
+	return convertK8sIngressToApi(meta, cluster, req.Yaml), nil
 }
 
 func (k *kubernetesService) IngressDelete(ctx context.Context, req *iapiserver.IngressRequest) error {
@@ -199,7 +193,7 @@ func (k *kubernetesService) IngressListAll(ctx context.Context, req *iapiserver.
 
 			var resInfos []*iapiserver.IngressInfo
 			for i := range resList.Items {
-				resInfo := convertK8sIngressToApiIngress(&resList.Items[i], c, req.Yaml)
+				resInfo := convertK8sIngressToApi(&resList.Items[i], c, req.Yaml)
 				resInfos = append(resInfos, resInfo)
 			}
 			clusterListOne.TotalCount = len(resInfos)
@@ -211,10 +205,9 @@ func (k *kubernetesService) IngressListAll(ctx context.Context, req *iapiserver.
 	return resp, err
 }
 
-func convertK8sIngressToApiIngress(meta *networkingv1.Ingress, cluster *iapiserver.Cluster, yaml bool) *iapiserver.IngressInfo {
-	apiInfo := &iapiserver.IngressInfo{
-		Resource: meta,
-	}
+func convertK8sIngressToApi(meta *networkingv1.Ingress, cluster *iapiserver.Cluster, yaml bool) *iapiserver.IngressInfo {
+	apiInfo := iapiserver.NewIngressInfo(meta, cluster)
+
 	if !yaml {
 		ref := v1.ObjectReference{
 			Kind:            "Deployment",

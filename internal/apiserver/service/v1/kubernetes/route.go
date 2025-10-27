@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/wangweihong/gotoolbox/pkg/errors"
 	"github.com/wangweihong/gotoolbox/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/waitgroup"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/wangweihong/eazycloud/apis/iapiserver"
@@ -15,6 +17,7 @@ import (
 	"github.com/wangweihong/eazycloud/internal/pkg/libkubernetes"
 
 	//metav1 "k8s.io/api/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -23,11 +26,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
-func (k *kubernetesService) RouterGet(ctx context.Context, req *iapiserver.RouterGetRequest) (*iapiserver.ServiceInfo, error) {
-	if req.Namespace == "" {
-		return nil, errors.New("namespace is empty")
-	}
-
+func (k *kubernetesService) RouterGet(ctx context.Context, req *iapiserver.RouterGetRequest) (*iapiserver.ResourceInfo[*v1.Service], error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, err
@@ -44,92 +43,81 @@ func (k *kubernetesService) RouterGet(ctx context.Context, req *iapiserver.Route
 		return nil, err
 	}
 
-	return convertK8sServiceToApiService(meta, cluster, req.Yaml), nil
+	return iapiserver.NewResourceInfo(meta, cluster), nil
 
 }
 
-// func (k *kubernetesService) RouterList(ctx context.Context, req *topke.RouterListRequest) *topke.RouterListResponse {
-// 	clusterList, err := tm.GetVisitScope(req.ResourceListRequest)
-// 	if err != nil {
-// 		resp.Status = status.UpdateStatus(err)
-// 		return resp
-// 	}
+func (k *kubernetesService) RouterList(ctx context.Context, req *iapiserver.RouterListRequest) (*iapiserver.RouterListResponse, error) {
+	resp := &iapiserver.RouterListResponse{}
+	var err error
+	resp.EachRangeListState, resp.TotalCount, err = multiClusterResourceList[*iapiserver.ServiceInfo](ctx, k.store, &resp.List, req.ResourceListRequest,
+		func(ctx context.Context, cluster *iapiserver.Cluster) waitgroup.GenericResult[iapiserver.EachResourceRangeListState[*iapiserver.ServiceInfo]] {
+			clusterListOne := iapiserver.NewEachResourceRangeListState[*iapiserver.ServiceInfo](cluster.ID, cluster.Name)
+			resList, err := clientset.ServiceList(ctx, cluster, req.Namespace, req.ToListOpts())
+			if err != nil {
+				return waitgroup.NewGenericResult(clusterListOne, err)
+			}
 
-// 	wg := utils.NewWaitGroup(nil)
-// 	for _, cluster := range clusterList {
-// 		cluster := cluster
-// 		wg.Start(utils.NewWaitGroupHandleFunc("", nil, func() utils.WaitGroupResult {
-// 			clusterListOne := topke.NewEachResourceRangeListState(cluster.UUID, cluster.Name)
+			var resInfos []*iapiserver.ServiceInfo
+			for i := range resList.Items {
+				resInfo := iapiserver.NewServiceInfo(&resList.Items[i], cluster)
+				if NewObjectCommonFieldFilter(resInfo.Resource).Filter(req.Fuzzy) {
+					continue
+				}
+				resInfos = append(resInfos, resInfo)
+			}
+			clusterListOne.TotalCount = len(resInfos)
+			clusterListOne.List = resInfos
+			return waitgroup.NewGenericResult(clusterListOne, nil)
+		}, func(i, j int) bool {
+			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
+		}, 10*time.Second)
+	return resp, err
+}
 
-// 			rets, err := clientset.ServiceList(cluster, topke.IngressControllerNamespace, req.ToListOpts())
-// 			if err != nil {
-// 				return utils.NewWaitGroupResult(clusterListOne, status.UpdateStatus(err))
-// 			}
-
-// 			list := make([]*topke.ServiceInfo, len(rets.Items), len(rets.Items))
-// 			for k, v := range rets.Items {
-// 				v := v
-// 				one := convertK8sServiceToApiService(&v, cluster, false)
-// 				list[k] = one
-// 			}
-// 			clusterListOne.TotalCount = len(list)
-// 			clusterListOne.List = list
-// 			return utils.NewWaitGroupResult(clusterListOne, nil)
-// 		}))
-// 	}
-// 	wg.Wait()
-
-// 	CutPagingSliceFromWgResultsV2(wg, &resp.EachRangeListState, &resp.List, req.PageNumber, req.PageSize, &resp.TotalCount, req.SortBy, req.SortDesc)
-
-// 	return resp
-// }
-
+// TODO: use Config
 const (
 	defaultNginxIngressImage = "k8s.gcr.io/ingress-nginx/controller:v0.20.0"
 )
 
-// func (k *kubernetesService) RouterCreate(ctx context.Context, req *iapiserver.RouterRequest) error {
-// 	if req.Namespace == "" {
-// 		return errors.Errorf( "namespace is empty")
-// 	}
+func (k *kubernetesService) RouterCreate(ctx context.Context, req *iapiserver.RouterRequest) error {
+	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
-// 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
-// 	if err != nil {
-// 		return err
-// 	}
+	ret, err := clientset.PodList(ctx, cluster, "kube-system", metav1.ListOptions{})
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
-// 	ret, err := clientset.PodList(cluster, "kube-system", metav1.ListOptions{})
-// 	if err != nil {
-// 		return err
-// 	}
+	req.Image = defaultNginxIngressImage
+	for _, v := range ret.Items {
+		if strings.Contains(v.Name, "kube-apiserver") {
+			for _, c := range v.Spec.Containers {
+				if strings.Contains(c.Image, "kube-apiserver") {
+					splitImage := strings.SplitN(c.Image, "/", 3)
+					if len(splitImage) == 3 {
+						req.Image = strings.Join([]string{splitImage[0], splitImage[1], req.Image}, "/")
+					}
+					break
+				}
+			}
+			break
+		}
+	}
 
-// 	req.Image = defaultNginxIngressImage
-// 	for _, v := range ret.Items {
-// 		if strings.Contains(v.Name, "kube-apiserver") {
-// 			for _, c := range v.Spec.Containers {
-// 				if strings.Contains(c.Image, "kube-apiserver") {
-// 					splitImage := strings.SplitN(c.Image, "/", 3) //
-// 					if len(splitImage) == 3 {
-// 						req.Image = strings.Join([]string{splitImage[0], splitImage[1], req.Image}, "/")
-// 					}
-// 					break
-// 				}
-// 			}
-// 			break
-// 		}
-// 	}
+	// 如果网关已经开启，那么不允许再次开启
+	if _, err = clientset.NamespaceGet(ctx, cluster, req.Namespace, req.GetOpts); err != nil {
+		return errors.WithStack(err)
+	}
 
-// 	// 如果网关已经开启，那么不允许再次开启
-// 	if _, err = clientset.NamespaceGet(ctx,cluster, req.Namespace, req.GetOpts); err != nil {
-// 		return err
-// 	}
+	if err := k.create(ctx, cluster, req); err != nil {
+		return errors.WithStack(err)
+	}
 
-// 	if err := k.create(ctx,cluster, req); err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
+	return nil
+}
 
 func (k *kubernetesService) RouterDelete(ctx context.Context, req *iapiserver.RouterRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)

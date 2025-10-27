@@ -24,7 +24,7 @@ type KubernetesSrv interface {
 	PodList(ctx context.Context, req *iapiserver.PodListRequest) (*iapiserver.PodListResponse, error)
 	GetComponentPod(ctx context.Context, req *iapiserver.PodListRequest) (*iapiserver.PodListResponse, error)
 
-	ServiceUpdate(ctx context.Context, req *iapiserver.ServiceRequest) (*v1.Service, error)
+	ServiceUpdate(ctx context.Context, req *iapiserver.ServiceRequest) (*iapiserver.ServiceInfo, error)
 
 	NodeGatewayUpdate(ctx context.Context, req *iapiserver.NodeRequest) error
 	NodeTaintUpdate(ctx context.Context, req *iapiserver.NodeRequest) (*iapiserver.NodeInfo, error)
@@ -72,12 +72,12 @@ type KubernetesSrv interface {
 	StatefulSetGet(ctx context.Context, req *iapiserver.StatefulSetGetRequest) (*iapiserver.StatefulSetInfo, error)
 	StatefulSetList(ctx context.Context, req *iapiserver.StatefulSetListRequest) (*iapiserver.StatefulSetListResponse, error)
 
-	DeploymentUpdate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentResponse, error)
-	DeploymentCreate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentResponse, error)
+	DeploymentUpdate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentInfo, error)
+	DeploymentCreate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentInfo, error)
 	DeploymentDelete(ctx context.Context, req *iapiserver.DeploymentRequest) error
 	DeploymentBatchDelete(ctx context.Context, req *iapiserver.DeploymentBatchRequest) waitgroup.BatchGenericOutput[*iapiserver.DeploymentRequest]
-	DeploymentRecreate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentResponse, error)
-	DeploymentGet(ctx context.Context, req *iapiserver.DeploymentGetRequest) (*iapiserver.DeploymentResponse, error)
+	DeploymentRecreate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentInfo, error)
+	DeploymentGet(ctx context.Context, req *iapiserver.DeploymentGetRequest) (*iapiserver.DeploymentInfo, error)
 	DeploymentList(ctx context.Context, req *iapiserver.DeploymentListRequest) (*iapiserver.DeploymentListResponse, error)
 	DeploymentVersionUpdate(ctx context.Context, req *iapiserver.DeploymentRequest) error
 	DeploymentVersionList(ctx context.Context, req *iapiserver.DeploymentVersoinListRequest) (*iapiserver.DeploymentVersionListResponse, error)
@@ -143,5 +143,21 @@ func multiClusterResourceList[T any](
 	eachClusterResult := wg.GetSuccessResultList()
 
 	totalCount := CutPagingSliceResourceList(eachClusterResult, list, req.PageNum, req.PageSize, sortFunc)
+	return eachClusterResult, totalCount, nil
+}
+
+func multiClusterResourceList2[T any](
+	ctx context.Context, st store.Factory, list *[]T, req iapiserver.ResourceListRequest,
+	concurrentFunc func(context.Context, *iapiserver.Cluster) waitgroup.GenericResult[iapiserver.EachResourceRangeListState[T]],
+	sortfields string,sortAsc bool, timeouts ...time.Duration,
+) ([]iapiserver.EachResourceRangeListState[T], int, error) {
+	clusters, err := getVisitScope(ctx, st, req)
+	if err != nil {
+		return nil, 0, err
+	}
+	wg := waitgroup.RunGenericConcurrently(ctx, clusters, concurrentFunc, timeouts...)
+	eachClusterResult := wg.GetSuccessResultList()
+
+	totalCount := CutPagingSliceResourceList2(eachClusterResult, list, req.PageNum, req.PageSize, sortfields,sortAsc)
 	return eachClusterResult, totalCount, nil
 }

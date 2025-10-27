@@ -10,6 +10,7 @@ import (
 	"github.com/wangweihong/gotoolbox/pkg/cache"
 	"github.com/wangweihong/gotoolbox/pkg/errors"
 
+	"github.com/wangweihong/eazycloud/apis/iapiserver"
 	"github.com/wangweihong/eazycloud/apis/iregistry"
 )
 
@@ -40,7 +41,7 @@ func newRegistry(ds *datastore) *registry {
 	}
 }
 
-func (s *registry) List(ctx context.Context) ([]*iregistry.Registry, error) {
+func (s *registry) List(ctx context.Context, req *iapiserver.RegistryListRequest) ([]*iregistry.Registry, int64, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -54,7 +55,7 @@ func (s *registry) List(ctx context.Context) ([]*iregistry.Registry, error) {
 	sort.SliceStable(result, func(i, j int) bool {
 		return result[i].ID < result[j].ID
 	})
-	return result, nil
+	return result, int64(len(result)), nil
 }
 
 func (s *registry) Get(ctx context.Context, id string) (*iregistry.Registry, error) {
@@ -81,7 +82,7 @@ func (s *registry) Get(ctx context.Context, id string) (*iregistry.Registry, err
 	return data, nil
 }
 
-func (s *registry) Create(ctx context.Context, data *iregistry.Registry) (*iregistry.Registry, error) {
+func (s *registry) Add(ctx context.Context, data *iregistry.Registry) (*iregistry.Registry, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

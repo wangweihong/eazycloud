@@ -3,8 +3,6 @@ package kubernetes
 import (
 	"context"
 
-	v1 "k8s.io/api/core/v1"
-
 	"github.com/wangweihong/eazycloud/apis/iapiserver"
 	"github.com/wangweihong/eazycloud/internal/pkg/clientset"
 	"github.com/wangweihong/gotoolbox/pkg/errors"
@@ -22,7 +20,7 @@ func (k *kubernetesService) ConfigMapCreate(ctx context.Context, req *iapiserver
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sConfigMapToApiConfigMap(meta, cluster, req.Yaml), nil
+	return iapiserver.NewConfigMapInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) ConfigMapUpdate(ctx context.Context, req *iapiserver.ConfigMapRequest) (*iapiserver.ConfigMapInfo, error) {
@@ -36,7 +34,7 @@ func (k *kubernetesService) ConfigMapUpdate(ctx context.Context, req *iapiserver
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sConfigMapToApiConfigMap(meta, cluster, req.Yaml), nil
+	return iapiserver.NewConfigMapInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) ConfigMapDelete(ctx context.Context, req *iapiserver.ConfigMapRequest) error {
@@ -77,7 +75,7 @@ func (k *kubernetesService) ConfigMapGet(ctx context.Context, req *iapiserver.Co
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sConfigMapToApiConfigMap(meta, cluster, req.Yaml), nil
+	return iapiserver.NewConfigMapInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) ConfigMapList(ctx context.Context, req *iapiserver.ConfigMapListRequest) (*iapiserver.ConfigMapListResponse, error) {
@@ -100,7 +98,7 @@ func (k *kubernetesService) ConfigMapList(ctx context.Context, req *iapiserver.C
 			if NewObjectCommonFieldFilter(resInfo).Filter(req.Fuzzy) {
 				continue
 			}
-			resInfos = append(resInfos, convertK8sConfigMapToApiConfigMap(resInfo, cluster, req.Yaml))
+			resInfos = append(resInfos, iapiserver.NewConfigMapInfo(resInfo, cluster))
 		}
 		clusterListOne.TotalCount = len(resInfos)
 		clusterListOne.List = resInfos
@@ -112,14 +110,4 @@ func (k *kubernetesService) ConfigMapList(ctx context.Context, req *iapiserver.C
 		return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 	})
 	return resp, nil
-}
-
-func convertK8sConfigMapToApiConfigMap(meta *v1.ConfigMap, cluster *iapiserver.Cluster, yaml bool) *iapiserver.ConfigMapInfo {
-	resp := &iapiserver.ConfigMapInfo{
-		Resource: meta,
-	}
-	if !yaml {
-
-	}
-	return resp
 }

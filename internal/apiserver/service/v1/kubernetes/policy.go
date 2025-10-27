@@ -8,6 +8,7 @@ import (
 
 	"github.com/wangweihong/eazycloud/apis/iapiserver"
 	"github.com/wangweihong/eazycloud/internal/pkg/clientset"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
 	"github.com/wangweihong/gotoolbox/pkg/waitgroup"
 
 	policyv1 "k8s.io/api/policy/v1"
@@ -16,39 +17,39 @@ import (
 func (k *kubernetesService) PodDisruptionBudgetCreate(ctx context.Context, req *iapiserver.PodDisruptionBudgetRequest) (*iapiserver.PodDisruptionBudgetInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.PodDisruptionBudgetCreate(ctx, cluster, req.Resource, metav1.CreateOptions{})
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sPodDisruptionBudgetToApiPodDisruptionBudget(meta, cluster, req.Yaml), nil
+	return iapiserver.NewPodDisruptionBudgetInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) PodDisruptionBudgetUpdate(ctx context.Context, req *iapiserver.PodDisruptionBudgetRequest) (*iapiserver.PodDisruptionBudgetInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.PodDisruptionBudgetUpdate(ctx, cluster, req.Resource, metav1.UpdateOptions{})
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sPodDisruptionBudgetToApiPodDisruptionBudget(meta, cluster, req.Yaml), nil
+	return iapiserver.NewPodDisruptionBudgetInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) PodDisruptionBudgetDelete(ctx context.Context, req *iapiserver.PodDisruptionBudgetRequest) (*iapiserver.PodDisruptionBudgetInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	if err := clientset.PodDisruptionBudgetDelete(ctx, cluster, req.Resource, metav1.DeleteOptions{}); err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return nil, nil
@@ -71,18 +72,18 @@ func (k *kubernetesService) PodDisruptionBudgetBatchDelete(ctx context.Context, 
 func (k *kubernetesService) PodDisruptionBudgetGet(ctx context.Context, req *iapiserver.PodDisruptionBudgetGetRequest) (*iapiserver.PodDisruptionBudgetInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.PodDisruptionBudgetGet(ctx, cluster, &policyv1.PodDisruptionBudget{ObjectMeta: metav1.ObjectMeta{Namespace: req.Namespace, Name: req.Name}}, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sPodDisruptionBudgetToApiPodDisruptionBudget(meta, cluster, req.Yaml), nil
+	return iapiserver.NewPodDisruptionBudgetInfo(meta, cluster), nil
 }
 
-func (k *kubernetesService) PodDisruptionBudgetListAll(ctx context.Context, req *iapiserver.PodDisruptionBudgetListRequest) (*iapiserver.PodDisruptionBudgetListResponse, error) {
+func (k *kubernetesService) PodDisruptionBudgetList(ctx context.Context, req *iapiserver.PodDisruptionBudgetListRequest) (*iapiserver.PodDisruptionBudgetListResponse, error) {
 	resp := &iapiserver.PodDisruptionBudgetListResponse{}
 	var err error
 	resp.EachRangeListState, resp.TotalCount, err = multiClusterResourceList[*iapiserver.PodDisruptionBudgetInfo](ctx, k.store, &resp.List, req.ResourceListRequest,
@@ -95,7 +96,7 @@ func (k *kubernetesService) PodDisruptionBudgetListAll(ctx context.Context, req 
 
 			var resInfos []*iapiserver.PodDisruptionBudgetInfo
 			for i := range resList.Items {
-				resInfo := convertK8sPodDisruptionBudgetToApiPodDisruptionBudget(&resList.Items[i], cluster, req.Yaml)
+				resInfo := iapiserver.NewPodDisruptionBudgetInfo(&resList.Items[i], cluster)
 				if NewObjectCommonFieldFilter(resInfo.Resource).Filter(req.Fuzzy) {
 					continue
 				}
@@ -106,10 +107,4 @@ func (k *kubernetesService) PodDisruptionBudgetListAll(ctx context.Context, req 
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
 	return resp, err
-}
-
-func convertK8sPodDisruptionBudgetToApiPodDisruptionBudget(meta *policyv1.PodDisruptionBudget, cluster *iapiserver.Cluster, showYaml bool) *iapiserver.PodDisruptionBudgetInfo {
-	return &iapiserver.PodDisruptionBudgetInfo{
-		Resource: meta,
-	}
 }

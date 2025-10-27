@@ -6,11 +6,11 @@ import (
 	"github.com/wangweihong/eazycloud/internal/apiserver/store"
 )
 
-func GetCacheFactoryOr() (store.Factory, error) {
-	return &datastore{
-		registries: registryIndexer(),
-	}, nil
-}
+// func GetCacheFactoryOr() (store.Factory, error) {
+// 	return &datastore{
+// 		registries: registryIndexer(),
+// 	}, nil
+// }
 
 type datastore struct {
 	registries cache.Indexer

@@ -85,7 +85,7 @@ func init() {
 
 		// monitor : prometheus-operator
 		ikubernetes.KubernetesResourceKindServiceMonitor: {Kind: "ServiceMonitor", APIVersion: "monitoring.coreos.com/v1"},
-		ikubernetes.KubernetesResourceKindPodMoniotr:     {Kind: "PodMonitor", APIVersion: "monitoring.coreos.com/v1"},
+		ikubernetes.KubernetesResourceKindPodMonitor:     {Kind: "PodMonitor", APIVersion: "monitoring.coreos.com/v1"},
 		ikubernetes.KubernetesResourceKindAlertManager:   {Kind: "Alertmanager", APIVersion: "monitoring.coreos.com/v1"},
 		ikubernetes.KubernetesResourceKindPrometheus:     {Kind: "Prometheus", APIVersion: "monitoring.coreos.com/v1"},
 		ikubernetes.KubernetesResourceKindPrometheusRule: {Kind: "PrometheusRule", APIVersion: "monitoring.coreos.com/v1"},
@@ -154,6 +154,14 @@ func init() {
 			APIVersion: "snapshot.storage.k8s.io/v1",
 		},
 	}
+}
+
+func getResourceTypeMeta(resourceName string) metav1.TypeMeta {
+	meta, ok := MetaMap[resourceName]
+	if !ok {
+		return metav1.TypeMeta{Kind: "Unknown", APIVersion: "Unknown"}
+	}
+	return meta
 }
 
 const (

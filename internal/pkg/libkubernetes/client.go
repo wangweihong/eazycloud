@@ -2,6 +2,7 @@ package libkubernetes
 
 import (
 	snapshotv1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v3/clientset/versioned/typed/volumesnapshot/v1beta1"
+	monitorv1 "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -11,7 +12,7 @@ import (
 type Client struct {
 	client *kubernetes.Clientset
 	//metricClient   *metricctl.Clientset
-	//	monitorClient  *monitoringv1.MonitoringV1Client
+	monitorClient  *monitorv1.Clientset
 	snapshotClient *snapshotv1beta1.SnapshotV1beta1Client
 }
 
@@ -22,10 +23,10 @@ func NewClient(config *ikubernetes.ClusterConfig) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	//monitorclientSet, err := monitoringv1.NewForConfig(k8sConfig)
-	//if err != nil {
-	//	return nil, status.NewStatusDesc(scode.ScodeNewK8SClientError, err.Error())
-	//}
+	monitorclientSet, err := monitorv1.NewForConfig(k8sConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	snapshotClinetSet, err := snapshotv1beta1.NewForConfig(k8sConfig)
 	if err != nil {
@@ -33,8 +34,8 @@ func NewClient(config *ikubernetes.ClusterConfig) (*Client, error) {
 	}
 
 	return &Client{
-		client: clientSet,
-		//	monitorClient:  monitorclientSet,
+		client:         clientSet,
+		monitorClient:  monitorclientSet,
 		snapshotClient: snapshotClinetSet,
 	}, nil
 }
@@ -62,3 +63,4 @@ func NewClusterConfigFromKubeconfig(kubeconfig string) (*ikubernetes.ClusterConf
 	}
 	return config, nil
 }
+

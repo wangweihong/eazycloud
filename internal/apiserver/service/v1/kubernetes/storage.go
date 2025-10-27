@@ -8,7 +8,6 @@ import (
 
 	"github.com/ghodss/yaml"
 	snapshotv1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v3/apis/volumesnapshot/v1beta1"
-	"github.com/sirupsen/logrus"
 	"github.com/wangweihong/gotoolbox/pkg/errors"
 	"github.com/wangweihong/gotoolbox/pkg/log"
 	"github.com/wangweihong/gotoolbox/pkg/waitgroup"
@@ -41,7 +40,7 @@ func (k *kubernetesService) StorageClassListAll(ctx context.Context, req *iapise
 			var resInfos []*iapiserver.StorageClassInfo
 			for i := range resList.Items {
 
-				resInfo := convertK8sStorageClassToApiStorageClass(&resList.Items[i], cluster, req.Yaml)
+				resInfo := iapiserver.NewStorageClassInfo(&resList.Items[i], cluster)
 				if filterStorageClass(resInfo, req.Fuzzy) {
 					continue
 				}
@@ -54,12 +53,6 @@ func (k *kubernetesService) StorageClassListAll(ctx context.Context, req *iapise
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
 	return resp, err
-}
-
-func convertK8sStorageClassToApiStorageClass(meta *storagev1.StorageClass, cluster *iapiserver.Cluster, yaml bool) *iapiserver.StorageClassInfo {
-	return &iapiserver.StorageClassInfo{
-		Resource: meta,
-	}
 }
 
 func (k *kubernetesService) StorageClassDelete(ctx context.Context, req *iapiserver.StorageClassRequest) (*iapiserver.StorageClassInfo, error) {
@@ -174,7 +167,7 @@ func (k *kubernetesService) StorageClassCreate(ctx context.Context, req *iapiser
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		return convertK8sStorageClassToApiStorageClass(meta, cluster, req.Yaml), nil
+		return iapiserver.NewStorageClassInfo(meta, cluster), nil
 	}
 
 	var nfsDeploy *appsv1.Deployment
@@ -280,12 +273,12 @@ func (k *kubernetesService) StorageClassCreate(ctx context.Context, req *iapiser
 		//TODO: delete deployment when storageclass delete
 		go func() {
 			if _, err := clientset.DeploymentCreate(ctx, cluster, nfsDeploy.Namespace, nfsDeploy, metav1.CreateOptions{}); err != nil {
-				logrus.Errorf("create topke nfs  driver err: %v", err.Error())
+				log.Errorf("create topke nfs  driver err: %v", err.Error())
 			}
 		}()
 	}
 
-	return convertK8sStorageClassToApiStorageClass(meta, cluster, req.Yaml), nil
+	return iapiserver.NewStorageClassInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) storageClassGlusterfsCreateCheck(req *iapiserver.StorageClassRequest) error {
@@ -373,7 +366,7 @@ func (k *kubernetesService) StorageClassUpdate(ctx context.Context, req *iapiser
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sStorageClassToApiStorageClass(meta, cluster, req.Yaml), nil
+	return iapiserver.NewStorageClassInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) StorageClassSetDefault(ctx context.Context, req *iapiserver.StorageClassRequest) error {
@@ -437,7 +430,7 @@ func (k *kubernetesService) StorageClassGet(ctx context.Context, req *iapiserver
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sStorageClassToApiStorageClass(meta, cluster, req.Yaml), nil
+	return iapiserver.NewStorageClassInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) PersistentVolumeListAll(ctx context.Context, req *iapiserver.PersistentVolumeListRequest) (*iapiserver.PersistentVolumeListResponse, error) {
@@ -456,7 +449,7 @@ func (k *kubernetesService) PersistentVolumeListAll(ctx context.Context, req *ia
 
 			var resInfos []*iapiserver.PersistentVolumeInfo
 			for i := range resList.Items {
-				resInfo := convertK8sPersistentVolumeToApiPersistentVolume(&resList.Items[i], cluster, req.Yaml)
+				resInfo := iapiserver.NewPersistentVolumeInfo(&resList.Items[i], cluster)
 				if req.StorageClassFilter != "" && resInfo.Resource.Spec.StorageClassName != req.StorageClassFilter {
 					continue
 				}
@@ -477,12 +470,6 @@ func (k *kubernetesService) PersistentVolumeListAll(ctx context.Context, req *ia
 	return resp, nil
 }
 
-func convertK8sPersistentVolumeToApiPersistentVolume(meta *v1.PersistentVolume, cluster *iapiserver.Cluster, yaml bool) *iapiserver.PersistentVolumeInfo {
-	return &iapiserver.PersistentVolumeInfo{
-		Resource: meta,
-	}
-}
-
 func (k *kubernetesService) PersistentVolumeCreate(ctx context.Context, req *iapiserver.PersistentVolumeRequest) (*iapiserver.PersistentVolumeInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
@@ -494,7 +481,7 @@ func (k *kubernetesService) PersistentVolumeCreate(ctx context.Context, req *iap
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sPersistentVolumeToApiPersistentVolume(meta, cluster, req.Yaml), nil
+	return iapiserver.NewPersistentVolumeInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) PersistentVolumeUpdate(ctx context.Context, req *iapiserver.PersistentVolumeRequest) (*iapiserver.PersistentVolumeInfo, error) {
@@ -507,7 +494,7 @@ func (k *kubernetesService) PersistentVolumeUpdate(ctx context.Context, req *iap
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sPersistentVolumeToApiPersistentVolume(meta, cluster, req.Yaml), nil
+	return iapiserver.NewPersistentVolumeInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) PersistentVolumeGet(ctx context.Context, req *iapiserver.PersistentVolumeGetRequest) (*iapiserver.PersistentVolumeInfo, error) {
@@ -521,7 +508,7 @@ func (k *kubernetesService) PersistentVolumeGet(ctx context.Context, req *iapise
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sPersistentVolumeToApiPersistentVolume(meta, cluster, req.Yaml), nil
+	return iapiserver.NewPersistentVolumeInfo(meta, cluster), nil
 }
 
 func (k *kubernetesService) PersistentVolumeDelete(ctx context.Context, req *iapiserver.PersistentVolumeRequest) (*iapiserver.PersistentVolumeInfo, error) {
@@ -626,7 +613,7 @@ func (k *kubernetesService) PersistentVolumeClaimCreate(ctx context.Context, req
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sPersistentVolumeClaimToApiPersistentVolumeClaim(meta, cluster, req.Yaml), nil
+	return convertK8sPersistentVolumeClaimToApi(meta, cluster, req.Yaml), nil
 }
 
 func (k *kubernetesService) PersistentVolumeClaimDelete(ctx context.Context, req *iapiserver.PersistentVolumeClaimRequest) (*iapiserver.PersistentVolumeClaimInfo, error) {
@@ -641,7 +628,7 @@ func (k *kubernetesService) PersistentVolumeClaimDelete(ctx context.Context, req
 	}
 
 	for i := range resList.Items {
-		podInfo := convertK8sPodToApiPod(&resList.Items[i], cluster, req.Yaml, nil)
+		podInfo := convertK8sPodToApi(&resList.Items[i], cluster, nil)
 		if !filterPod(podInfo, "", req.Resource.Name, "", "") {
 			return nil, errors.Errorf("pvc still mount by pod")
 		}
@@ -678,7 +665,7 @@ func (k *kubernetesService) PersistentVolumeClaimUpdate(ctx context.Context, req
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return convertK8sPersistentVolumeClaimToApiPersistentVolumeClaim(meta, cluster, req.Yaml), nil
+	return convertK8sPersistentVolumeClaimToApi(meta, cluster, req.Yaml), nil
 }
 
 func (k *kubernetesService) PersistentVolumeClaimExpand(ctx context.Context, req *iapiserver.PersistentVolumeClaimRequest) (*iapiserver.PersistentVolumeClaimInfo, error) {
@@ -720,7 +707,7 @@ func (k *kubernetesService) PersistentVolumeClaimExpand(ctx context.Context, req
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sPersistentVolumeClaimToApiPersistentVolumeClaim(meta, cluster, req.Yaml), nil
+	return convertK8sPersistentVolumeClaimToApi(meta, cluster, req.Yaml), nil
 }
 
 func (k *kubernetesService) PersistentVolumeClaimGet(ctx context.Context, req *iapiserver.PersistentVolumeClaimGetRequest) (*iapiserver.PersistentVolumeClaimInfo, error) {
@@ -734,7 +721,7 @@ func (k *kubernetesService) PersistentVolumeClaimGet(ctx context.Context, req *i
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sPersistentVolumeClaimToApiPersistentVolumeClaim(meta, cluster, req.Yaml), nil
+	return convertK8sPersistentVolumeClaimToApi(meta, cluster, req.Yaml), nil
 }
 
 func (k *kubernetesService) PersistentVolumeClaimListAll(ctx context.Context, req *iapiserver.PersistentVolumeClaimListRequest) (*iapiserver.PersistentVolumeClaimListResponse, error) {
@@ -751,7 +738,7 @@ func (k *kubernetesService) PersistentVolumeClaimListAll(ctx context.Context, re
 
 			var resInfos []*iapiserver.PersistentVolumeClaimInfo
 			for i := range resList.Items {
-				resInfo := convertK8sPersistentVolumeClaimToApiPersistentVolumeClaim(&resList.Items[i], cluster, req.Yaml)
+				resInfo := convertK8sPersistentVolumeClaimToApi(&resList.Items[i], cluster, req.Yaml)
 
 				if filterPersistentVolumeClaim(resInfo, req.Fuzzy) {
 					continue
@@ -767,19 +754,15 @@ func (k *kubernetesService) PersistentVolumeClaimListAll(ctx context.Context, re
 	return resp, err
 }
 
-func convertK8sPersistentVolumeClaimToApiPersistentVolumeClaim(meta *v1.PersistentVolumeClaim, cluster *iapiserver.Cluster, yaml bool) *iapiserver.PersistentVolumeClaimInfo {
+func convertK8sPersistentVolumeClaimToApi(meta *v1.PersistentVolumeClaim, cluster *iapiserver.Cluster, yaml bool) *iapiserver.PersistentVolumeClaimInfo {
+	resp := iapiserver.NewPersistentVolumeClaimInfo(meta, cluster)
+
 	if !yaml {
-		var allowExpansion, allowSnapshot bool
-		allowExpansion, allowSnapshot = getVolumeAttribute(context.Background(), cluster, meta)
-		return &iapiserver.PersistentVolumeClaimInfo{
-			Resource:       meta,
-			AllowExpansion: &allowExpansion,
-			AllowSnapshot:  &allowSnapshot,
-		}
+		allowExpansion, allowSnapshot := getVolumeAttribute(context.Background(), cluster, meta)
+		resp.AllowExpansion = &allowExpansion
+		resp.AllowSnapshot = &allowSnapshot
 	}
-	return &iapiserver.PersistentVolumeClaimInfo{
-		Resource: meta,
-	}
+	return resp
 }
 
 func filterPersistentVolumeClaim(pvci *iapiserver.PersistentVolumeClaimInfo, fuzzy string) bool {
@@ -1205,7 +1188,7 @@ func (k *kubernetesService) VolumeSnapshotClone(ctx context.Context, req *iapise
 		return nil, errors.WithStack(err)
 	}
 
-	return convertK8sPersistentVolumeClaimToApiPersistentVolumeClaim(newpvc, cluster, req.Yaml), nil
+	return convertK8sPersistentVolumeClaimToApi(newpvc, cluster, req.Yaml), nil
 }
 
 func filterVolumeSnapshot(resInfo *iapiserver.VolumeSnapshotInfo, fuzzy string, persistentVolumeFilter string) bool {
