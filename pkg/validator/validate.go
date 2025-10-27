@@ -1,8 +1,11 @@
 package validator
 
 import (
+	"fmt"
+	"net"
 	"os"
 	"regexp"
+	"strconv"
 
 	validator "github.com/go-playground/validator/v10"
 	"github.com/wangweihong/gotoolbox/pkg/stringutil"
@@ -38,6 +41,44 @@ func ValidateName(fl validator.FieldLevel) bool {
 	name := fl.Field().String()
 	re := regexp.MustCompile(nameRegixPattern)
 	return re.MatchString(name)
+}
+
+// ValidatePort checks if a given port is illegal.
+func ValidatePort(fl validator.FieldLevel) bool {
+	port := fl.Field().Int()
+	return port > 0 && port < 65535
+}
+
+// ValidatePort checks if a given port is illegal.
+func ValidatePortUsed(fl validator.FieldLevel) bool {
+	port := fl.Field().Int()
+	address := ":" + strconv.Itoa(int(port))
+
+	tcpAddr, err := net.ResolveTCPAddr("tcp", address)
+	if err != nil {
+		return false
+	}
+	tcpSocket, err := net.ListenTCP("tcp", tcpAddr)
+	if err != nil {
+		return true
+	}
+	tcpSocket.Close()
+	return false
+}
+
+// ValidatePort checks if a given port is illegal.
+func ValidatePorts(fl validator.FieldLevel) bool {
+	portInf := fl.Field().Interface()
+	ports, ok := portInf.([]int)
+	if ok {
+		for _, port := range ports {
+			if port < 0 || port > 65535 {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }
 
 // ValidateURL checks if a given url is illegal.
@@ -152,3 +193,34 @@ func ValidateClusterScopeResource(fl validator.FieldLevel) bool {
 // 	}
 // 	return true
 // }
+
+const DNS1123LabelMaxLength int = 63
+const dns1123LabelFmt string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?"
+const dns1123SubdomainFmt string = dns1123LabelFmt + "(\\." + dns1123LabelFmt + ")*"
+
+var dns1123LabelRegexp = regexp.MustCompile("^" + dns1123LabelFmt + "$")
+
+func IsDNS1123Label(value string) error {
+	if value == "" {
+		return fmt.Errorf("name is empty")
+	}
+
+	if len(value) > DNS1123LabelMaxLength {
+		return fmt.Errorf("name too long")
+	}
+	if !dns1123LabelRegexp.MatchString(value) {
+		return fmt.Errorf("not match name pattern: %v" , dns1123LabelRegexp.String())
+	}
+	return nil
+}
+
+func ValidateDNSName(fl validator.FieldLevel) bool {
+	name := fl.Field().String()
+	return IsDNS1123Label(name) != nil
+}
+
+func ValidateCIDR(fl validator.FieldLevel) bool {
+	name := fl.Field().String()
+	_, _, err := net.ParseCIDR(name)
+	return err != nil
+}

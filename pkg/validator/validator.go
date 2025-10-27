@@ -60,6 +60,11 @@ func NewCustomValidator(lang string) *customValidator {
 	registerValidator(val, "name", ValidateName, NameTranslator{})
 	registerValidator(val, "description", ValidateDescription, DescriptionTranslator{})
 	registerValidator(val, "url", ValidateURL, URLInvaliTranslator{})
+	registerValidator(val, "port", ValidatePort, PortRangeTranslator{})
+	registerValidator(val, "ports", ValidatePort, PortsRangeTranslator{})
+	registerValidator(val, "port_used", ValidatePort, PortUsedTranslator{})
+	registerValidator(val, "dns", ValidateDNSName, DNSTranslator{})
+	registerValidator(val, "cidr", ValidateCIDR, CIDRTranslator{})
 
 	registerValidatorNoTrans(val, "namespaced", ValidateNamespaceScopeResource)
 	registerValidatorNoTrans(val, "clusterd", ValidateClusterScopeResource)
