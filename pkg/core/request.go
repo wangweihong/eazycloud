@@ -15,7 +15,8 @@ import (
 func DecodeParameter(c *gin.Context, obj any) error {
 	if d, ok := obj.(imachinery.Decoder); ok {
 		if err := d.Decode(c); err != nil {
-			return errors.WrapStatus(err, code.ErrValidation)
+			//return errors.WrapStatus(err, code.ErrValidation)
+			return errors.WrapCode(err, code.ErrValidation)
 		}
 	} else {
 		switch c.Request.Method {
@@ -23,18 +24,21 @@ func DecodeParameter(c *gin.Context, obj any) error {
 			mediaType, _, _ := mime.ParseMediaType(c.GetHeader("Content-Type"))
 			if mediaType != "multipart/form-data" {
 				if err := c.ShouldBindJSON(obj); err != nil {
-					return errors.WrapStatus(err, code.ErrValidation)
+					//	return errors.WrapStatus(err, code.ErrValidation)
+					return errors.WrapCode(err, code.ErrValidation)
 				}
 			} else {
 				// 注意读取的tag为form
 				if err := c.ShouldBind(obj); err != nil {
-					return errors.WrapStatus(err, code.ErrValidation)
+					//	return errors.WrapStatus(err, code.ErrValidation)
+					return errors.WrapCode(err, code.ErrValidation)
 				}
 			}
 
 		case http.MethodGet:
 			if err := c.ShouldBindQuery(obj); err != nil {
-				return errors.WrapStatus(err, code.ErrValidation)
+				//return errors.WrapStatus(err, code.ErrValidation)
+					return errors.WrapCode(err, code.ErrValidation)
 			}
 		}
 	}

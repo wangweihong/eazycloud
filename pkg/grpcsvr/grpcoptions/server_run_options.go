@@ -68,7 +68,7 @@ func (s *ServerRunOptions) Validate() []error {
 
 	rm, repeated := sliceutil.StringSlice(s.UnaryInterceptors).GetRepeat()
 	if repeated {
-		errors = append(errors, fmt.Errorf("unary interceptors `%v` is repeated", maputil.StringIntMap(rm).Keys()))
+		errors = append(errors, fmt.Errorf("unary interceptors `%v` is repeated", maputil.StringInt(rm).Keys()))
 	}
 
 	supportedUnaryInterceptor := sets.NewString(interceptor.UnaryServerInterceptorNames...)

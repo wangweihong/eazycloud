@@ -7,7 +7,6 @@ type Factory interface {
 	Registries() RegistryStore
 	Kubernetes() KubernetesStore
 	Clusters() ClusterStore
-	Users() UserStore
 
 	//applicatoins
 	ApplicationInstances() ApplicationInstanceStore
@@ -19,6 +18,10 @@ type Factory interface {
 	IdentityProviders() IdentityProviderStore
 	ServiceProviders() ServiceProviderStore
 	Settings() SettingStore
+
+	// identitys
+	Users() UserStore
+	OneTimeTokens() OneTimeTokenStore
 
 	EnsureScheme(metaTypes ...any) error
 	Close() error

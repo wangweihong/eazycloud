@@ -3,7 +3,7 @@ package genericmiddleware
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 )
 
 // Context is a middleware that injects common prefix fields to gin.Context.

@@ -10,15 +10,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 )
 
-func DefaultPanicHandler(ctx context.Context, p interface{}) (interface{}, error) {
+func DefaultPanicHandler(ctx context.Context, p any) (any, error) {
 	log.F(ctx).Errorf("[panic] %s:", string(debug.Stack()))
 	return nil, status.Errorf(codes.Unknown, "panic triggered: %v", p)
 }
 
-func CustomPanicHandler(ctx context.Context, p interface{}) (interface{}, error) {
+func CustomPanicHandler(ctx context.Context, p any) (any, error) {
 	var stackMessage string
 	panicStacks := make([]string, 0, 10)
 	for i := 3; ; i++ {

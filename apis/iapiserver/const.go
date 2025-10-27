@@ -5,3 +5,8 @@ const (
 	HealthStatusUnhealthy = "error"
 	HealthStatusUnknown   = "unknown"
 )
+
+
+const(
+	GinContextKeyUser="user"
+)

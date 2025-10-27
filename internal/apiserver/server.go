@@ -102,6 +102,15 @@ func (c *CompletedExtraConfig) New() error {
 		&iapiserver.ApplicationTemplateCategory{},
 		&iapiserver.ApplicationTemplateVersion{},
 		&iapiserver.ApplicationInstanceRevision{},
+
+		//setting
+		&iapiserver.Setting{},
+		&iapiserver.ServiceProvider{},
+		&iapiserver.IdentityProvider{},
+
+		// identity
+		&iapiserver.User{},
+		&iapiserver.OneTimeToken{},
 	); err != nil {
 		return errors.Wrap(err, "EnsureScheme fail")
 	}

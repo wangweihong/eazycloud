@@ -68,7 +68,7 @@ func (s *ServerRunOptions) Validate() []error {
 
 	rm, repeated := sliceutil.StringSlice(s.Middlewares).GetRepeat()
 	if repeated {
-		errors = append(errors, fmt.Errorf("middleware `%v` is repeated", maputil.StringIntMap(rm).Keys()))
+		errors = append(errors, fmt.Errorf("middleware `%v` is repeated", maputil.StringInt(rm).Keys()))
 	}
 
 	supportedMiddleware := sets.NewString(genericmiddleware.MiddlewareNames...)

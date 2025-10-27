@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/wangweihong/eazycloud/apis/iapiserver"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -46,15 +47,38 @@ func (s *applicationInstance) Get(ctx context.Context, id string) (*iapiserver.A
 }
 
 func (s *applicationInstance) GetByName(ctx context.Context, name string) (*iapiserver.ApplicationInstance, error) {
-	return nil, nil
+	var meta *iapiserver.ApplicationInstance
+
+	err := s.ds.db.WithContext(ctx).Model(&iapiserver.ApplicationInstance{}).
+		Where("name = ?", name).
+		First(&meta).Error
+	return meta, err
 }
 
 func (s *applicationInstance) Add(ctx context.Context, data *iapiserver.ApplicationInstance) (*iapiserver.ApplicationInstance, error) {
-	return data, nil
+	err := s.ds.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if CheckExists(tx, &iapiserver.ApplicationInstance{}, map[string]any{
+			"name": data.Name,
+		}) {
+			return errors.Errorf("exists name with %v", data.Name)
+		}
+		if err := tx.Create(data).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return data, err
 }
 
 func (s *applicationInstance) Delete(ctx context.Context, id string) error {
-	return nil
+	return s.ds.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(&iapiserver.ApplicationInstance{}, "id = ?", id).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (s *applicationInstance) Update(ctx context.Context, data *iapiserver.ApplicationInstance) error {

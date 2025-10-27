@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/debug"
+	"github.com/wangweihong/gotoolbox/pkg/debug"
 
 	"github.com/wangweihong/eazycloud/pkg/httpsvr/profiling"
 
@@ -19,8 +19,8 @@ import (
 
 	ginprometheus "github.com/zsais/go-gin-prometheus"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
-	"github.com/wangweihong/eazycloud/pkg/version"
+	"github.com/wangweihong/gotoolbox/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/version"
 
 	cryptotls "crypto/tls"
 
@@ -30,7 +30,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// type GenericHTTPServer gin.Engine.
+// GenericHTTPServer gin.Engine.
 type GenericHTTPServer struct {
 	*gin.Engine
 
@@ -91,7 +91,7 @@ func (s *GenericHTTPServer) InstallAPIs() {
 		}
 	}
 
-	// install version api
+	// install version apis
 	if s.version {
 		s.GET("/version", func(c *gin.Context) {
 			c.JSON(http.StatusOK, version.Get())
@@ -235,7 +235,7 @@ func (s *GenericHTTPServer) Run() error {
 	return nil
 }
 
-// Close graceful shutdown the api server.
+// Close graceful shutdown the apis server.
 func (s *GenericHTTPServer) Close() {
 	// The context is used to inform the server it has 10 seconds to finish
 	// the request it is currently handling

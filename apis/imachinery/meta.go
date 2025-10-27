@@ -5,12 +5,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
 	"github.com/wangweihong/gotoolbox/pkg/json"
+	"github.com/wangweihong/gotoolbox/pkg/maputil"
 	"gorm.io/gorm"
 )
 
 // Extend defines a new type used to store extended fields.
-type Extend map[string]any
+type Extend struct {
+	maputil.StringAny
+}
 
 // String returns the string format of Extend.
 func (ext Extend) String() string {
@@ -18,18 +22,13 @@ func (ext Extend) String() string {
 	return string(data)
 }
 
-// Merge merge extend fields from extendShadow.
+// Merge merge extend fields from extendShadow.q
 func (ext Extend) Merge(extendShadow string) Extend {
 	var extend Extend
 
 	// always trust the extendShadow in the database
 	_ = json.Unmarshal([]byte(extendShadow), &extend)
-	for k, v := range extend {
-		if _, ok := ext[k]; !ok {
-			ext[k] = v
-		}
-	}
-
+	ext.StringAny = maputil.Copy(extend.StringAny, ext.StringAny)
 	return ext
 }
 
@@ -74,7 +73,7 @@ type ObjectMeta struct {
 
 	// Extend store the fields that need to be added, but do not want to add a new table column, will not be stored in
 	// db.
-	Extend Extend `json:"extend,omitempty" gorm:"-" binding:"omitempty"`
+	Extend maputil.StringAny `json:"extend,omitempty" gorm:"-" binding:"omitempty"`
 
 	// ExtendShadow is the shadow of Extend. DO NOT modify directly.
 	ExtendShadow string `json:"-" gorm:"column:extend_shadow" binding:"omitempty"`
@@ -112,6 +111,7 @@ func (obj *ObjectMeta) DeepCopyInto(target *ObjectMeta) {
 	target.ResourceVersion = obj.ResourceVersion
 	target.ExtendShadow = obj.ExtendShadow
 
+	target.Extend = maputil.Clone(obj.Extend)
 	if target.Extend == nil {
 		target.Extend = make(map[string]any)
 	}
@@ -138,9 +138,7 @@ func (obj *ObjectMeta) BeforeCreate(tx *gorm.DB) error {
 func (obj *ObjectMeta) BeforeUpdate(tx *gorm.DB) error {
 	obj.ExtendShadow = obj.Extend.String()
 	obj.UpdatedAt = NewTime(time.Now())
-	if tx.Statement.Changed() {
-		tx.Statement.SetColumn("resource_version", gorm.Expr("resource_version + 1"))
-	}
+	obj.ResourceVersion++
 
 	return nil
 }
@@ -148,8 +146,15 @@ func (obj *ObjectMeta) BeforeUpdate(tx *gorm.DB) error {
 // AfterFind run after find to unmarshal an extend shadow string into mExtend struct.
 func (obj *ObjectMeta) AfterFind(tx *gorm.DB) error {
 	if err := json.Unmarshal([]byte(obj.ExtendShadow), &obj.Extend); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
+}
+
+func (obj *ObjectMeta) SetExtendValue(key string, value any) {
+	if key == "" {
+		return
+	}
+	obj.Extend = obj.Extend.Set(key, value)
 }

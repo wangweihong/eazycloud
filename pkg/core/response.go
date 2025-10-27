@@ -34,8 +34,9 @@ type ErrResponse struct {
 func WriteResponse(c *gin.Context, err error, data any) {
 	if err != nil {
 		log.Errorf("%#+v", err)
-
 		st := errors.ToStatus(err)
+
+		// st := errors.ToStatus(err)
 
 		c.JSON(st.HTTPStatus, ErrResponse{
 			Data:     data,

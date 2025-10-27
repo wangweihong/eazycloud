@@ -54,6 +54,7 @@ func CheckExists(db *gorm.DB, model interface{}, fields map[string]interface{}) 
 
 type datastore struct {
 	db *gorm.DB
+	// redis ?
 }
 
 func (ds *datastore) Close() error {
@@ -115,4 +116,8 @@ func (ds *datastore) ServiceProviders() store.ServiceProviderStore {
 
 func (ds *datastore) Settings() store.SettingStore {
 	return newSetting(ds)
+}
+
+func (ds *datastore) OneTimeTokens() store.OneTimeTokenStore {
+	return newOneTimeToken(ds)
 }

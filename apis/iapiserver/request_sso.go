@@ -87,6 +87,19 @@ type (
 )
 
 type (
+	//ServiceProviderGetRedirectURLRequest ServiceProviderGetRequest
+
+	ServiceProviderGetRedirectURLResponse struct {
+		Method string            `json:"method"`
+		URL    string            `json:"url"`
+		Host   string            `json:"host"`
+		URI    string            `json:"uri"`
+		Header map[string]string `json:"header"`
+		Param  map[string]any    `json:"param"`
+	}
+)
+
+type (
 	ServiceProviderUpdateRequest struct {
 		ServiceProvider
 	}

@@ -4,24 +4,26 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
 
 	"github.com/spf13/pflag"
 
-	//"github.com/wangweihong/eazycloud/pkg/errors".
+	//"github.com/wangweihong/gotoolbox/pkg/errors".
+
+	"github.com/wangweihong/gotoolbox/pkg/terminal"
+	"github.com/wangweihong/gotoolbox/pkg/version/verflag"
 
 	"github.com/wangweihong/eazycloud/pkg/cli/globalflag"
-	"github.com/wangweihong/eazycloud/pkg/terminal"
-	"github.com/wangweihong/eazycloud/pkg/version/verflag"
 
-	"github.com/wangweihong/eazycloud/pkg/version"
+	"github.com/wangweihong/gotoolbox/pkg/version"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/wangweihong/gotoolbox/pkg/log"
+
 	cliflag "github.com/wangweihong/eazycloud/pkg/cli/flag"
-	"github.com/wangweihong/eazycloud/pkg/log"
 )
 
 var (
@@ -268,6 +270,10 @@ func (a *App) runCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if !a.noConfig {
+		if err := loadConfig(cfgFile, a.basename); err != nil {
+			return err
+		}
+
 		if err := viper.BindPFlags(cmd.Flags()); err != nil {
 			return err
 		}

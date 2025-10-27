@@ -4,7 +4,7 @@ import (
 	goflag "flag"
 	"strings"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 
 	"github.com/spf13/pflag"
 )
