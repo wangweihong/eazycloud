@@ -6,7 +6,7 @@
 # 代码根目录
 ROOT_PACKAGE=github.com/wangweihong/eazycloud
 # 程序版本代码所在目录
-VERSION_PACKAGE=github.com/wangweihong/eazycloud/pkg/version
+VERSION_PACKAGE=github.com/wangweihong/gotoolbox/pkg/version
 
 .PHONY: all
 all: tidy gen proto format lint cover build
@@ -97,14 +97,16 @@ test:
 cover:
 	@$(MAKE) go.test.cover
 
+
 ## format: Gofmt (reformat) package sources (exclude vendor dir if existed).
+# 注意泛型在1.18后才支持，老版本的工具gofmt/goimport检测泛型会出错,需要升级
 .PHONY: format
 format: tools.verify.golines tools.verify.goimports
 	@echo "===========> Formatting codes"
-	@$(FIND) -type f -name '*.go' | $(XARGS) gofmt -s -w
-	@$(FIND) -type f -name '*.go' | $(XARGS) goimports -w -local $(ROOT_PACKAGE)
-	@$(FIND) -type f -name '*.go' | $(XARGS) golines -w --max-len=120 --reformat-tags --shorten-comments --ignore-generated .
-	@$(GO) mod edit -fmt
+	$(FIND) -type f -name '*.go' | $(XARGS) gofmt -s -w
+	$(FIND) -type f -name '*.go' | $(XARGS) goimports -w -local $(ROOT_PACKAGE)
+	$(FIND) -type f -name '*.go' | $(XARGS) golines -w --max-len=120 --reformat-tags --shorten-comments --ignore-generated .
+	$(GO) mod edit -fmt
 
 
 ## dependencies: Install necessary dependencies.

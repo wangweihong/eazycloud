@@ -3,9 +3,9 @@ package example
 import (
 	"net/http"
 
-	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
 
-	"github.com/wangweihong/eazycloud/pkg/sets"
+	"github.com/wangweihong/gotoolbox/pkg/sets"
 )
 
 type ErrCode struct {
@@ -29,6 +29,15 @@ func (coder ErrCode) Code() int {
 // Reference returns the reference document.
 func (coder ErrCode) Message() map[string]string {
 	return coder.message
+}
+
+// Reference returns the reference document.
+func (coder ErrCode) String() string {
+	if coder.message != nil {
+		msg := coder.message[errors.MessageLangENKey]
+		return msg
+	}
+	return ""
 }
 
 // HTTPStatus returns the associated HTTP status code, if any. Otherwise,
