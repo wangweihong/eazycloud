@@ -37,7 +37,7 @@ type (
 		Cluster   string `json:"cluster"   form:"cluster" binding:"required"`
 		Namespace string `json:"namespace" form:"namespace"`
 		Name      string `json:"name"      form:"name" binding:"required"`
-		Yaml      bool   `json:"yaml" 		form:"yaml"`
+		Yaml      bool   `json:"yaml" form:"yaml"`
 	}
 	ResourceRequest struct {
 		Cluster          string               `json:"cluster"           binding:"required"`
@@ -1068,7 +1068,7 @@ type (
 		Info *DeploymentInfo `json:"info"`
 	}
 
-	DeploymentVersoinListRequest struct {
+	DeploymentVersionListRequest struct {
 		ResourceGetRequest
 		imachinery.PagingParams
 	}

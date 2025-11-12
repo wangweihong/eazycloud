@@ -16,7 +16,7 @@ var (
 		TemplateName: "kubelet_service_config.template",
 		//TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "systemd", "kubelet_service_config.template"),
 		TemplateDir:     ikubeagent.TemplateDirPath,
-		TemplateSubPath: filepath.Join("systemd", "kubelet_service_config.template"),
+		TemplateSubPath: systemd_kubelet_service_config_template.Path,
 		TemplateText:    nil,
 		Context:         map[string]any{},
 		FilePath:        ikubeagent.KubeletServiceConfigFilePath,
@@ -25,7 +25,7 @@ var (
 	// KubeletPreRunScriptTemplate
 	KubeletPreRunScriptTemplate = template.FileProcessor{
 		TemplateName: "kubelet_pre_run_script.template",
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "systemd", "kubelet_pre_run_script.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, systemd_kubelet_pre_run_script_template.Path),
 		TemplateText: nil,
 		Context:      map[string]any{},
 		FilePath:     ikubeagent.KubeletPreRunScript,
@@ -33,7 +33,7 @@ var (
 
 	KubeletServiceTemplate = template.FileProcessor{
 		TemplateName: "kubelet_service.template",
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "systemd", "kubelet_service.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, systemd_kubelet_service_template.Path),
 		TemplateText: nil,
 		Context: map[string]any{
 			"KubeletBinaryPath":       "",
@@ -46,7 +46,7 @@ var (
 var (
 	KubeadmConfigTemplate = template.FileProcessor{
 		TemplateName: "kubeadm_config.template",
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "misc", "kubeadm_config.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, misc_kubeadm_config_template.Path),
 		TemplateText: nil,
 		Context: map[string]any{
 			// 当前控制面板服务地址
@@ -66,7 +66,9 @@ var (
 			// 集群Pod网段, 注意不能和已存在网络冲突。还必须和插件保持一致, 如calico
 			"PodSubnet": "172.18.0.0/16",
 			// KubeProxy模型,,为空默认是iptables, 可选iptables,ipvs
-			"KubeProxyMode": "",
+			"KubeProxyMode":  "",
+			"EtcdListenPort": "2379",
+			"EtcdPeerPort":   "2380",
 		},
 		FilePath: ikubeagent.KubeadmConfigYamlPath,
 	}
@@ -79,7 +81,7 @@ const (
 var (
 	ContainerdConfigTemplate = template.FileProcessor{
 		TemplateName: "containerd_config.template",
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "systemd", "containerd_config_toml.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, systemd_containerd_config_toml_template.Path),
 		TemplateText: nil,
 		Context: map[string]any{
 			"RegistryConfigPath": certDir,
@@ -91,7 +93,7 @@ var (
 
 	ContainerdRegistryConfigTemplate = template.FileProcessor{
 		TemplateName: "containerd_registry.template",
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "systemd", "containerd_registry_hosts.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, systemd_containerd_registry_hosts_template.Path),
 		TemplateText: nil,
 		Context: map[string]any{
 			"RegistryAddress":      "",
@@ -112,14 +114,14 @@ metadata:
   name: kubeagent-namespace
 `,
 		Context:  map[string]any{},
-		FilePath: "/etc/kubernetes/addons/namespace.yaml",
+		FilePath: filepath.Join(ikubeagent.AddonDir, "namespace.yaml"),
 	}
 )
 
 var (
 	CalicoManifest = template.DirectoryProcessor{
 		TemplateName: "calico.template",
-		TemplateDir:  filepath.Join(ikubeagent.TemplateDirPath, "network", "calico"),
+		TemplateDir:  filepath.Join(ikubeagent.TemplateDirPath, filepath.Dir(network_calico_custom_resource_yaml_template.Path)),
 		Context: map[string]any{
 			"ImageRepository":             "",
 			"PodSubnet":                   ikubeagent.CalicoDefaultPodSubnet,
@@ -173,7 +175,7 @@ var (
 	MetricsServerTemplate = template.FileProcessor{
 		TemplateName: "metrics_server.template",
 		TemplateText: nil,
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "metrics_server.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, monitor_metrics_server_template.Path),
 		Context: map[string]any{
 			"ImageRepository": "",
 		},
@@ -182,7 +184,7 @@ var (
 
 	MonitorStackTemplate = template.DirectoryProcessor{
 		TemplateName: "monitor-stack",
-		TemplateDir:  filepath.Join(ikubeagent.TemplateDirPath, "kube-prometheus-0.6.0", "monitor-stack"),
+		TemplateDir:  filepath.Join(ikubeagent.TemplateDirPath, filepath.Dir(monitor_kube_prometheus_0_6_0_monitor_stack_alertmanager_secret_yaml.Path)),
 		Context: map[string]any{
 			"ImageRepository": "",
 		},
@@ -191,7 +193,7 @@ var (
 	//monitorOperators Must deploy before monitor stack
 	MonitorOperatorsTemplate = template.DirectoryProcessor{
 		TemplateName: "monitor-operators",
-		TemplateDir:  filepath.Join(ikubeagent.TemplateDirPath, "kube-prometheus-0.6.0", "monitor-operator"),
+		TemplateDir:  filepath.Join(ikubeagent.TemplateDirPath, filepath.Dir(monitor_kube_prometheus_0_6_0_monitor_operator_0namespace_namespace_yaml.Path)),
 		Context: map[string]any{
 			"ImageRepository": "",
 		},
@@ -202,7 +204,7 @@ var (
 var (
 	LocalStorageAllInOneTemplate = template.DirectoryProcessor{
 		TemplateName: "local-storage-controller",
-		TemplateDir:  filepath.Join(ikubeagent.TemplateDirPath, "storage", "local"),
+		TemplateDir:  filepath.Join(ikubeagent.TemplateDirPath, filepath.Dir(storage_local_local_storage_class_yaml.Path)),
 		Context: map[string]any{
 			"ImageRepository": "",
 			"Namespace":       "",
@@ -212,14 +214,14 @@ var (
 
 	NFSStorageClassTemplate = template.DirectoryProcessor{
 		TemplateName:    "nfs-storage-class",
-		TemplateDir:     filepath.Join(ikubeagent.TemplateDirPath, "storage", "nfs"),
+		TemplateDir:     filepath.Join(ikubeagent.TemplateDirPath, filepath.Dir(storage_nfs_nfs_storage_class_yaml.Path)),
 		Context:         map[string]any{},
 		LocateParsedDir: filepath.Join(ikubeagent.AddonDir, "storage", "nfs"),
 	}
 
 	NFSPVTemplate = template.FileProcessor{
 		TemplateName: "nfs-pv-pvc",
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "nfs-volume.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, misc_nfs_volume_template.Path),
 		Context: map[string]any{
 			"NFSIP":       "",
 			"NFSHostPath": "/var/lib/deploy/nfs",
@@ -229,7 +231,7 @@ var (
 )
 
 var (
-	// namespacecontroller do some work when receive namespace events, such as create podpreset to keep timezone sync
+	// namespacecontroller do some work： when receive namespace events, such as create podpreset to keep timezone sync
 	NamespacesControllerManifests = template.DirectoryProcessor{
 		TemplateName: "namespace-controllers",
 		Context: map[string]any{
@@ -244,7 +246,7 @@ var (
 	KubectlManifest = template.FileProcessor{
 		TemplateName: "kubectl.yaml.template",
 		TemplateText: nil,
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "kubectl.yaml.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, misc_kubectl_yaml_template.Path),
 		Context: map[string]any{
 			"ImageRepository": "k8s.gcr.io",
 			"Namespace":       "",
@@ -257,13 +259,13 @@ var (
 	KeepalivedConfigTempl = template.FileProcessor{
 		TemplateName: "keepalived_config.template",
 		TemplateText: nil,
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "ha", "keepalived_config.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, ha_keepalived_config_template.Path),
 		Context: map[string]any{
 			"STATE":                "",
 			"INTERFACE":            "",
 			"ROUTER_ID":            "50",
 			"AUTH_PASS":            "42",
-			"ikubeagentSERVER_VIP": "",
+			"APISERVER_VIP": "",
 			"PRIORITY":             "",
 		},
 		FilePath: "/etc/keepalived/keepalived.conf",
@@ -272,17 +274,17 @@ var (
 	KeepalivedCheckApiserverScript = template.FileProcessor{
 		TemplateName: "keepalived_vrrp_script.template",
 		TemplateText: nil,
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "ha", "keepalived_vrrp_script.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, ha_keepalived_vrrp_script_template.Path),
 		Context: map[string]any{
-			"EXTERNAL_PORT":        "",
-			"ikubeagentSERVER_VIP": "",
+			"EXTERNAL_PORT": "",
+			"APISERVER_VIP": "",
 		},
-		FilePath: "/etc/keepalived/check_ikubeagentserver.sh",
+		FilePath: "/etc/keepalived/check_apiserver.sh",
 	}
 	KeepalivedYamlTemplate = template.FileProcessor{
 		TemplateName: "keepalived_pod.template",
 		TemplateText: nil,
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "ha", "keepalived_pod.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, ha_keepalived_pod_template.Path),
 		Context: map[string]any{
 			"ImageRepository": "",
 		},
@@ -291,7 +293,7 @@ var (
 
 	HaproxyYamlTemplate = template.FileProcessor{
 		TemplateName: "haproxy_pod.template",
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "ha", "haproxy_pod.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, ha_haproxy_pod_template.Path),
 		TemplateText: nil,
 		Context: map[string]any{
 			"ImageRepository": "library",
@@ -302,7 +304,7 @@ var (
 
 	HaproxyConfigTemplate = template.FileProcessor{
 		TemplateName: "haproxy_cfg.template",
-		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, "ha", "haproxy_cfg.template"),
+		TemplatePath: filepath.Join(ikubeagent.TemplateDirPath, ha_haproxy_cfg_template.Path),
 		TemplateText: nil,
 		Context: map[string]any{
 			"HAPROXY_PORT": "8443",
@@ -316,7 +318,16 @@ var (
 		Context: map[string]any{
 			"ImageRepository": "",
 		},
-		TemplateDir:     filepath.Join(ikubeagent.TemplateDirPath, "gpu"),
+		TemplateDir:     filepath.Join(ikubeagent.TemplateDirPath, filepath.Dir(gpu_nfd_crd_yaml.Path)),
 		LocateParsedDir: filepath.Join(ikubeagent.AddonDir, "gpu"),
+	}
+
+	Npu = template.DirectoryProcessor{
+		TemplateName: "npu",
+		TemplateDir:  filepath.Join(ikubeagent.TemplateDirPath, filepath.Dir(npu_device_plugin_310p_v6_0_0_yaml_template.Path)),
+		Context: map[string]interface{}{
+			"ImageRepository": "",
+		},
+		LocateParsedDir: filepath.Join(ikubeagent.AddonDir, "npu"),
 	}
 )

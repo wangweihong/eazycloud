@@ -1,11 +1,15 @@
 package kubeagent
 
 import (
+	"context"
+
 	"github.com/wangweihong/gotoolbox/pkg/log"
 	"github.com/wangweihong/gotoolbox/pkg/shutdown"
 	"github.com/wangweihong/gotoolbox/pkg/shutdown/managers/posixsignal"
 
+	"github.com/wangweihong/eazycloud/apis/ikubeagent"
 	"github.com/wangweihong/eazycloud/internal/kubeagent/config"
+	"github.com/wangweihong/eazycloud/internal/kubeagent/store/postgresql"
 	"github.com/wangweihong/eazycloud/pkg/httpsvr"
 )
 
@@ -71,6 +75,18 @@ func buildGenericHTTPServerConfig(cfg *config.Config) (genericConfig *httpsvr.Co
 // PrepareRun prepares the server to run, by setting up the server instance.
 func (s *server) PrepareRun() preparedServer {
 	initRouter(s.httpServer.Engine)
+
+	storeIns, _ := postgresql.GetPostgresSQLFactoryOr(nil)
+	d, _ := storeIns.InstallStateStores().GetByName(context.Background(), ikubeagent.KubernetesInstallStateUniqueName)
+	// 上一次正在部署过程中,程序异常退出, 数据库状态没有更新
+	if d != nil && d.State == string(ikubeagent.KubernetesDeployStateDeploying) {
+		d.State = string(ikubeagent.KubernetesDeployStateError)
+		d.ErrorMessage = "program restart"
+		if _, err := storeIns.InstallStateStores().Upsert(context.Background(), d); err != nil {
+			log.Errorf("last time program restart when deploying, try to set error deploy fail:%v ", err)
+		}
+	}
+
 	// 设置服务优雅退出回调处理
 	s.gracefulShutdown.AddShutdownCallback(shutdown.ShutdownFunc(func(string) error {
 		s.httpServer.Close()

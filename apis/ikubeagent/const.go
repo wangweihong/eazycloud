@@ -9,9 +9,9 @@ import (
 
 const (
 	KubernetesDeployStateUninitialized statemachine.State = "uninitialized"
-	KubernetesDeployStateDeploying                        = "deploying"
-	KubernetesDeployStateSuccess                          = "success"
-	KubernetesDeployStateError                            = "error"
+	KubernetesDeployStateDeploying     statemachine.State = "deploying"
+	KubernetesDeployStateSuccess       statemachine.State = "success"
+	KubernetesDeployStateError         statemachine.State = "error"
 )
 
 const (

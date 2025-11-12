@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-func (k *kubernetesService) AlertManagerCreate(ctx context.Context, req *iapiserver.AlertManagerRequest) (*iapiserver.AlertManagerInfo, error) {
+func (k *kubernetesService) AlertManagerAdd(ctx context.Context, req *iapiserver.AlertManagerRequest) (*iapiserver.AlertManagerInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -119,7 +119,7 @@ func (k *kubernetesService) AlertManagerList(ctx context.Context, req *iapiserve
 	return resp, nil
 }
 
-func (k *kubernetesService) ServiceMonitorCreate(ctx context.Context, req *iapiserver.ServiceMonitorRequest) (*iapiserver.ServiceMonitorInfo, error) {
+func (k *kubernetesService) ServiceMonitorAdd(ctx context.Context, req *iapiserver.ServiceMonitorRequest) (*iapiserver.ServiceMonitorInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -206,7 +206,7 @@ func (k *kubernetesService) ServiceMonitorList(ctx context.Context, req *iapiser
 	return resp, nil
 }
 
-func (k *kubernetesService) PodMonitorCreate(ctx context.Context, req *iapiserver.PodMonitorRequest) (*iapiserver.PodMonitorInfo, error) {
+func (k *kubernetesService) PodMonitorAdd(ctx context.Context, req *iapiserver.PodMonitorRequest) (*iapiserver.PodMonitorInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -615,7 +615,7 @@ func (m *Combiner) GetTypeString() string {
 }
 
 func (m *Combiner) GetInsert() []iprometheus.Point {
-	resp := make([]iprometheus.Point,0, len(m.meta))
+	resp := make([]iprometheus.Point, len(m.meta), len(m.meta))
 
 	var i, j int
 	for k, v := range m.meta {

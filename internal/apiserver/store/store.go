@@ -111,6 +111,7 @@ type SettingStore interface {
 	GetByName(ctx context.Context, name string) (*iapiserver.Setting, error)
 	GetMultiByNames(ctx context.Context, names ...string) ([]*iapiserver.Setting, error)
 	Upsert(ctx context.Context, data *iapiserver.Setting) (*iapiserver.Setting, error)
+	FirstOrCreate(ctx context.Context, data *iapiserver.Setting) (*iapiserver.Setting, error)
 }
 
 type UserStore interface {
@@ -128,4 +129,13 @@ type OneTimeTokenStore interface {
 	Delete(ctx context.Context, id string) error
 	Add(ctx context.Context, data *iapiserver.OneTimeToken) (*iapiserver.OneTimeToken, error)
 	CleanupExpiredTokens(ctx context.Context) error
+}
+
+type UserOTPStore interface {
+	List(ctx context.Context) ([]*iapiserver.UserOTP, error)
+	Delete(ctx context.Context, id string) error
+	GetByUser(ctx context.Context, uid string) (*iapiserver.UserOTP, error)
+	Upsert(ctx context.Context, data *iapiserver.UserOTP) (*iapiserver.UserOTP, error)
+	FirstOrCreate(ctx context.Context, data *iapiserver.UserOTP) (*iapiserver.UserOTP, error)
+	Add(ctx context.Context, data *iapiserver.UserOTP) (*iapiserver.UserOTP, error)
 }

@@ -22,6 +22,7 @@ type Factory interface {
 	// identitys
 	Users() UserStore
 	OneTimeTokens() OneTimeTokenStore
+	UserOTPs() UserOTPStore
 
 	EnsureScheme(metaTypes ...any) error
 	Close() error

@@ -45,12 +45,12 @@ var (
 func (k *kubernetesService) NodeGatewayUpdate(ctx context.Context, req *iapiserver.NodeRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	node, err := clientset.NodeGet(ctx, cluster, req.Node.Name, req.GetOpts)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if getNodeRole(node) == iapiserver.NodeRoleMaster {
@@ -58,12 +58,12 @@ func (k *kubernetesService) NodeGatewayUpdate(ctx context.Context, req *iapiserv
 	}
 
 	if err := k.nodeActionUpdate(req.Action, node); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	node, err = clientset.NodeUpdate(ctx, cluster, node, req.UpdateOpts)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	// 删掉本节点和nginx相关的pod
@@ -145,18 +145,18 @@ func (k *kubernetesService) nodeActionUpdate(action string, node *v1.Node) error
 func (k *kubernetesService) NodeTaintUpdate(ctx context.Context, req *iapiserver.NodeRequest) (*iapiserver.NodeInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	node, err := clientset.NodeGet(ctx, cluster, req.Node.Name, req.GetOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	node.Spec.Taints = req.Node.Spec.Taints
 	meta, err := clientset.NodeUpdate(ctx, cluster, node, req.UpdateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return convertK8sNodeToNodeInfo(meta, cluster, req.Yaml), nil
@@ -166,31 +166,31 @@ func (k *kubernetesService) NodeTaintUpdate(ctx context.Context, req *iapiserver
 func (k *kubernetesService) NodeUpdateLabel(ctx context.Context, req *iapiserver.NodeRequest) (*iapiserver.NodeInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	//TODO: restrict label prefix check
 	node, err := clientset.NodeGet(ctx, cluster, req.Node.Name, req.GetOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	node.Labels = req.Node.Labels
 	node, err = clientset.NodeUpdate(ctx, cluster, node, req.UpdateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return convertK8sNodeToNodeInfo(node, cluster, req.Yaml), nil
 }
 
-func (k *kubernetesService) NodeCreate(ctx context.Context, req *iapiserver.NodeRequest) (*iapiserver.NodeInfo, error) {
+func (k *kubernetesService) NodeAdd(ctx context.Context, req *iapiserver.NodeRequest) (*iapiserver.NodeInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	node, err := clientset.NodeCreate(ctx, cluster, req.Node, req.CreateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return convertK8sNodeToNodeInfo(node, cluster, req.Yaml), nil
@@ -199,11 +199,11 @@ func (k *kubernetesService) NodeCreate(ctx context.Context, req *iapiserver.Node
 func (k *kubernetesService) NodeUpdate(ctx context.Context, req *iapiserver.NodeRequest) (*iapiserver.NodeInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	node, err := clientset.NodeUpdate(ctx, cluster, req.Node, req.UpdateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return convertK8sNodeToNodeInfo(node, cluster, req.Yaml), nil
 }
@@ -211,11 +211,11 @@ func (k *kubernetesService) NodeUpdate(ctx context.Context, req *iapiserver.Node
 func (k *kubernetesService) NodeDelete(ctx context.Context, req *iapiserver.NodeRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if err = clientset.NodeDelete(ctx, cluster, req.Node, req.DeleteOpts); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -224,11 +224,11 @@ func (k *kubernetesService) NodeDelete(ctx context.Context, req *iapiserver.Node
 func (k *kubernetesService) NodeGet(ctx context.Context, req *iapiserver.NodeGetRequest) (*iapiserver.NodeInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	node, err := clientset.NodeGet(ctx, cluster, req.Name, req.ToGetOpts())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	nodeInfo := convertK8sNodeToNodeInfo(node, cluster, req.Yaml)
@@ -410,10 +410,10 @@ func (k *kubernetesService) NodeList(ctx context.Context, req *iapiserver.NodeLi
 func (k *kubernetesService) NodeCordon(ctx context.Context, req *iapiserver.NodeRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _, err := clientset.NodeCordon(ctx, cluster, req.Node); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -422,10 +422,10 @@ func (k *kubernetesService) NodeCordon(ctx context.Context, req *iapiserver.Node
 func (k *kubernetesService) NodeUncordon(ctx context.Context, req *iapiserver.NodeRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if _, err := clientset.NodeUncordon(ctx, cluster, req.Node); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -434,17 +434,17 @@ func (k *kubernetesService) NodeUncordon(ctx context.Context, req *iapiserver.No
 func (k *kubernetesService) NodeDrain(ctx context.Context, req *iapiserver.NodeDrainRequest) (*imachinery.BatchOutput, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	node, err := clientset.NodeGet(ctx, cluster, req.Node.Name, req.GetOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	podList, err := nodeAllPodsList(ctx, cluster, node)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	if !req.DisableEviction {
@@ -456,11 +456,11 @@ func (k *kubernetesService) NodeDrain(ctx context.Context, req *iapiserver.NodeD
 func (k *kubernetesService) NodeEvent(ctx context.Context, req *iapiserver.NodeEventRequest) ([]*iapiserver.EventInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	node, err := clientset.NodeGet(ctx, cluster, req.Name, req.ToGetOpts())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	ref, err := reference.GetReference(scheme.Scheme, node)
@@ -471,7 +471,7 @@ func (k *kubernetesService) NodeEvent(ctx context.Context, req *iapiserver.NodeE
 	ref.UID = kubetypes.UID(ref.Name)
 	resList, err := clientset.EventSearch(ctx, cluster, scheme.Scheme, ref)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	var resInfos []*iapiserver.EventInfo
@@ -690,7 +690,7 @@ func nodeNonTerminatedPodsList(ctx context.Context, clusterInfo *iapiserver.Clus
 func nodeAllPodsList(ctx context.Context, clusterInfo *iapiserver.Cluster, node *v1.Node) ([]*v1.Pod, error) {
 	podList, err := clientset.PodList(ctx, clusterInfo, metav1.NamespaceAll, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	pods := make([]*v1.Pod, 0)
 	for i := range podList.Items {

@@ -4,14 +4,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/wangweihong/eazycloud/apis/iapiserver"
 	"github.com/wangweihong/gotoolbox/pkg/compareutil"
 	"github.com/wangweihong/gotoolbox/pkg/paging"
 	"github.com/wangweihong/gotoolbox/pkg/sets"
-	"github.com/wangweihong/gotoolbox/pkg/sortutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
+	"github.com/wangweihong/gotoolbox/pkg/sortutil"
+	"github.com/wangweihong/eazycloud/apis/iapiserver"
 )
 
 // import (
@@ -456,31 +456,33 @@ func convertResourceLimitToPersistentUnit(containerName string, requests, limits
 		Limits:    make(map[string]int64),
 		Request:   make(map[string]int64),
 	}
-
-	for i, j := range requests {
-		if string(i) == "memory" {
-			ResourceConvert.Request[string(i)] = j.Value() / 1024 / 1024 // convert to memory
-			continue
+	if requests != nil {
+		for i, j := range requests {
+			if string(i) == "memory" {
+				ResourceConvert.Request[string(i)] = j.Value() / 1024 / 1024 // convert to memory
+				continue
+			}
+			if string(i) == "cpu" { // if use Value(), 0.1 cpu/100m cpu will convert to 1 cpu
+				ResourceConvert.Request[string(i)] = j.MilliValue()
+				continue
+			}
+			ResourceConvert.Request[string(i)] = j.Value()
 		}
-		if string(i) == "cpu" { // if use Value(), 0.1 cpu/100m cpu will convert to 1 cpu
-			ResourceConvert.Request[string(i)] = j.MilliValue()
-			continue
-		}
-		ResourceConvert.Request[string(i)] = j.Value()
 	}
 
-	for i, j := range limits {
-		if string(i) == "memory" {
-			ResourceConvert.Limits[string(i)] = j.Value() / 1024 / 1024 // convert to memory
-			continue
+	if limits != nil {
+		for i, j := range limits {
+			if string(i) == "memory" {
+				ResourceConvert.Limits[string(i)] = j.Value() / 1024 / 1024 // convert to memory
+				continue
+			}
+			if string(i) == "cpu" { // if use Value(), 0.1 cpu/100m cpu will convert to 1 cpu
+				ResourceConvert.Limits[string(i)] = j.MilliValue()
+				continue
+			}
+			ResourceConvert.Limits[string(i)] = j.Value()
 		}
-		if string(i) == "cpu" { // if use Value(), 0.1 cpu/100m cpu will convert to 1 cpu
-			ResourceConvert.Limits[string(i)] = j.MilliValue()
-			continue
-		}
-		ResourceConvert.Limits[string(i)] = j.Value()
 	}
-
 	return ResourceConvert
 }
 
@@ -605,7 +607,7 @@ func CutPagingSliceResourceList2[T any](eachClusterResources []iapiserver.EachRe
 
 	total := len(*list)
 	if total > 0 {
-		sortutil.StructSliceSort(*list, sortBy, asc)
+		sortutil.StructSliceSort(*list,sortBy,asc)
 		//sort.SliceStable(*list, lessFunc)
 		s, index := paging.Index(total, pageNum, pageSize)
 		plist := *list

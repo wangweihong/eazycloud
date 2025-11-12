@@ -21,6 +21,18 @@ func (rc *RegistryController) SystemScanAllExecuteScheduleAdd(c *gin.Context) {
 
 }
 
+func (rc *RegistryController) SystemScanAllScheduleCreate(c *gin.Context) {
+
+}
+
+func (rc *RegistryController) SystemScanAllScheduleDelete(c *gin.Context) {
+
+}
+
+func (rc *RegistryController) SystemScanAllScheduleUpdate(c *gin.Context) {
+
+}
+
 func (rc *RegistryController) SystemScanAllExecuteScheduleUpdate(c *gin.Context) {
 
 }

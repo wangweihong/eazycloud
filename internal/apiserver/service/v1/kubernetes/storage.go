@@ -25,7 +25,7 @@ const (
 	NFSDriverPrefix = "nfs-pod-provisioner"
 )
 
-func (k *kubernetesService) StorageClassListAll(ctx context.Context, req *iapiserver.StorageClassListRequest) (*iapiserver.StorageClassListResponse, error) {
+func (k *kubernetesService) StorageClassList(ctx context.Context, req *iapiserver.StorageClassListRequest) (*iapiserver.StorageClassListResponse, error) {
 	resp := &iapiserver.StorageClassListResponse{}
 
 	var err error
@@ -55,29 +55,28 @@ func (k *kubernetesService) StorageClassListAll(ctx context.Context, req *iapise
 	return resp, err
 }
 
-func (k *kubernetesService) StorageClassDelete(ctx context.Context, req *iapiserver.StorageClassRequest) (*iapiserver.StorageClassInfo, error) {
-
+func (k *kubernetesService) StorageClassDelete(ctx context.Context, req *iapiserver.StorageClassRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
 	resList, err := clientset.PersistentVolumeClaimList(ctx, cluster, "", metav1.ListOptions{})
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
 	for i := range resList.Items {
 		if resList.Items[i].Spec.StorageClassName != nil && *resList.Items[i].Spec.StorageClassName == req.Resource.Name {
-			return nil, errors.Errorf("cannot delete storageclass if has persistent volumes")
+			return errors.Errorf("cannot delete storageclass if has persistent volumes")
 		}
 	}
 
 	if err := clientset.StorageClassDelete(ctx, cluster, req.Resource, req.DeleteOpts); err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	return nil, errors.WithStack(err)
+	return nil
 }
 
 func (k *kubernetesService) StorageClassBatchDelete(ctx context.Context, req *iapiserver.StorageClassBatchRequest) waitgroup.BatchGenericOutput[*iapiserver.StorageClassRequest] {
@@ -151,7 +150,7 @@ spec:
 )
 
 // handle topsc-provisioner storageclass
-func (k *kubernetesService) StorageClassCreate(ctx context.Context, req *iapiserver.StorageClassRequest) (*iapiserver.StorageClassInfo, error) {
+func (k *kubernetesService) StorageClassAdd(ctx context.Context, req *iapiserver.StorageClassRequest) (*iapiserver.StorageClassInfo, error) {
 	if req.Resource.Provisioner == "" {
 		return nil, errors.Errorf("req.StorageClass.Provisioner is empty")
 	}
@@ -299,7 +298,7 @@ func (k *kubernetesService) storageClassGlusterfsCreateCheck(req *iapiserver.Sto
 		}
 		decoded, err := base64.StdEncoding.DecodeString(userkey)
 		if err != nil {
-			return errors.WithStack(err)
+			return errors.Errorf(err.Error())
 		}
 		decodestr := string(decoded)
 		req.Resource.Parameters["restuserkey"] = decodestr
@@ -433,7 +432,7 @@ func (k *kubernetesService) StorageClassGet(ctx context.Context, req *iapiserver
 	return iapiserver.NewStorageClassInfo(meta, cluster), nil
 }
 
-func (k *kubernetesService) PersistentVolumeListAll(ctx context.Context, req *iapiserver.PersistentVolumeListRequest) (*iapiserver.PersistentVolumeListResponse, error) {
+func (k *kubernetesService) PersistentVolumeList(ctx context.Context, req *iapiserver.PersistentVolumeListRequest) (*iapiserver.PersistentVolumeListResponse, error) {
 	resp := &iapiserver.PersistentVolumeListResponse{}
 	clusters, err := getVisitScope(ctx, k.store, req.ResourceListRequest)
 	if err != nil {
@@ -470,7 +469,7 @@ func (k *kubernetesService) PersistentVolumeListAll(ctx context.Context, req *ia
 	return resp, nil
 }
 
-func (k *kubernetesService) PersistentVolumeCreate(ctx context.Context, req *iapiserver.PersistentVolumeRequest) (*iapiserver.PersistentVolumeInfo, error) {
+func (k *kubernetesService) PersistentVolumeAdd(ctx context.Context, req *iapiserver.PersistentVolumeRequest) (*iapiserver.PersistentVolumeInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -511,17 +510,17 @@ func (k *kubernetesService) PersistentVolumeGet(ctx context.Context, req *iapise
 	return iapiserver.NewPersistentVolumeInfo(meta, cluster), nil
 }
 
-func (k *kubernetesService) PersistentVolumeDelete(ctx context.Context, req *iapiserver.PersistentVolumeRequest) (*iapiserver.PersistentVolumeInfo, error) {
+func (k *kubernetesService) PersistentVolumeDelete(ctx context.Context, req *iapiserver.PersistentVolumeRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
 	if err := clientset.PersistentVolumeDelete(ctx, cluster, req.Resource.Namespace, req.Resource.Name, req.DeleteOpts); err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	return nil, errors.WithStack(err)
+	return nil
 }
 
 func (k *kubernetesService) PersistentVolumeBatchDelete(ctx context.Context, req *iapiserver.PersistentVolumeBatchRequest) waitgroup.BatchGenericOutput[*iapiserver.PersistentVolumeRequest] {
@@ -602,7 +601,7 @@ func filterPersistentVolume(resource *iapiserver.PersistentVolumeInfo, fuzzy str
 		Filter(fuzzy)
 }
 
-func (k *kubernetesService) PersistentVolumeClaimCreate(ctx context.Context, req *iapiserver.PersistentVolumeClaimRequest) (*iapiserver.PersistentVolumeClaimInfo, error) {
+func (k *kubernetesService) PersistentVolumeClaimAdd(ctx context.Context, req *iapiserver.PersistentVolumeClaimRequest) (*iapiserver.PersistentVolumeClaimInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -616,32 +615,32 @@ func (k *kubernetesService) PersistentVolumeClaimCreate(ctx context.Context, req
 	return convertK8sPersistentVolumeClaimToApi(meta, cluster, req.Yaml), nil
 }
 
-func (k *kubernetesService) PersistentVolumeClaimDelete(ctx context.Context, req *iapiserver.PersistentVolumeClaimRequest) (*iapiserver.PersistentVolumeClaimInfo, error) {
+func (k *kubernetesService) PersistentVolumeClaimDelete(ctx context.Context, req *iapiserver.PersistentVolumeClaimRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
 	resList, err := clientset.PodList(ctx, cluster, req.Resource.Namespace, req.ListOpts)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
 	for i := range resList.Items {
 		podInfo := convertK8sPodToApi(&resList.Items[i], cluster, nil)
 		if !filterPod(podInfo, "", req.Resource.Name, "", "") {
-			return nil, errors.Errorf("pvc still mount by pod")
+			return errors.Errorf("pvc still mount by pod")
 		}
 	}
 
 	if err := clientset.PersistentVolumeClaimDelete(ctx, cluster, req.Resource.Namespace, req.Resource.Name, req.DeleteOpts); err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	return nil, errors.WithStack(err)
+	return nil
 }
 
-func (k *kubernetesService) PersistentVolumeClaimClaimBatchDelete(ctx context.Context, req *iapiserver.PersistentVolumeClaimBatchRequest) waitgroup.BatchGenericOutput[*iapiserver.PersistentVolumeClaimRequest] {
+func (k *kubernetesService) PersistentVolumeClaimBatchDelete(ctx context.Context, req *iapiserver.PersistentVolumeClaimBatchRequest) waitgroup.BatchGenericOutput[*iapiserver.PersistentVolumeClaimRequest] {
 	wg := waitgroup.RunGenericConcurrently(ctx, req.Resources, func(ctx context.Context, res *iapiserver.PersistentVolumeClaimRequest) waitgroup.GenericResult[*iapiserver.PersistentVolumeClaimRequest] {
 		cluster, err := k.store.Clusters().Get(ctx, res.Cluster)
 		if err != nil {
@@ -724,7 +723,7 @@ func (k *kubernetesService) PersistentVolumeClaimGet(ctx context.Context, req *i
 	return convertK8sPersistentVolumeClaimToApi(meta, cluster, req.Yaml), nil
 }
 
-func (k *kubernetesService) PersistentVolumeClaimListAll(ctx context.Context, req *iapiserver.PersistentVolumeClaimListRequest) (*iapiserver.PersistentVolumeClaimListResponse, error) {
+func (k *kubernetesService) PersistentVolumeClaimList(ctx context.Context, req *iapiserver.PersistentVolumeClaimListRequest) (*iapiserver.PersistentVolumeClaimListResponse, error) {
 	resp := &iapiserver.PersistentVolumeClaimListResponse{}
 
 	var err error
@@ -822,7 +821,7 @@ func getVolumeAttribute(ctx context.Context, cluster *iapiserver.Cluster, pvc *v
 	return allowExpansion, allowSnapshot
 }
 
-func (k *kubernetesService) VolumeSnapshotClassListAll(ctx context.Context, req *iapiserver.VolumeSnapshotClassListRequest) (*iapiserver.VolumeSnapshotClassListResponse, error) {
+func (k *kubernetesService) VolumeSnapshotClassList(ctx context.Context, req *iapiserver.VolumeSnapshotClassListRequest) (*iapiserver.VolumeSnapshotClassListResponse, error) {
 	resp := &iapiserver.VolumeSnapshotClassListResponse{}
 
 	var err error
@@ -868,7 +867,7 @@ func (k *kubernetesService) VolumeSnapshotClassGet(ctx context.Context, req *iap
 	return convertK8sVolumeSnapshotClassToApiVolumeSnapshotClass(meta, cluster, req.Yaml), nil
 }
 
-func (k *kubernetesService) VolumeSnapshotClassCreate(ctx context.Context, req *iapiserver.VolumeSnapshotClassRequest) (*iapiserver.VolumeSnapshotClassInfo, error) {
+func (k *kubernetesService) VolumeSnapshotClassAdd(ctx context.Context, req *iapiserver.VolumeSnapshotClassRequest) (*iapiserver.VolumeSnapshotClassInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -882,16 +881,16 @@ func (k *kubernetesService) VolumeSnapshotClassCreate(ctx context.Context, req *
 	return convertK8sVolumeSnapshotClassToApiVolumeSnapshotClass(meta, cluster, req.Yaml), nil
 }
 
-func (k *kubernetesService) VolumeSnapshotClassDelete(ctx context.Context, req *iapiserver.VolumeSnapshotClassRequest) (*iapiserver.VolumeSnapshotInfo, error) {
+func (k *kubernetesService) VolumeSnapshotClassDelete(ctx context.Context, req *iapiserver.VolumeSnapshotClassRequest) ( error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
 	if err := libkubernetes.VolumeSnapshotClassDelete(ctx, cluster.Config, req.Resource.Name, req.DeleteOpts); err != nil {
-		return nil, errors.WithStack(err)
+		return  errors.WithStack(err)
 	}
-	return nil, nil
+	return  nil
 }
 
 func (k *kubernetesService) VolumeSnapshotClassBatchDelete(ctx context.Context, req *iapiserver.VolumeSnapshotClassBatchRequest) waitgroup.BatchGenericOutput[*iapiserver.VolumeSnapshotClassRequest] {
@@ -922,7 +921,7 @@ func (k *kubernetesService) VolumeSnapshotClassUpdate(ctx context.Context, req *
 	return convertK8sVolumeSnapshotClassToApiVolumeSnapshotClass(meta, cluster, req.Yaml), nil
 }
 
-func (k *kubernetesService) VolumeSnapshotContentListAll(ctx context.Context, req *iapiserver.VolumeSnapshotContentListRequest) (*iapiserver.VolumeSnapshotContentListResponse, error) {
+func (k *kubernetesService) VolumeSnapshotContentList(ctx context.Context, req *iapiserver.VolumeSnapshotContentListRequest) (*iapiserver.VolumeSnapshotContentListResponse, error) {
 	resp := &iapiserver.VolumeSnapshotContentListResponse{}
 
 	var err error
@@ -971,7 +970,7 @@ func (k *kubernetesService) VolumeSnapshotContentGet(ctx context.Context, req *i
 	return convertK8sVolumeSnapshotContentToApiVolumeSnapshotContent(meta, cluster, req.Yaml), nil
 }
 
-func (k *kubernetesService) VolumeSnapshotContentCreate(ctx context.Context, req *iapiserver.VolumeSnapshotContentRequest) (*iapiserver.VolumeSnapshotContentInfo, error) {
+func (k *kubernetesService) VolumeSnapshotContentAdd(ctx context.Context, req *iapiserver.VolumeSnapshotContentRequest) (*iapiserver.VolumeSnapshotContentInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -1026,7 +1025,7 @@ func (k *kubernetesService) VolumeSnapshotContentUpdate(ctx context.Context, req
 	return convertK8sVolumeSnapshotContentToApiVolumeSnapshotContent(meta, cluster, req.Yaml), nil
 }
 
-func (k *kubernetesService) VolumeSnapshotListAll(ctx context.Context, req *iapiserver.VolumeSnapshotListRequest) (*iapiserver.VolumeSnapshotListResponse, error) {
+func (k *kubernetesService) VolumeSnapshotList(ctx context.Context, req *iapiserver.VolumeSnapshotListRequest) (*iapiserver.VolumeSnapshotListResponse, error) {
 	resp := &iapiserver.VolumeSnapshotListResponse{}
 
 	var err error
@@ -1076,7 +1075,7 @@ func (k *kubernetesService) VolumeSnapshotGet(ctx context.Context, req *iapiserv
 	return convertK8sVolumeSnapshotToApiVolumeSnapshot(meta, cluster, req.Yaml), nil
 }
 
-func (k *kubernetesService) VolumeSnapshotCreate(ctx context.Context, req *iapiserver.VolumeSnapshotRequest) (*iapiserver.VolumeSnapshotInfo, error) {
+func (k *kubernetesService) VolumeSnapshotAdd(ctx context.Context, req *iapiserver.VolumeSnapshotRequest) (*iapiserver.VolumeSnapshotInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)

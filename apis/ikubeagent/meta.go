@@ -17,6 +17,7 @@ type InstallState struct {
 	StartTime     imachinery.Time `json:"start_time"`
 	EndTime       imachinery.Time `json:"end_time"`
 	ErrorMessage  string          `json:"error_message"`
+	Owner         string          `json:"owner"`
 }
 
 func (obj *InstallState) BeforeCreate(tx *gorm.DB) error {

@@ -1,23 +1,31 @@
 package version130
 
 import (
+	"context"
+	gerrors "errors"
 	"os"
 	osexec "os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/wangweihong/gotoolbox/pkg/errors"
 	"github.com/wangweihong/gotoolbox/pkg/executil"
 	"github.com/wangweihong/gotoolbox/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/statemachine"
+	"gorm.io/gorm"
 
 	"github.com/wangweihong/eazycloud/apis/ikubeagent"
-	"github.com/wangweihong/eazycloud/internal/kubeagent/service/v1/deployment"
+	"github.com/wangweihong/eazycloud/apis/imachinery"
 	"github.com/wangweihong/eazycloud/internal/kubeagent/store"
 	"github.com/wangweihong/eazycloud/internal/pkg/run"
 )
 
-func NewDeployService(version string, store store.Factory) deployment.AgentService {
+func NewDeployService(version string, state *ikubeagent.InstallState, store store.Factory) *impl {
 	return &impl{
+		state:   state,
+		sm:      statemachine.New(statemachine.State(state.State)),
 		version: version,
 		deps: []string{
 			"kubeadm",
@@ -48,29 +56,39 @@ type impl struct {
 	version string
 	deps    []string
 	store   store.Factory
+	sm      *statemachine.StateMachine
+	state   *ikubeagent.InstallState
 }
 
 func (i *impl) Version() string {
 	return i.version
 }
 
-var (
-	initMasterProcess = []setupFunc{
-		prepareDataDir,
+func (i *impl) InitMaster(ctx context.Context, param *ikubeagent.InstallMasterRequest) error {
+	if i.sm.CurrentState() != ikubeagent.KubernetesDeployStateUninitialized {
+		return errors.Errorf("current node has used to deploy")
 	}
-)
+	var err error
 
-func (i *impl) InitMaster(config *ikubeagent.KubernetesDeployConfig, isMaster0 bool) (err error) {
-	log.Infof("start to init master, isMaster0:%v", isMaster0)
+	defer func() {
+		updateState(ctx, i.store, err, i.state, ikubeagent.KubernetesDeployStateSuccess)
+	}()
+	err = i.initMaster(ctx, param)
+	return err
+}
 
-	if config.ControlPlaneConfig == nil {
-		log.Errorf("init master must parsing k8s cluster control plane param")
-		return errors.Errorf("missing ControlPlaneConfig")
+func (i *impl) initMaster(ctx context.Context, param *ikubeagent.InstallMasterRequest) (err error) {
+	log.Infof("start to init master")
+
+	config := param.ToKubernetesInstallConfig()
+
+	if i.sm.CurrentState() != ikubeagent.KubernetesDeployStateUninitialized {
+		return errors.Errorf("current node has used to deploy,cuurent state: %v", i.sm.CurrentState())
 	}
 
-	c, err := initSetupContext(config, isMaster0)
+	c, err := initSetupContext(config, true)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	Ops := []NamedOperation{
@@ -86,7 +104,7 @@ func (i *impl) InitMaster(config *ikubeagent.KubernetesDeployConfig, isMaster0 b
 		{Name: "install storage plugin", Op: installStoragePlugin},
 		{Name: "install kubectl plugin", Op: installKubectlPlugin},
 		{Name: "set master as worker", Op: setMasterAsWorker},
-		{Name: "install gpu plugin", Op: installGpuPlugin},
+		{Name: "install display card plugin", Op: installDisplayCardPlugin},
 	}
 
 	for _, op := range Ops {
@@ -95,24 +113,55 @@ func (i *impl) InitMaster(config *ikubeagent.KubernetesDeployConfig, isMaster0 b
 			return err
 		}
 	}
-	//p := postInstall{}
-	// p.err = p.createSystemNamespace()
-	// p.err = p.deployNetworkPlugin(config)
-	//p.err = p.deployMonitorPlugin(config)
-	//p.err = p.deployStoragePlugin(config)
-	//p.err = p.deployNamespaceControllerPlugin(config)
-	//p.err = p.deployKubectlPlugin(config)
-	//p.err = p.createSecretOfEtcd(config)
-	//p.err = p.setMasterAsWorker(config)
-	// p.err = p.deployGpuPlugin(config)
-	// if p.err != nil {
-	// 	return p.err
-	// }
+
 	return nil
 }
 
-func (i *impl) JoinCluster(config *ikubeagent.KubernetesDeployConfig, joinCmd string, isControlPlane bool) (err error) {
-	log.Info("start to JoinCluster ")
+func updateState(ctx context.Context, store store.Factory, err error, state *ikubeagent.InstallState, targetState statemachine.State) {
+	if x := recover(); x != nil {
+		err = errors.Errorf("panic")
+	}
+
+	switch targetState {
+	case ikubeagent.KubernetesDeployStateError, ikubeagent.KubernetesDeployStateSuccess:
+		state.EndTime = imachinery.Now()
+	case ikubeagent.KubernetesDeployStateUninitialized:
+		state = new(ikubeagent.InstallState)
+		state.State = string(ikubeagent.KubernetesDeployStateUninitialized)
+
+	case ikubeagent.KubernetesDeployStateDeploying:
+		state.StartTime = imachinery.Now()
+	}
+
+	if err != nil {
+		state.State = string(ikubeagent.KubernetesDeployStateError)
+		state.ErrorMessage = err.Error()
+	} else {
+		state.State = string(ikubeagent.KubernetesDeployStateSuccess)
+	}
+
+	if _, err := store.InstallStateStores().Upsert(ctx, state); err != nil {
+		log.F(ctx).Errorf("update install state error:%v", err)
+	}
+
+}
+func (i *impl) JoinCluster(ctx context.Context, param *ikubeagent.JoinClusterRequest) error {
+	if i.sm.CurrentState() != ikubeagent.KubernetesDeployStateUninitialized {
+		return errors.Errorf("current node has used to deploy")
+	}
+	var err error
+
+	defer func() {
+		updateState(ctx, i.store, err, i.state, ikubeagent.KubernetesDeployStateSuccess)
+	}()
+	err = i.joinCluster(ctx, param)
+	return err
+}
+
+func (i *impl) joinCluster(ctx context.Context, param *ikubeagent.JoinClusterRequest) (err error) {
+	log.Info("start to JoinCluster")
+
+	config := param.ToKubernetesInstallConfig()
 
 	c, err := initSetupContext(config, false)
 	if err != nil {
@@ -124,7 +173,10 @@ func (i *impl) JoinCluster(config *ikubeagent.KubernetesDeployConfig, joinCmd st
 		{Name: "prepare component template ", Op: prepareComponentTemplate},
 		{Name: "update kubelet service", Op: updateKubeletService},
 		{Name: "update containerd service", Op: updateContainerdService2},
-		{Name: "prepare ha", Op: deployPrepareHA},
+		// {Name: "prepare ha", Op: deployPrepareHA},
+	}
+	if param.WorkerConfig.IsControlPlane {
+		Ops = append(Ops, NamedOperation{Name: "prepare ha", Op: deployPrepareHA})
 	}
 
 	for _, op := range Ops {
@@ -135,7 +187,7 @@ func (i *impl) JoinCluster(config *ikubeagent.KubernetesDeployConfig, joinCmd st
 	}
 
 	log.Info("Join Cluster run runKubeadmJoin")
-	if err := runKubeadmJoin(joinCmd, isControlPlane, config.NodeConfig.NodeName); err != nil {
+	if err := runKubeadmJoin(param.WorkerConfig.JoinCommand, param.WorkerConfig.IsControlPlane, config.NodeConfig.NodeName); err != nil {
 		log.Errorf("runKubeadmJoin fail:%v", err)
 		return err
 	}
@@ -143,7 +195,21 @@ func (i *impl) JoinCluster(config *ikubeagent.KubernetesDeployConfig, joinCmd st
 	return nil
 }
 
-func (i *impl) Reset(isHa bool) error {
+func (i *impl) Reset(ctx context.Context) error {
+
+	if i.sm.CurrentState() != ikubeagent.KubernetesDeployStateDeploying {
+		return errors.Errorf("current node is deploying")
+	}
+
+	var err error
+	defer func() {
+		updateState(ctx, i.store, err, i.state, ikubeagent.KubernetesDeployStateUninitialized)
+	}()
+	err = i.reset(ctx, i.state.HighAvailable)
+	return err
+}
+
+func (i *impl) reset(ctx context.Context, isHa bool) error {
 	// FiXME: we should skip init etcd preflight check error if we reset ignore etcd. but at sametime we should ignore
 	// init phase /var/lib/etcd remain data dir error.
 	args := []string{"reset", "-f"}
@@ -174,7 +240,15 @@ func (i *impl) Reset(isHa bool) error {
 	return nil
 }
 
-func (i *impl) GetJoinCommand(showControlPlane bool) (string, string, error) {
+func (i *impl) GetJoinCommand(ctx context.Context, param *ikubeagent.GetJoinCommandRequest) (string, string, error) {
+	if i.sm.CurrentState() != ikubeagent.KubernetesDeployStateSuccess {
+		return "", "", errors.Errorf("kubernetes cluster doesn't deploy success")
+	}
+
+	if !i.state.ControlPlane {
+		return "", "", errors.Errorf("current node is not control-plane node")
+	}
+
 	cmd := ikubeagent.KubeadmBinary
 	args := []string{
 		"token",
@@ -191,7 +265,7 @@ func (i *impl) GetJoinCommand(showControlPlane bool) (string, string, error) {
 	}
 	joinCmd = strings.TrimSuffix(joinCmd, "\n")
 
-	if showControlPlane {
+	if param.ShowControlPlane {
 		joinCmd = joinCmd + "--control-plane"
 		//kubeadm-certs exist TTL is 2 minute, "kubeadm alpha certs certificate-key will fail if kubeadm-certs delete."
 		// so generate a new kubeadm-certs if control-plane ha
@@ -234,7 +308,15 @@ func (i *impl) GetJoinCommand(showControlPlane bool) (string, string, error) {
 	return joinCmd, "", nil
 }
 
-func (i *impl) GetKubeConfig() (string, error) {
+func (i *impl) GetKubeConfig(ctx context.Context) (string, error) {
+	if i.sm.CurrentState() != ikubeagent.KubernetesDeployStateSuccess {
+		return "", errors.Errorf("kubernetes cluster doesn't deploy success")
+	}
+
+	if !i.state.ControlPlane {
+		return "", errors.Errorf("current node is not control-plane node")
+	}
+
 	data, err := os.ReadFile(ikubeagent.KubeConfigPath)
 	if err != nil {
 		return "", errors.Errorf("read file %v fail:%v", ikubeagent.KubeConfigPath, err.Error())
@@ -243,7 +325,7 @@ func (i *impl) GetKubeConfig() (string, error) {
 	return string(data), nil
 }
 
-func (i *impl) GetDeployLog() (string, error) {
+func (i *impl) GetDeployLog(ctx context.Context) (string, error) {
 	data, err := os.ReadFile(ikubeagent.KubeadmLogPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -256,7 +338,7 @@ func (i *impl) GetDeployLog() (string, error) {
 	return string(data), nil
 }
 
-func (i *impl) CheckDependency(version string) error {
+func (i *impl) CheckDependency(ctx context.Context, version string) error {
 	if i.version != version {
 		return errors.Errorf("kubeadm version %v no match:%v", i.version, version)
 	}
@@ -293,5 +375,53 @@ func (i *impl) GenerateTemplate() error {
 			return errors.Errorf("generate template %v fail:%v", tp, err.Error())
 		}
 	}
+	return nil
+}
+
+func (i *impl) GetInstallState(ctx context.Context) (*ikubeagent.InstallStateResponse, error) {
+	state, err := i.store.InstallStateStores().GetByName(ctx, ikubeagent.KubernetesInstallStateUniqueName)
+	if err != nil && !gerrors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.WithStack(err)
+	}
+
+	if err != nil {
+		state = &ikubeagent.InstallState{
+			State: string(ikubeagent.KubernetesDeployStateUninitialized),
+		}
+	}
+
+	hostName, _ := os.Hostname()
+	hostInfo, _ := hostInfos()
+	return &ikubeagent.InstallStateResponse{
+		State:    state,
+		HostStat: hostInfo,
+		HostName: hostName,
+	}, nil
+}
+
+func hostInfos() (*ikubeagent.HostInfo, error) {
+	cpucores, err := cpu.Counts(false)
+	if err != nil {
+		return nil, err
+	}
+	memInfo, err := mem.VirtualMemory()
+	if err != nil {
+		return nil, err
+	}
+	return &ikubeagent.HostInfo{
+		Cpu: ikubeagent.CpuInfo{
+			Cores: int64(cpucores),
+		},
+		Mem: ikubeagent.MemInfo{
+			Total: memInfo.Total,
+		},
+	}, nil
+}
+
+func (i *impl) SetOwner(ctx context.Context, owner string) error {
+	//  fixme: 只更新单个数据
+	// if _, err := store.InstallStateStores().Upsert(ctx, state); err != nil {
+	// 	log.F(ctx).Errorf("update install state error:%v", err)
+	// }
 	return nil
 }

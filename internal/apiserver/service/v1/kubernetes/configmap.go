@@ -9,7 +9,7 @@ import (
 	"github.com/wangweihong/gotoolbox/pkg/waitgroup"
 )
 
-func (k *kubernetesService) ConfigMapCreate(ctx context.Context, req *iapiserver.ConfigMapRequest) (*iapiserver.ConfigMapInfo, error) {
+func (k *kubernetesService) ConfigMapAdd(ctx context.Context, req *iapiserver.ConfigMapRequest) (*iapiserver.ConfigMapInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)

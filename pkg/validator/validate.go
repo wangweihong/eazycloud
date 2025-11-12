@@ -9,9 +9,6 @@ import (
 
 	validator "github.com/go-playground/validator/v10"
 	"github.com/wangweihong/gotoolbox/pkg/stringutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/wangweihong/eazycloud/apis/iapiserver"
 )
 
 const (
@@ -93,63 +90,63 @@ func ValidateURL(fl validator.FieldLevel) bool {
 	return true
 }
 
-// ValidateNamespaceScopeResource 检验命名空间级资源是否合法
-func ValidateNamespaceScopeResource(fl validator.FieldLevel) bool {
-	if fl.Field().Interface() == nil {
-		return false
-	}
+// // ValidateNamespaceScopeResource 检验命名空间级资源是否合法
+// func ValidateNamespaceScopeResource(fl validator.FieldLevel) bool {
+// 	if fl.Field().Interface() == nil {
+// 		return false
+// 	}
 
-	// 如果是iapiserver.ResourceGetRequest结构则直接判断
-	if gr, ok := fl.Field().Interface().(iapiserver.ResourceGetRequest); ok {
-		return !(gr.Namespace == "" || gr.Name == "")
-	}
-	// 这里是因为之前没法找到获取检测的结构体字段临时想到的方法
-	// fieldVal := fl.Field()
-	// if fieldVal.Kind() != reflect.Ptr {
-	// 	fieldVal = reflectutil.CreatePointerToValue(fl.Field())
-	// }
-	if !fl.Field().CanAddr() {
-		return false
-	}
+// 	// 如果是iapiserver.ResourceGetRequest结构则直接判断
+// 	if gr, ok := fl.Field().Interface().(iapiserver.ResourceGetRequest); ok {
+// 		return !(gr.Namespace == "" || gr.Name == "")
+// 	}
+// 	// 这里是因为之前没法找到获取检测的结构体字段临时想到的方法
+// 	// fieldVal := fl.Field()
+// 	// if fieldVal.Kind() != reflect.Ptr {
+// 	// 	fieldVal = reflectutil.CreatePointerToValue(fl.Field())
+// 	// }
+// 	if !fl.Field().CanAddr() {
+// 		return false
+// 	}
 
-	// 即使结构体中定义的指针,fl.Field()获得解引用的类型。因此需要通过fl.Field().Addr()
-	cm, ok := fl.Field().Addr().Interface().(metav1.Object)
-	if !ok || cm == nil {
-		return false
-	}
+// 	// 即使结构体中定义的指针,fl.Field()获得解引用的类型。因此需要通过fl.Field().Addr()
+// 	cm, ok := fl.Field().Addr().Interface().(metav1.Object)
+// 	if !ok || cm == nil {
+// 		return false
+// 	}
 
-	if cm.GetNamespace() == "" || cm.GetName() == "" {
-		return false
-	}
+// 	if cm.GetNamespace() == "" || cm.GetName() == "" {
+// 		return false
+// 	}
 
-	return true
-}
+// 	return true
+// }
 
-// ValidateClusterScopeResource 检验集群级资源是否合法
-func ValidateClusterScopeResource(fl validator.FieldLevel) bool {
-	if fl.Field().Interface() == nil {
-		return false
-	}
+// // ValidateClusterScopeResource 检验集群级资源是否合法
+// func ValidateClusterScopeResource(fl validator.FieldLevel) bool {
+// 	if fl.Field().Interface() == nil {
+// 		return false
+// 	}
 
-	if gr, ok := fl.Field().Interface().(iapiserver.ResourceGetRequest); ok {
-		return !(gr.Name == "")
-	}
+// 	if gr, ok := fl.Field().Interface().(iapiserver.ResourceGetRequest); ok {
+// 		return !(gr.Name == "")
+// 	}
 
-	if !fl.Field().CanAddr() {
-		return false
-	}
+// 	if !fl.Field().CanAddr() {
+// 		return false
+// 	}
 
-	cm, ok := fl.Field().Addr().Interface().(metav1.Object)
-	if !ok || cm == nil {
-		return false
-	}
+// 	cm, ok := fl.Field().Addr().Interface().(metav1.Object)
+// 	if !ok || cm == nil {
+// 		return false
+// 	}
 
-	if cm.GetName() == "" {
-		return false
-	}
+// 	if cm.GetName() == "" {
+// 		return false
+// 	}
 
-	return true
-}
+// 	return true
+// }
 
 // func ValidateBatchNamespaceScopeResource(fl validator.FieldLevel) bool {
 // 	field := fl.Field()
@@ -209,7 +206,7 @@ func IsDNS1123Label(value string) error {
 		return fmt.Errorf("name too long")
 	}
 	if !dns1123LabelRegexp.MatchString(value) {
-		return fmt.Errorf("not match name pattern: %v" , dns1123LabelRegexp.String())
+		return fmt.Errorf("not match name pattern: %v", dns1123LabelRegexp.String())
 	}
 	return nil
 }
@@ -223,4 +220,23 @@ func ValidateCIDR(fl validator.FieldLevel) bool {
 	name := fl.Field().String()
 	_, _, err := net.ParseCIDR(name)
 	return err != nil
+}
+
+func ValidateIP(fl validator.FieldLevel) bool {
+	ip := fl.Field().String()
+	return net.ParseIP(ip) != nil
+}
+
+func ValidateIPs(fl validator.FieldLevel) bool {
+	ipInf := fl.Field().Interface()
+	ips, ok := ipInf.([]string)
+	if ok {
+		for _, ip := range ips {
+			if net.ParseIP(ip) == nil {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }

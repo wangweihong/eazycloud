@@ -149,7 +149,7 @@ func (k *kubernetesService) NamespaceList(ctx context.Context, req *iapiserver.N
 		}, func(i, j int) bool {
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
-	return resp, err
+	return resp, errors.WithStack(err)
 }
 
 // func (k *kubernetesService)  NamespaceTree(ctx context.Context, req *iapiserver.NamespaceListRequest) *iapiserver.NamespaceTreeResponse {

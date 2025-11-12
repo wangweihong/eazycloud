@@ -55,7 +55,7 @@ func (k *kubernetesService) PrometheusRuleGet(ctx context.Context, req *iapiserv
 	return iapiserver.NewPrometheusRuleInfo(meta, cluster), nil
 }
 
-func (k *kubernetesService) PrometheusRuleCreate(ctx context.Context, req *iapiserver.PrometheusRuleRequest) (*iapiserver.PrometheusRuleInfo, error) {
+func (k *kubernetesService) PrometheusRuleAdd(ctx context.Context, req *iapiserver.PrometheusRuleRequest) (*iapiserver.PrometheusRuleInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)

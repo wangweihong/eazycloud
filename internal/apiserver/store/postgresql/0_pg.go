@@ -121,3 +121,7 @@ func (ds *datastore) Settings() store.SettingStore {
 func (ds *datastore) OneTimeTokens() store.OneTimeTokenStore {
 	return newOneTimeToken(ds)
 }
+
+func (ds *datastore) UserOTPs() store.UserOTPStore {
+	return newUserOTP(ds)
+}

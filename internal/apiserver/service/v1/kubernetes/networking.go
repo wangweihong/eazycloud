@@ -14,7 +14,7 @@ import (
 	"github.com/wangweihong/gotoolbox/pkg/waitgroup"
 )
 
-func (k *kubernetesService) NetworkPolicyCreate(ctx context.Context, req *iapiserver.NetworkPolicyRequest) (*iapiserver.NetworkPolicyInfo, error) {
+func (k *kubernetesService) NetworkPolicyAdd(ctx context.Context, req *iapiserver.NetworkPolicyRequest) (*iapiserver.NetworkPolicyInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -84,7 +84,7 @@ func (k *kubernetesService) NetworkPolicyGet(ctx context.Context, req *iapiserve
 	return iapiserver.NewNetworkPolicyInfo(meta, cluster), nil
 }
 
-func (k *kubernetesService) NetworkPolicyListAll(ctx context.Context, req *iapiserver.NetworkPolicyListRequest) (*iapiserver.NetworkPolicyListResponse, error) {
+func (k *kubernetesService) NetworkPolicyList(ctx context.Context, req *iapiserver.NetworkPolicyListRequest) (*iapiserver.NetworkPolicyListResponse, error) {
 	resp := &iapiserver.NetworkPolicyListResponse{}
 
 	var err error
@@ -107,10 +107,10 @@ func (k *kubernetesService) NetworkPolicyListAll(ctx context.Context, req *iapis
 		}, func(i, j int) bool {
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
-	return resp, err
+	return resp, errors.WithStack(err)
 }
 
-func (k *kubernetesService) IngressCreate(ctx context.Context, req *iapiserver.IngressRequest) (*iapiserver.IngressInfo, error) {
+func (k *kubernetesService) IngressAdd(ctx context.Context, req *iapiserver.IngressRequest) (*iapiserver.IngressInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -138,13 +138,13 @@ func (k *kubernetesService) IngressUpdate(ctx context.Context, req *iapiserver.I
 	return convertK8sIngressToApi(meta, cluster, req.Yaml), nil
 }
 
-func (k *kubernetesService) IngressGet(ctx context.Context, req *iapiserver.IngressRequest) (*iapiserver.IngressInfo, error) {
+func (k *kubernetesService) IngressGet(ctx context.Context, req *iapiserver.IngressGetRequest) (*iapiserver.IngressInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	meta, err := clientset.IngressGet(ctx, cluster, req.Resource.Namespace, req.Resource.Name, metav1.GetOptions{})
+	meta, err := clientset.IngressGet(ctx, cluster, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -179,7 +179,7 @@ func (k *kubernetesService) IngressBatchDelete(ctx context.Context, req *iapiser
 	return wg.BatchGenericOutput()
 }
 
-func (k *kubernetesService) IngressListAll(ctx context.Context, req *iapiserver.IngressListRequest) (*iapiserver.IngressListResponse, error) {
+func (k *kubernetesService) IngressList(ctx context.Context, req *iapiserver.IngressListRequest) (*iapiserver.IngressListResponse, error) {
 	resp := &iapiserver.IngressListResponse{}
 
 	var err error
@@ -202,7 +202,7 @@ func (k *kubernetesService) IngressListAll(ctx context.Context, req *iapiserver.
 		}, func(i, j int) bool {
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
-	return resp, err
+	return resp, errors.WithStack(err)
 }
 
 func convertK8sIngressToApi(meta *networkingv1.Ingress, cluster *iapiserver.Cluster, yaml bool) *iapiserver.IngressInfo {

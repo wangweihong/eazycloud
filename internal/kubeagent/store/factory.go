@@ -5,6 +5,7 @@ var client Factory
 // Factory defines the iam platform storage interface.
 type Factory interface {
 	EnsureScheme(metaTypes ...any) error
+	InstallStateStores() InstallStateStore
 	Close() error
 }
 

@@ -157,7 +157,7 @@ func (k *kubernetesService) versionToDaemonSet(dae *appsv1.DaemonSet, version *a
 	return resp, nil
 }
 
-func (k *kubernetesService) DaemonSetCreate(ctx context.Context, req *iapiserver.DaemonSetRequest) (*iapiserver.DaemonSetInfo, error) {
+func (k *kubernetesService) DaemonSetAdd(ctx context.Context, req *iapiserver.DaemonSetRequest) (*iapiserver.DaemonSetInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -289,7 +289,7 @@ func convertK8sDaemonSetToApiDaemonSet(meta *appsv1.DaemonSet, cluster *iapiserv
 	return resp
 }
 
-func (k *kubernetesService) ReplicaSetCreate(ctx context.Context, req *iapiserver.ReplicaSetRequest) (*iapiserver.ReplicaSetInfo, error) {
+func (k *kubernetesService) ReplicaSetAdd(ctx context.Context, req *iapiserver.ReplicaSetRequest) (*iapiserver.ReplicaSetInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -370,7 +370,7 @@ func (k *kubernetesService) ReplicaSetList(ctx context.Context, req *iapiserver.
 	return resp, err
 }
 
-func (k *kubernetesService) HpaCreate(ctx context.Context, req *iapiserver.HpaRequest) (*iapiserver.HpaInfo, error) {
+func (k *kubernetesService) HpaAdd(ctx context.Context, req *iapiserver.HpaRequest) (*iapiserver.HpaInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -450,7 +450,7 @@ func (k *kubernetesService) HpaList(ctx context.Context, req *iapiserver.HpaList
 	return resp, err
 }
 
-func (k *kubernetesService) StatefulSetCreate(ctx context.Context, req *iapiserver.StatefulSetRequest) (*iapiserver.StatefulSetInfo, error) {
+func (k *kubernetesService) StatefulSetAdd(ctx context.Context, req *iapiserver.StatefulSetRequest) (*iapiserver.StatefulSetInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -760,7 +760,7 @@ func (k *kubernetesService) DeploymentUpdate(ctx context.Context, req *iapiserve
 
 }
 
-func (k *kubernetesService) DeploymentCreate(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentInfo, error) {
+func (k *kubernetesService) DeploymentAdd(ctx context.Context, req *iapiserver.DeploymentRequest) (*iapiserver.DeploymentInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -983,7 +983,7 @@ func (k *kubernetesService) DeploymentVersionUpdate(ctx context.Context, req *ia
 	return nil
 }
 
-func (k *kubernetesService) DeploymentVersionList(ctx context.Context, req *iapiserver.DeploymentVersoinListRequest) (*iapiserver.DeploymentVersionListResponse, error) {
+func (k *kubernetesService) DeploymentVersionList(ctx context.Context, req *iapiserver.DeploymentVersionListRequest) (*iapiserver.DeploymentVersionListResponse, error) {
 	resp := &iapiserver.DeploymentVersionListResponse{}
 
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)

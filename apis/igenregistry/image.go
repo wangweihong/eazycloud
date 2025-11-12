@@ -1,9 +1,5 @@
 package igenregistry
 
-type ImageResp struct {
-	Repositories []string `json:"repositories"`
-}
-
 type RepoTags struct {
 	Name string   `json:"name"`
 	Tags []string `json:"tags"`

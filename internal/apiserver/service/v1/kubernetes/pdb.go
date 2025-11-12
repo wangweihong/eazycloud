@@ -106,5 +106,5 @@ func (k *kubernetesService) PodDisruptionBudgetList(ctx context.Context, req *ia
 		}, func(i, j int) bool {
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
-	return resp, err
+	return resp, errors.WithStack(err)
 }

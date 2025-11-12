@@ -18,6 +18,8 @@ nodeRegistration:
 ---
 apiServer:
   timeoutForControlPlane: 4m0s
+  extraArgs:
+      etcd-servers: "https://{{.LocalAdvertiseAddress}}:{{.EtcdListenPort}}"
 apiVersion: kubeadm.k8s.io/v1beta3
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
@@ -30,6 +32,16 @@ controllerManager:
 dns: {}
 etcd:
   local:
+    extraArgs:
+      listen-client-urls: "https://{{.LocalAdvertiseAddress}}:{{.EtcdListenPort}}"
+      advertise-client-urls: "https://{{.LocalAdvertiseAddress}}:{{.EtcdListenPort}}"
+      listen-peer-urls: "https://0.0.0.0:{{.EtcdPeerPort}}"
+      initial-advertise-peer-urls: "https://{{.LocalAdvertiseAddress}}:{{.EtcdPeerPort}}"
+      initial-cluster: "{{.NodeRegistrationName}}=https://{{.LocalAdvertiseAddress}}:{{.EtcdPeerPort}}"
+    serverCertSANs:
+      - "{{.LocalAdvertiseAddress}}"
+    peerCertSANs:
+      - "{{.LocalAdvertiseAddress}}"
     dataDir: /var/lib/etcd
 imageRepository: {{.ImageRepository}}
 kind: ClusterConfiguration
@@ -128,7 +140,7 @@ authorization:
   webhook:
     cacheAuthorizedTTL: 0s
     cacheUnauthorizedTTL: 0s
-cgroupDriver: systemd
+cgroupDriver: {{.CgroupDriver}}
 clusterDNS:
 - 10.96.0.10
 clusterDomain: cluster.local

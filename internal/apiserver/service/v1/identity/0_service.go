@@ -17,6 +17,9 @@ type IdentitySrv interface {
 	UserAdd(ctx context.Context, req *iapiserver.UserAddRequest) (*iapiserver.UserAddResponse, error)
 	UserDelete(ctx context.Context, req *iapiserver.UserDeleteRequest) error
 	UserUpdate(ctx context.Context, req *iapiserver.UserUpdateRequest) error
+
+	UserOTPGetOrAdd(ctx context.Context, req *iapiserver.OTPGenerateRequest) (string, error)
+	UserOTPGet(ctx context.Context, userid string) (*iapiserver.UserOTP, error)
 }
 
 func NewService(str store.Factory) *identityService {

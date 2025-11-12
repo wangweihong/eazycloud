@@ -137,7 +137,7 @@ func (k *kubernetesService) BuiltinPrometheusRuleSpecGroupGet(ctx context.Contex
 			return iapiserver.NewPrometheusRuleInfo(promRule, cluster), nil
 		}
 	}
-	return nil, errors.Errorf("rule group %v not found",req.GroupName)
+	return nil, errors.Errorf("rule group %v not found")
 
 }
 

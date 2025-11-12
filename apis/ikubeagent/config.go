@@ -1,9 +1,11 @@
 package ikubeagent
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/robfig/cron"
 	"github.com/wangweihong/eazycloud/pkg/validator"
@@ -14,39 +16,14 @@ import (
 	"github.com/wangweihong/gotoolbox/pkg/validation"
 )
 
-type KubernetesMasterDeployConfig struct {
-	RegistryConfig *Registry `json:"registry_config" binding:"required,dive"`
-	// master配置, 传递了则认为是master
-	ControlPlaneConfig *KubernetesControlPlaneConfig `json:"control_plane_config" binding:"required,dive"`
-	// worker配置, 传递了则认为是worker
-	WorkerConfig *KubernetesWorkerPlaneConfig `json:"worker_config"`
-	NodeConfig   *KubernetesNodeConfig        `json:"node_config" binding:"required"`
-	// etcd快照策略
-	DataBaseConfig *EtcdDatabaseConfig `json:"data_base_config"`
-	// control plane也作为工作节点, 一体机环境设置
-	MasterAlsoWorker  bool   `json:"master_also_worker"`
-	KubernetesVersion string `json:"kubernetes_version"`
-}
-
-func (r *KubernetesMasterDeployConfig) Validate() error {
-
-	var vals = []validator.Validator{r.RegistryConfig, r.ControlPlaneConfig, r.NodeConfig, r.DataBaseConfig}
-	for _, val := range vals {
-		if err := val.Validate(); err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return nil
-}
-
 type KubernetesDeployConfig struct {
 	RegistryConfig    *Registry `json:"registry_config" binding:"required,dive"`
 	KubernetesVersion string    `json:"kubernetes_version"`
 	// master配置, 传递了则认为是master
 	ControlPlaneConfig *KubernetesControlPlaneConfig `json:"control_plane_config" binding:"required"`
 	// worker配置, 传递了则认为是worker
-	WorkerConfig *KubernetesWorkerPlaneConfig `json:"worker_config"`
-	NodeConfig   *KubernetesNodeConfig        `json:"node_config" binding:"required"`
+	WorkerConfig *KubernetesWorkerConfig `json:"worker_config"`
+	NodeConfig   *KubernetesNodeConfig   `json:"node_config" binding:"required"`
 	// etcd快照策略
 	DataBaseConfig *EtcdDatabaseConfig `json:"data_base_config"`
 	// control plane也作为工作节点, 一体机环境设置
@@ -69,9 +46,8 @@ func (r *KubernetesDeployConfig) Validate() error {
 }
 
 type KubernetesControlPlaneConfig struct {
-	ConfigYaml       string                         `json:"config_yaml"`
 	NetworkPlugin    *KubernetesNetworkPluginConfig `json:"network_plugin"`
-	HAConfig         *KubernetesInitMasterHAConfig  `json:"ha_config"`
+	HAConfig         *KubernetesHAConfig            `json:"ha_config"`
 	MonitorPlugin    *KubernetesMonitorPluginConfig `json:"monitor_plugin"`
 	KubectlPlugin    *KubernetesKubectlPluginConfig `json:"kubectl_plugin"`
 	KubeProxy        *KubeProxyConfig               `json:"kube_proxy"`
@@ -79,32 +55,16 @@ type KubernetesControlPlaneConfig struct {
 	Gpu              *GpuConfig                     `json:"gpu"`
 	Npu              *NpuConfig                     `json:"npu"`
 	Namespace        *NamespaceConfig               `json:"namespace"`
-	ServiceCIDR      string                         `json:"service_cidr"`
-	PodCIDR          string                         `json:"pod_cidr"`
+	ServiceCIDR      string                         `json:"service_cidr" binding:"omitempty,cidr"`
+	PodCIDR          string                         `json:"pod_cidr" binding:"omitempty,cidr"`
 	ServiceDnsDomain string                         `json:"service_dns_domain"`
 }
 
 func (r *KubernetesControlPlaneConfig) Validate() error {
-	if r.ServiceCIDR != "" {
-		if _, _, err := net.ParseCIDR(r.ServiceCIDR); err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
-	if r.PodCIDR != "" {
-		if _, _, err := net.ParseCIDR(r.PodCIDR); err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
-	var vals = []validator.Validator{r.NetworkPlugin, r.HAConfig, r.MonitorPlugin, r.KubeProxy, r.StoragePlugin}
-	for _, val := range vals {
-		if err := val.Validate(); err != nil {
-			return errors.WithStack(err)
-		}
+	if err := validator.ValidateAll(r); err != nil {
+		return errors.WithStack(err)
 	}
 	return nil
-
 }
 
 type GpuConfig struct{}
@@ -124,6 +84,10 @@ type Registry struct {
 }
 
 func (r *Registry) Validate() error {
+	if r == nil {
+		return nil
+	}
+
 	if r.Address == "" {
 		return errors.Errorf("registry address is empty")
 	}
@@ -148,7 +112,7 @@ type EtcdDatabaseBackupPolicy struct {
 	BackupHostPath     string `json:"backup_host_path"`
 }
 
-type KubernetesInitMasterHAConfig struct {
+type KubernetesHAConfig struct {
 	// 集群虚拟IP
 	VIP string `json:"vip" binding:"required"`
 	// 集群对外接口
@@ -161,7 +125,7 @@ type KubernetesInitMasterHAConfig struct {
 	KubeadmConfigYaml string `json:"kubeadm_config_yaml" binding:"required"`
 }
 
-func (r *KubernetesInitMasterHAConfig) Validate() error {
+func (r *KubernetesHAConfig) Validate() error {
 	if r.VIP == "" || net.ParseIP(r.VIP) == nil {
 		return errors.Errorf("invalid vip '%v'", r.VIP)
 	}
@@ -264,6 +228,9 @@ type KubernetesNodeConfig struct {
 }
 
 func (r *KubernetesNodeConfig) Validate() error {
+	if r == nil {
+		r = &KubernetesNodeConfig{}
+	}
 	if r.NodeName == "" {
 		r.NodeName, _ = os.Hostname()
 	}
@@ -280,6 +247,9 @@ type KubernetesNetworkPluginConfig struct {
 }
 
 func (r *KubernetesNetworkPluginConfig) Validate() error {
+	if r == nil {
+		return fmt.Errorf("network plugin is empty")
+	}
 	return nil
 }
 
@@ -334,10 +304,21 @@ type NFSVolumeConfig struct {
 	MountPath string `json:"mount_path"`
 }
 
-type KubernetesWorkerPlaneConfig struct {
-	ConfigYaml  string `json:"config_yaml"`
-	JoinCommand string `json:"join_command"`
-	Sync        bool   `json:"sync"`
+type KubernetesWorkerConfig struct {
+	JoinCommand    string `json:"join_command" binding:"required"`
+	IsControlPlane bool   `json:"-"`
+}
+
+func (r *KubernetesWorkerConfig) Validate() error {
+	if r.JoinCommand == "" {
+		return errors.Errorf("Join command is empty")
+	}
+
+	if strings.Contains(r.JoinCommand, "--control-plane") && !strings.Contains(r.JoinCommand, "--certificate-key") {
+		return errors.Errorf("invalid join Command, --control-plane must with --certificate-key")
+	}
+
+	return nil
 }
 
 type EtcdDatabaseConfig struct {

@@ -16,7 +16,7 @@ import (
 	"github.com/wangweihong/eazycloud/internal/pkg/clientset"
 )
 
-func (k *kubernetesService) JobCreate(ctx context.Context, req *iapiserver.JobRequest) (*iapiserver.JobInfo, error) {
+func (k *kubernetesService) JobAdd(ctx context.Context, req *iapiserver.JobRequest) (*iapiserver.JobInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -151,7 +151,7 @@ func convertK8sJobToApiJob(meta *batchv1.Job, cluster *iapiserver.Cluster) *iapi
 	return resp
 }
 
-func (k *kubernetesService) CronJobCreate(ctx context.Context, req *iapiserver.CronJobRequest) (*iapiserver.CronJobInfo, error) {
+func (k *kubernetesService) CronJobAdd(ctx context.Context, req *iapiserver.CronJobRequest) (*iapiserver.CronJobInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -311,7 +311,7 @@ func (k *kubernetesService) CronJobList(ctx context.Context, req *iapiserver.Cro
 			}
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
-	return resp, err
+	return resp, errors.WithStack(err)
 }
 
 func (k *kubernetesService) CronJobTrigger(ctx context.Context, req *iapiserver.CronJobRequest) (*iapiserver.JobInfo, error) {

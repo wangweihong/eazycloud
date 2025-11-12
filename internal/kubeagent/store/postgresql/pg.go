@@ -60,3 +60,7 @@ func (ds *datastore) EnsureScheme(metaTypes ...any) error {
 	}
 	return nil
 }
+
+func (ds *datastore) InstallStateStores() store.InstallStateStore {
+	return newInstallState(ds)
+}

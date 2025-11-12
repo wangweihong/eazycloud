@@ -11,45 +11,52 @@ import (
 	"github.com/wangweihong/gotoolbox/pkg/log"
 	"github.com/wangweihong/gotoolbox/pkg/netutil"
 	"github.com/wangweihong/gotoolbox/pkg/template"
+	"github.com/wangweihong/gotoolbox/pkg/typeutil"
 
 	"github.com/wangweihong/eazycloud/apis/ikubeagent"
 	"github.com/wangweihong/eazycloud/internal/pkg/run"
 )
 
-func runKubeadmInit(config *ikubeagent.KubernetesDeployConfig, isMaster0 bool) error {
-	var stdout string
-	var stderr string
-	var err error
-	defer func() {
-		recordKubeadmLog(stdout, stderr)
-	}()
-	if err := generateKubeadmConfigYaml(config); err != nil {
-		return err
-	}
-	args := []string{"init"}
-	args = append(args, "--config", ikubeagent.KubeadmConfigYamlPath)
-	if config.ControlPlaneConfig.HAConfig != nil {
-		args = append(args, "--upload-certs")
-	}
+// func runKubeadmInit(config *ikubeagent.KubernetesMasterDeployConfig, isMaster0 bool) error {
+// 	var stdout string
+// 	var stderr string
+// 	var err error
+// 	defer func() {
+// 		recordKubeadmLog(stdout, stderr)
+// 	}()
+// 	if err := generateKubeadmConfigYaml(config); err != nil {
+// 		return err
+// 	}
+// 	args := []string{"init"}
+// 	args = append(args, "--config", ikubeagent.KubeadmConfigYamlPath)
+// 	if config.ControlPlaneConfig.HAConfig != nil {
+// 		args = append(args, "--upload-certs")
+// 	}
 
-	log.Debugf("run command:%v,args:%v", ikubeagent.KubeadmBinary, args)
+// 	args = append(args, "-v=9")
+// 	if config.DataBaseConfig != nil && config.DataBaseConfig.Local != nil && (config.DataBaseConfig.Local.PeerPort != nil || config.DataBaseConfig.Local.ListenPort != nil) {
+// 		// kubeadm preflight阶段硬编码了2379和2380的检测, 即使kubeadm.yaml更改了etcd端口仍然会检测这两个端口
+// 		args = append(args, "--ignore-preflight-errors=Port-2379,Port-2380")
+// 	}
 
-	f, err := os.Create(ikubeagent.KubeadmLogPath)
-	if err != nil {
-		log.Errorf("deploy k8s control-plane [%v:%v] fail:%v", ikubeagent.KubeadmBinary, args, run.TrimError(err))
-		return run.TrimError(err)
-	}
-	defer f.Close()
+// 	log.Debugf("run command:%v,args:%v", ikubeagent.KubeadmBinary, args)
 
-	stdout, stderr, err = executil.ExecuteCmdSplitStdoutStderr(ikubeagent.KubeadmBinary, args, 600)
-	if err != nil {
-		log.Errorf("deploy k8s control-plane [%v:%v] fail:%v", ikubeagent.KubeadmBinary, args, run.TrimError(err))
-		return run.TrimError(err)
-	}
+// 	f, err := os.Create(ikubeagent.KubeadmLogPath)
+// 	if err != nil {
+// 		log.Errorf("deploy k8s control-plane [%v:%v] fail:%v", ikubeagent.KubeadmBinary, args, run.TrimError(err))
+// 		return run.TrimError(err)
+// 	}
+// 	defer f.Close()
 
-	log.Infof("run kubeadm init success")
-	return nil
-}
+// 	stdout, stderr, err = executil.ExecuteCmdSplitStdoutStderr(ikubeagent.KubeadmBinary, args, 600)
+// 	if err != nil {
+// 		log.Errorf("deploy k8s control-plane [%v:%v] fail:%v", ikubeagent.KubeadmBinary, args, run.TrimError(err))
+// 		return run.TrimError(err)
+// 	}
+
+// 	log.Infof("run kubeadm init success")
+// 	return nil
+// }
 
 func generateKubeadmConfigYaml(config *ikubeagent.KubernetesDeployConfig) error {
 	if config.ControlPlaneConfig == nil {
@@ -75,6 +82,12 @@ func generateKubeadmConfigYaml(config *ikubeagent.KubernetesDeployConfig) error 
 		//for better distinguish image source.
 		"ImageRepository": repository + "/" + "registry.k8s.io",
 	}
+
+	if config.DataBaseConfig.Local != nil {
+		ctxs["EtcdListenPort"] = typeutil.GenericIndirectPrefined(config.DataBaseConfig.Local.ListenPort, 2379)
+		ctxs["EtcdPeerPort"] = typeutil.GenericIndirectPrefined(config.DataBaseConfig.Local.PeerPort, 2380)
+	}
+
 	if config.ControlPlaneConfig.HAConfig != nil {
 		ctxs["ControlPlaneEndpoint"] = config.ControlPlaneConfig.HAConfig.VIP + ":" + strconv.Itoa(
 			int(config.ControlPlaneConfig.HAConfig.ExternalPort),
@@ -102,9 +115,9 @@ func generateKubeadmConfigYaml(config *ikubeagent.KubernetesDeployConfig) error 
 		ctxs["NodeRegistrationName"] = config.NodeConfig.NodeName
 	}
 
-	if config.ControlPlaneConfig.KubeProxyConfig != nil {
-		if config.ControlPlaneConfig.KubeProxyConfig.Mode != "" {
-			ctxs["KubeProxyMode"] = config.ControlPlaneConfig.KubeProxyConfig.Mode
+	if config.ControlPlaneConfig.KubeProxy != nil {
+		if config.ControlPlaneConfig.KubeProxy.Mode != "" {
+			ctxs["KubeProxyMode"] = config.ControlPlaneConfig.KubeProxy.Mode
 		}
 	}
 
@@ -133,7 +146,7 @@ func (pi postInstall) deployNetworkPlugin(config *ikubeagent.KubernetesDeployCon
 		return pi.err
 	}
 
-	plugin := config.ControlPlaneConfig.NetworkPluginConfig
+	plugin := config.ControlPlaneConfig.NetworkPlugin
 	if plugin == nil {
 		return fmt.Errorf("network plugin config is empty")
 	}
@@ -173,7 +186,7 @@ func runTemplateOperation(c *setupContext, template template.ProcessorInterface,
 }
 
 func installMonitorPlugin(c *setupContext) error {
-	if c.config.ControlPlaneConfig == nil || c.config.ControlPlaneConfig.MonitorPluginConfig == nil {
+	if c.config.ControlPlaneConfig == nil || c.config.ControlPlaneConfig.MonitorPlugin == nil {
 		log.Infof("ignore monitor plugin deploy phase for non-monitor plugin config")
 		return nil
 	}
@@ -198,9 +211,30 @@ func installMonitorPlugin(c *setupContext) error {
 	return nil
 }
 
+func installDisplayCardPlugin(c *setupContext) error {
+	Ops := []NamedOperation{}
+	ctx := map[string]any{}
+
+	if c.config.ControlPlaneConfig != nil && c.config.ControlPlaneConfig.Gpu != nil {
+		Ops = append(Ops, NamedOperation{Name: "install gpu plugin", Op: runTemplateOperation(c, Gpu, ctx, 0644)})
+	}
+
+	if c.config.ControlPlaneConfig != nil && c.config.ControlPlaneConfig.Npu != nil {
+		Ops = append(Ops, NamedOperation{Name: "install npu plugin", Op: runTemplateOperation(c, Npu, ctx, 0644)})
+	}
+
+	for _, op := range Ops {
+		setupDep := LogOperation(op.Name, op.Op)
+		if err := setupDep(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func installGpuPlugin(c *setupContext) error {
-	if c.config.ControlPlaneConfig == nil || c.config.ControlPlaneConfig.GpuConfig == nil {
-		log.Infof("ignore monitor plugin deploy phase for gpu plugin config")
+	if c.config.ControlPlaneConfig == nil || c.config.ControlPlaneConfig.Gpu == nil {
+		log.Infof("ignore deploy phase for non gpu plugin config")
 		return nil
 	}
 	ctx := map[string]any{
@@ -208,7 +242,7 @@ func installGpuPlugin(c *setupContext) error {
 	}
 
 	Ops := []NamedOperation{
-		{Name: "install kubectl plugin", Op: runTemplateOperation(c, Gpu, ctx, 0644)},
+		{Name: "install gpu plugin", Op: runTemplateOperation(c, Gpu, ctx, 0644)},
 	}
 	for _, op := range Ops {
 		setupDep := LogOperation(op.Name, op.Op)
@@ -221,7 +255,7 @@ func installGpuPlugin(c *setupContext) error {
 }
 
 func installStoragePlugin(c *setupContext) error {
-	if c.config.ControlPlaneConfig == nil || c.config.ControlPlaneConfig.StoragePluginConfig == nil {
+	if c.config.ControlPlaneConfig == nil || c.config.ControlPlaneConfig.StoragePlugin == nil {
 		log.Infof("ignore storage plugin deploy phase for non-storage plugin config")
 		return nil
 	}
@@ -230,22 +264,22 @@ func installStoragePlugin(c *setupContext) error {
 	}
 
 	Ops := []NamedOperation{}
-	if c.config.ControlPlaneConfig.StoragePluginConfig.LocalStorage != nil {
+	if c.config.ControlPlaneConfig.StoragePlugin.Local != nil {
 		Ops = append(Ops, NamedOperation{Name: "install local storage plugin", Op: runTemplateOperation(c, LocalStorageAllInOneTemplate, ctx, 0644)})
 	}
 
-	if c.config.ControlPlaneConfig.StoragePluginConfig.NfsStoragePluginConfig != nil {
+	if c.config.ControlPlaneConfig.StoragePlugin.Nfs != nil {
 		Ops = append(Ops, NamedOperation{Name: "install nfs storage plugin", Op: runTemplateOperation(c, NFSStorageClassTemplate, ctx, 0644)})
 	}
 
-	if c.config.ControlPlaneConfig.StoragePluginConfig.NFSVolumeConfig != nil {
+	if c.config.ControlPlaneConfig.StoragePlugin.NFSVolume != nil {
 		log.Infof("deploy nfs pv storage plugin.")
 		ctx := map[string]any{
-			"NFSIP": c.config.ControlPlaneConfig.StoragePluginConfig.NFSVolumeConfig.ServerIP,
+			"NFSIP": c.config.ControlPlaneConfig.StoragePlugin.NFSVolume.ServerIP,
 		}
 
-		if c.config.ControlPlaneConfig.StoragePluginConfig.NFSVolumeConfig.MountPath != "" {
-			ctx["NFSHostPath"] = c.config.ControlPlaneConfig.StoragePluginConfig.NFSVolumeConfig.MountPath
+		if c.config.ControlPlaneConfig.StoragePlugin.NFSVolume.MountPath != "" {
+			ctx["NFSHostPath"] = c.config.ControlPlaneConfig.StoragePlugin.NFSVolume.MountPath
 		}
 		Ops = append(Ops, NamedOperation{Name: "install nfs volume plugin", Op: runTemplateOperation(c, NFSStorageClassTemplate, ctx, 0644)})
 
@@ -285,7 +319,7 @@ func installStoragePlugin(c *setupContext) error {
 // }
 
 func installKubectlPlugin(c *setupContext) error {
-	if c.config.ControlPlaneConfig == nil || c.config.ControlPlaneConfig.KubectlPluginConfig == nil {
+	if c.config.ControlPlaneConfig == nil || c.config.ControlPlaneConfig.KubectlPlugin == nil {
 		log.Infof("ignore kubectl plugin deploy phase for non-kubectl plugin config")
 		return nil
 	}
@@ -384,7 +418,7 @@ func generateHaproxyService(config *ikubeagent.KubernetesDeployConfig) error {
 }
 
 func createSecretOfEtcdForMonitoring(c *setupContext) error {
-	if c.config.ControlPlaneConfig == nil || c.config.ControlPlaneConfig.MonitorPluginConfig == nil {
+	if c.config.ControlPlaneConfig == nil || c.config.ControlPlaneConfig.MonitorPlugin == nil {
 		log.Infof("ignore createSecretOfEtcd deploy phase for non-monitor plugin config")
 		return nil
 	}
@@ -610,8 +644,8 @@ func generateKubeadmConfig(c *setupContext) error {
 		ctxs["NodeRegistrationName"] = c.config.NodeConfig.NodeName
 	}
 
-	if c.config.ControlPlaneConfig.KubeProxyConfig != nil && c.config.ControlPlaneConfig.KubeProxyConfig.Mode != "" {
-		ctxs["KubeProxyMode"] = c.config.ControlPlaneConfig.KubeProxyConfig.Mode
+	if c.config.ControlPlaneConfig.KubeProxy != nil && c.config.ControlPlaneConfig.KubeProxy.Mode != "" {
+		ctxs["KubeProxyMode"] = c.config.ControlPlaneConfig.KubeProxy.Mode
 	}
 
 	if err := run.WriteTemplate(KubeadmConfigTemplate, ctxs, 0644); err != nil {
@@ -627,7 +661,7 @@ func installSystemNamespace(c *setupContext) error {
 }
 
 func installNetworkPlugin(c *setupContext) error {
-	plugin := c.config.ControlPlaneConfig.NetworkPluginConfig
+	plugin := c.config.ControlPlaneConfig.NetworkPlugin
 	if plugin == nil {
 		return fmt.Errorf("network plugin config is empty")
 	}

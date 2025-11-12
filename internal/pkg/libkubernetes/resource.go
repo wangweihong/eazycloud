@@ -14,12 +14,11 @@ import (
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	batchv1 "k8s.io/api/batch/v1"
 
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	//monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func ResourceCreate(
@@ -39,12 +38,6 @@ func ResourceCreate(
 	if err != nil {
 		return err
 	}
-
-	//cm, err := NewMonitorClient(config)
-	//if err != nil {
-	//	return err
-	//}
-	//defer cm.Close()
 
 	for _, v := range metas {
 		ctx, cancel := context.WithTimeout(context.Background(), defaultRequestTimeout)
@@ -107,26 +100,25 @@ func ResourceCreate(
 			delete(storageClass.Annotations, "storageclass.kubernetes.io/is-default-class")
 
 			_, err = c.client.StorageV1().StorageClasses().Create(ctx, (v.Config).(*storagev1.StorageClass), opts)
-		//case "ServiceMonitor":
-		// 	_, err = cm.monitorClient.ServiceMonitors(monitoringNamespace).Create(ctx,
-		// (v.Config).(*monitoringv1.ServiceMonitor), opts)
-		//case "PodMonitor":
-		// 	_, err = cm.monitorClient.PodMonitors(monitoringNamespace).Create(ctx,
-		// (v.Config).(*monitoringv1.PodMonitor), opts)
-		//case "Prometheus":
-		// 	_, err = cm.monitorClient.Prometheuses(monitoringNamespace).Create(ctx,
-		// (v.Config).(*monitoringv1.Prometheus), opts)
-		//case "PrometheusRule":
-		// 	_, err = cm.monitorClient.PrometheusRules(monitoringNamespace).Create(ctx,
-		// (v.Config).(*monitoringv1.PrometheusRule), opts)
-		//case "Alertmanager":
-		// 	_, err = cm.monitorClient.Alertmanagers(monitoringNamespace).Create(ctx,
-		// (v.Config).(*monitoringv1.Alertmanager), opts)
+		case "ServiceMonitor":
+			_, err = c.monitorClient.MonitoringV1().ServiceMonitors(ikubernetes.MonitorNamespace).Create(ctx,
+				(v.Config).(*monitoringv1.ServiceMonitor), opts)
+		case "PodMonitor":
+			_, err = c.monitorClient.MonitoringV1().PodMonitors(ikubernetes.MonitorNamespace).Create(ctx,
+				(v.Config).(*monitoringv1.PodMonitor), opts)
+		case "Prometheus":
+			_, err = c.monitorClient.MonitoringV1().Prometheuses(ikubernetes.MonitorNamespace).Create(ctx,
+				(v.Config).(*monitoringv1.Prometheus), opts)
+		case "PrometheusRule":
+			_, err = c.monitorClient.MonitoringV1().PrometheusRules(ikubernetes.MonitorNamespace).Create(ctx,
+				(v.Config).(*monitoringv1.PrometheusRule), opts)
+		case "Alertmanager":
+			_, err = c.monitorClient.MonitoringV1().Alertmanagers(ikubernetes.MonitorNamespace).Create(ctx,
+				(v.Config).(*monitoringv1.Alertmanager), opts)
 		case "PersistentVolume":
 			_, err = c.client.CoreV1().PersistentVolumes().Create(ctx, (v.Config).(*corev1.PersistentVolume), opts)
 		default:
 			return errors.Errorf("resource not support,kind[%v]apiversion[%v]", v.Kind, v.APIVersion)
-
 		}
 		if err != nil {
 			return errors.Errorf("kind[%v]apiversion[%v]err[%v]", v.Kind, v.APIVersion, err.Error())

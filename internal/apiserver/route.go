@@ -6,6 +6,7 @@ import (
 
 	"github.com/wangweihong/eazycloud/internal/apiserver/controller/v1/application"
 	"github.com/wangweihong/eazycloud/internal/apiserver/controller/v1/authentication"
+	"github.com/wangweihong/eazycloud/internal/apiserver/controller/v1/kubernetes"
 	"github.com/wangweihong/eazycloud/internal/apiserver/controller/v1/registry"
 	"github.com/wangweihong/eazycloud/internal/apiserver/controller/v1/setting"
 	"github.com/wangweihong/eazycloud/internal/apiserver/store"
@@ -44,7 +45,11 @@ func installAuthApis(rg *gin.RouterGroup, storeIns store.Factory) {
 	authv1 := rg.Group("/auth")
 	{
 		authController := authentication.NewController(storeIns)
-
+		otp := authv1.Group("/otp")
+		{
+			otp.GET("qrcode", authController.OTPGenerateOrGet)
+			otp.POST("validate", authController.OTPValidate)
+		}
 		// 修改以下路由需要同步修改iapiserver.SsoURL相关的常量
 		sso := authv1.Group("/sso")
 		{
@@ -162,9 +167,9 @@ func installRegistryApis(rg *gin.RouterGroup, storeIns store.Factory) {
 			system.GET("/scanall/execute/result", registryController.SystemScanAllExecuteResult)
 			system.GET("/scanall/schedule/list", registryController.SystemScanAllExecuteScheduleList)
 			system.GET("/scanall/schedule/get", registryController.SystemScanAllExecuteScheduleGet)
-			system.POST("/scanall/schedule/create", registryController.GarbageCollectScheduleCreate)
-			system.POST("/scanall/schedule/delete", registryController.GarbageCollectScheduleDelete)
-			system.POST("/scanall/schedule/update", registryController.GarbageCollectScheduleDelete)
+			system.POST("/scanall/schedule/create", registryController.SystemScanAllScheduleCreate)
+			system.POST("/scanall/schedule/delete", registryController.SystemScanAllScheduleDelete)
+			system.POST("/scanall/schedule/update", registryController.SystemScanAllScheduleUpdate)
 
 			system.GET("/cve-whitelist", registryController.SystemCVEWhiteList)
 
@@ -284,5 +289,249 @@ func InstallApplicationApis(rg *gin.RouterGroup, storeIns store.Factory) {
 				version.POST("/update", appController.ApplicationTemplateVersionUpdate)
 			}
 		}
+	}
+}
+
+func InstallKubernetesApis(rg *gin.RouterGroup, storeIns store.Factory) {
+	appv1 := rg.Group("/kubernetes")
+	{
+		k8sController := kubernetes.NewKubernetesController(storeIns)
+
+		pod := appv1.Group("/pod")
+		{
+			pod.GET("/list", k8sController.PodList)
+			pod.GET("/get", k8sController.PodGet)
+			pod.POST("/add", k8sController.PodAdd)
+			pod.POST("/delete", k8sController.PodDelete)
+			pod.POST("/evict", k8sController.PodEvict)
+			pod.POST("/batch_delete", k8sController.PodBatchDelete)
+			pod.POST("/log/list", k8sController.PodLogList)
+			pod.POST("/patch", k8sController.PodPatch)
+			pod.POST("/component/pod", k8sController.GetComponentPod)
+		}
+
+		service := appv1.Group("/service")
+		{
+			service.GET("/list", k8sController.ServiceList)
+			service.GET("/get", k8sController.ServiceGet)
+			service.POST("/add", k8sController.ServiceAdd)
+			service.POST("/delete", k8sController.ServiceDelete)
+			service.POST("/batch_delete", k8sController.ServiceBatchDelete)
+			service.POST("/update", k8sController.ServiceUpdate)
+		}
+
+		secret := appv1.Group("/secret")
+		{
+			secret.GET("/list", k8sController.SecretList)
+			secret.GET("/get", k8sController.SecretGet)
+			secret.POST("/add", k8sController.SecretAdd)
+			secret.POST("/delete", k8sController.SecretDelete)
+			secret.POST("/batch_delete", k8sController.SecretBatchDelete)
+			secret.POST("/update", k8sController.SecretUpdate)
+		}
+
+		configmap := appv1.Group("/configmap")
+		{
+			configmap.GET("/list", k8sController.ConfigMapList)
+			configmap.GET("/get", k8sController.ConfigMapGet)
+			configmap.POST("/add", k8sController.ConfigMapAdd)
+			configmap.POST("/delete", k8sController.ConfigMapDelete)
+			configmap.POST("/batch_delete", k8sController.ConfigMapBatchDelete)
+			configmap.POST("/update", k8sController.ConfigMapUpdate)
+		}
+
+		limitrange := appv1.Group("/limitrange")
+		{
+			limitrange.GET("/list", k8sController.LimitRangeList)
+			limitrange.GET("/get", k8sController.LimitRangeGet)
+			limitrange.POST("/add", k8sController.LimitRangeAdd)
+			limitrange.POST("/delete", k8sController.LimitRangeDelete)
+			limitrange.POST("/update", k8sController.LimitRangeUpdate)
+		}
+
+		resourcequota := appv1.Group("/resourcequota")
+		{
+			resourcequota.GET("/list", k8sController.ResourceQuotaList)
+			resourcequota.GET("/get", k8sController.ResourceQuotaGet)
+			resourcequota.POST("/add", k8sController.ResourceQuotaAdd)
+			resourcequota.POST("/delete", k8sController.ResourceQuotaDelete)
+			resourcequota.POST("/update", k8sController.ResourceQuotaUpdate)
+		}
+
+		namespace := appv1.Group("/namespace")
+		{
+			namespace.GET("/list", k8sController.NamespaceList)
+			namespace.GET("/get", k8sController.NamespaceGet)
+			namespace.GET("/gateway/get", k8sController.NamespaceGatewayGet)
+			namespace.POST("/add", k8sController.NamespaceAdd)
+			namespace.POST("/delete", k8sController.NamespaceDelete)
+			namespace.POST("/update", k8sController.NamespaceUpdate)
+		}
+
+		hpa := appv1.Group("/hpa")
+		{
+			hpa.GET("/list", k8sController.HpaList)
+			hpa.GET("/get", k8sController.HpaGet)
+			hpa.POST("/add", k8sController.HpaAdd)
+			hpa.POST("/delete", k8sController.HpaDelete)
+			hpa.POST("/update", k8sController.HpaUpdate)
+		}
+
+		deployment := appv1.Group("/deployment")
+		{
+			deployment.GET("/list", k8sController.DeploymentList)
+			deployment.GET("/get", k8sController.DeploymentGet)
+			deployment.POST("/add", k8sController.DeploymentAdd)
+			deployment.POST("/delete", k8sController.DeploymentDelete)
+			deployment.POST("/batch_delete", k8sController.DeploymentBatchDelete)
+			deployment.POST("/update", k8sController.DeploymentUpdate)
+			deployment.POST("/recreate", k8sController.DeploymentRecreate)
+			deployment.GET("/version/list", k8sController.DeploymentVersionList)
+			deployment.POST("/version/update", k8sController.DeploymentVersionUpdate)
+		}
+
+		daemonset := appv1.Group("/daemonset")
+		{
+			daemonset.GET("/list", k8sController.DaemonSetList)
+			daemonset.GET("/get", k8sController.DaemonSetGet)
+			daemonset.POST("/add", k8sController.DaemonSetAdd)
+			daemonset.POST("/delete", k8sController.DaemonSetDelete)
+			daemonset.POST("/batch_delete", k8sController.DaemonSetBatchDelete)
+			daemonset.POST("/update", k8sController.DaemonSetUpdate)
+			daemonset.POST("/recreate", k8sController.DaemonSetRecreate)
+			daemonset.GET("/version/list", k8sController.DaemonSetVersionList)
+			daemonset.POST("/version/update", k8sController.DaemonSetVersionUpdate)
+		}
+
+		statefulset := appv1.Group("/statefulset")
+		{
+			statefulset.GET("/list", k8sController.StatefulSetList)
+			statefulset.GET("/get", k8sController.StatefulSetGet)
+			statefulset.POST("/add", k8sController.StatefulSetAdd)
+			statefulset.POST("/delete", k8sController.StatefulSetDelete)
+			statefulset.POST("/batch_delete", k8sController.StatefulSetBatchDelete)
+			statefulset.POST("/update", k8sController.StatefulSetUpdate)
+			statefulset.POST("/recreate", k8sController.StatefulSetRecreate)
+			statefulset.GET("/version/list", k8sController.StatefulSetVersionList)
+			statefulset.POST("/version/update", k8sController.StatefulSetVersionUpdate)
+		}
+
+		replicaset := appv1.Group("/replicaset")
+		{
+			replicaset.GET("/list", k8sController.ReplicaSetList)
+			replicaset.GET("/get", k8sController.ReplicaSetGet)
+			replicaset.POST("/add", k8sController.ReplicaSetAdd)
+			replicaset.POST("/delete", k8sController.ReplicaSetDelete)
+			replicaset.POST("/update", k8sController.ReplicaSetUpdate)
+		}
+
+		event := appv1.Group("/event")
+		{
+			event.GET("/list", k8sController.EventList)
+			event.GET("/get", k8sController.EventGet)
+		}
+
+		job := appv1.Group("/job")
+		{
+			job.GET("/list", k8sController.JobList)
+			job.GET("/get", k8sController.JobGet)
+			job.POST("/add", k8sController.JobAdd)
+			job.POST("/delete", k8sController.JobDelete)
+			job.POST("/batch_delete", k8sController.JobBatchDelete)
+		}
+
+		cronjob := appv1.Group("/cronjob")
+		{
+			cronjob.GET("/list", k8sController.CronJobList)
+			cronjob.GET("/get", k8sController.CronJobGet)
+			cronjob.POST("/add", k8sController.CronJobAdd)
+			cronjob.POST("/delete", k8sController.CronJobDelete)
+			cronjob.POST("/update", k8sController.CronJobUpdate)
+			cronjob.POST("/suspend/update", k8sController.CronJobUpdateSuspend)
+			cronjob.POST("/schedule/update", k8sController.CronJobUpdateSchedule)
+			cronjob.POST("/batch_delete", k8sController.CronJobBatchDelete)
+			cronjob.POST("/trigger", k8sController.CronJobTrigger)
+		}
+
+		storageclass := appv1.Group("/storageclass")
+		{
+			storageclass.GET("/list", k8sController.StorageClassList)
+			storageclass.GET("/get", k8sController.StorageClassGet)
+			storageclass.POST("/add", k8sController.StorageClassAdd)
+			storageclass.POST("/delete", k8sController.StorageClassDelete)
+			storageclass.POST("/batch_delete", k8sController.StorageClassBatchDelete)
+			storageclass.POST("/update", k8sController.StorageClassUpdate)
+		}
+
+		persistentvolume := appv1.Group("/persistentvolume")
+		{
+			persistentvolume.GET("/list", k8sController.PersistentVolumeList)
+			persistentvolume.GET("/get", k8sController.PersistentVolumeGet)
+			persistentvolume.POST("/add", k8sController.PersistentVolumeAdd)
+			persistentvolume.POST("/delete", k8sController.PersistentVolumeDelete)
+			persistentvolume.POST("/batch_delete", k8sController.PersistentVolumeBatchDelete)
+			persistentvolume.POST("/update", k8sController.PersistentVolumeUpdate)
+		}
+
+		persistentvolumeclaim := appv1.Group("/persistentvolumeclaim")
+		{
+			persistentvolumeclaim.GET("/list", k8sController.PersistentVolumeClaimList)
+			persistentvolumeclaim.GET("/get", k8sController.PersistentVolumeClaimGet)
+			persistentvolumeclaim.POST("/add", k8sController.PersistentVolumeClaimAdd)
+			persistentvolumeclaim.POST("/delete", k8sController.PersistentVolumeClaimDelete)
+			persistentvolumeclaim.POST("/batch_delete", k8sController.PersistentVolumeClaimBatchDelete)
+			persistentvolumeclaim.POST("/update", k8sController.PersistentVolumeClaimUpdate)
+		}
+
+		volumsnapshotclass := appv1.Group("/volumsnapshotclass")
+		{
+			volumsnapshotclass.GET("/list", k8sController.VolumeSnapshotClassList)
+			volumsnapshotclass.GET("/get", k8sController.VolumeSnapshotClassGet)
+			volumsnapshotclass.POST("/add", k8sController.VolumeSnapshotClassAdd)
+			volumsnapshotclass.POST("/delete", k8sController.VolumeSnapshotClassDelete)
+			volumsnapshotclass.POST("/batch_delete", k8sController.VolumeSnapshotClassBatchDelete)
+			volumsnapshotclass.POST("/update", k8sController.VolumeSnapshotClassUpdate)
+		}
+
+		volumesnapshotcontent := appv1.Group("/volumesnapshotcontent")
+		{
+			volumesnapshotcontent.GET("/list", k8sController.VolumeSnapshotContentList)
+			volumesnapshotcontent.GET("/get", k8sController.VolumeSnapshotContentGet)
+			volumesnapshotcontent.POST("/add", k8sController.VolumeSnapshotContentAdd)
+			volumesnapshotcontent.POST("/delete", k8sController.VolumeSnapshotContentDelete)
+			volumesnapshotcontent.POST("/batch_delete", k8sController.VolumeSnapshotContentBatchDelete)
+			volumesnapshotcontent.POST("/update", k8sController.VolumeSnapshotContentUpdate)
+		}
+
+		volumesnapshot := appv1.Group("/volumesnapshot")
+		{
+			volumesnapshot.GET("/list", k8sController.VolumeSnapshotList)
+			volumesnapshot.GET("/get", k8sController.VolumeSnapshotGet)
+			volumesnapshot.POST("/add", k8sController.VolumeSnapshotAdd)
+			volumesnapshot.POST("/delete", k8sController.VolumeSnapshotDelete)
+			volumesnapshot.POST("/batch_delete", k8sController.VolumeSnapshotBatchDelete)
+			volumesnapshot.POST("/update", k8sController.VolumeSnapshotUpdate)
+		}
+
+		ingress := appv1.Group("/ingress")
+		{
+			ingress.GET("/list", k8sController.IngressList)
+			ingress.GET("/get", k8sController.IngressGet)
+			ingress.POST("/add", k8sController.IngressAdd)
+			ingress.POST("/delete", k8sController.IngressDelete)
+			ingress.POST("/batch_delete", k8sController.IngressBatchDelete)
+			ingress.POST("/update", k8sController.IngressUpdate)
+		}
+
+		networkpolicy := appv1.Group("/networkpolicy")
+		{
+			networkpolicy.GET("/list", k8sController.NetworkPolicyList)
+			networkpolicy.GET("/get", k8sController.NetworkPolicyGet)
+			networkpolicy.POST("/add", k8sController.NetworkPolicyAdd)
+			networkpolicy.POST("/delete", k8sController.NetworkPolicyDelete)
+			networkpolicy.POST("/batch_delete", k8sController.NetworkPolicyBatchDelete)
+			networkpolicy.POST("/update", k8sController.NetworkPolicyUpdate)
+		}
+
 	}
 }

@@ -3,51 +3,67 @@ package validator
 import (
 	"fmt"
 	"reflect"
+	"sync"
 
+	"github.com/wangweihong/gotoolbox/pkg/errors"
 	"github.com/wangweihong/gotoolbox/pkg/validation"
 )
 
-type Validator interface {
-	Validate() error
+
+func ValidateList(vs ...validation.Validator) error {
+	var errs []error
+	for _, v := range vs {
+		if err := v.Validate(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) != 0 {
+		return errors.NewAggregate(errs...)
+	}
+	return nil
 }
 
 // ValidateAll 先基于结构体字段进行binding tag的go-validator检测, 如果字段实现了Validator, 再次进行验证
 func ValidateAll(s interface{}) error {
 	cval := NewCustomValidator(validation.LangEN)
 	cval.Engine()
-
+	visited := &sync.Map{}
+	// 先进行Tag检测，注意这里不会递归，除非设置"dive"
 	if err := cval.Validate(s); err != nil {
 		return err
 	}
 
-	return validateCustom(s)
+	return validateCustom(s, visited)
 }
 
-// 自定义验证入口
-func validateCustom(s interface{}) error {
+// 遍历结构体所有的字段, 凡是实现了validator.Validate,均用来调用检测
+func validateCustom(s interface{}, visited *sync.Map) error {
 	v := reflect.ValueOf(s)
 	if v.Kind() == reflect.Ptr && v.IsNil() {
-		return nil // 跳过nil指针
+		return nil
 	}
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
 	if v.Kind() != reflect.Struct {
-		return nil // 非结构体直接返回
+		return nil
 	}
-	return validateRecursive(v)
+	return validateRecursive(v, visited)
 }
 
-// 递归验证函数
-func validateRecursive(v reflect.Value) error {
-	// 处理指针
+func validateRecursive(v reflect.Value, visited *sync.Map) error {
 	if v.Kind() == reflect.Ptr {
 		if v.IsNil() {
 			return nil
 		}
+		ptr := v.Pointer()
+		// 避免指向同个对象, 陷入死循环
+		if _, loaded := visited.LoadOrStore(ptr, struct{}{}); loaded {
+			return nil // 已访问过，跳过
+		}
+
 		v = v.Elem()
 	}
-	// 仅处理结构体
 	if v.Kind() != reflect.Struct {
 		return nil
 	}
@@ -66,15 +82,15 @@ func validateRecursive(v reflect.Value) error {
 			}
 			continue // 跳过递归
 		}
-		// 递归处理嵌套结构
+
 		switch field.Kind() {
 		case reflect.Struct:
-			if err := validateRecursive(field); err != nil {
+			if err := validateRecursive(field, visited); err != nil {
 				return err
 			}
 		case reflect.Ptr:
 			if field.Type().Elem().Kind() == reflect.Struct {
-				if err := validateRecursive(field); err != nil {
+				if err := validateRecursive(field, visited); err != nil {
 					return err
 				}
 			}
@@ -83,12 +99,12 @@ func validateRecursive(v reflect.Value) error {
 	return nil
 }
 
-func getCustomValidator(field reflect.Value) (Validator, bool) {
-	if validator, ok := field.Interface().(Validator); ok {
+func getCustomValidator(field reflect.Value) (validation.Validator, bool) {
+	if validator, ok := field.Interface().(validation.Validator); ok {
 		return validator, true
 	}
 	if field.CanAddr() {
-		if validator, ok := field.Addr().Interface().(Validator); ok {
+		if validator, ok := field.Addr().Interface().(validation.Validator); ok {
 			return validator, true
 		}
 	}

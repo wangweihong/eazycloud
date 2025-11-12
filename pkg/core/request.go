@@ -6,10 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/wangweihong/gotoolbox/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/validation"
 
 	"github.com/wangweihong/eazycloud/apis/imachinery"
 	"github.com/wangweihong/eazycloud/internal/pkg/code"
-	"github.com/wangweihong/eazycloud/pkg/validator"
 )
 
 func DecodeParameter(c *gin.Context, obj any) error {
@@ -30,7 +30,6 @@ func DecodeParameter(c *gin.Context, obj any) error {
 			} else {
 				// 注意读取的tag为form
 				if err := c.ShouldBind(obj); err != nil {
-					//	return errors.WrapStatus(err, code.ErrValidation)
 					return errors.WrapCode(err, code.ErrValidation)
 				}
 			}
@@ -38,13 +37,13 @@ func DecodeParameter(c *gin.Context, obj any) error {
 		case http.MethodGet:
 			if err := c.ShouldBindQuery(obj); err != nil {
 				//return errors.WrapStatus(err, code.ErrValidation)
-					return errors.WrapCode(err, code.ErrValidation)
+				return errors.WrapCode(err, code.ErrValidation)
 			}
 		}
 	}
 
 	// 自定义检测
-	if d, ok := obj.(validator.Validator); ok {
+	if d, ok := obj.(validation.Validator); ok {
 		if err := d.Validate(); err != nil {
 			return errors.WrapStatus(err, code.ErrValidation)
 		}

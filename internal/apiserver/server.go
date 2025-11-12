@@ -111,6 +111,7 @@ func (c *CompletedExtraConfig) New() error {
 		// identity
 		&iapiserver.User{},
 		&iapiserver.OneTimeToken{},
+		&iapiserver.UserOTP{},
 	); err != nil {
 		return errors.Wrap(err, "EnsureScheme fail")
 	}

@@ -13,7 +13,7 @@ import (
 type Lang string
 
 type customValidator struct {
-	validator *validation.Validator
+	validator *validation.CustomValidator
 	once      sync.Once
 }
 
@@ -61,20 +61,21 @@ func NewCustomValidator(lang string) *customValidator {
 	registerValidator(val, "description", ValidateDescription, DescriptionTranslator{})
 	registerValidator(val, "url", ValidateURL, URLInvaliTranslator{})
 	registerValidator(val, "port", ValidatePort, PortRangeTranslator{})
-	registerValidator(val, "ports", ValidatePort, PortsRangeTranslator{})
+	registerValidator(val, "ports", ValidatePorts, PortsRangeTranslator{})
 	registerValidator(val, "port_used", ValidatePort, PortUsedTranslator{})
 	registerValidator(val, "dns", ValidateDNSName, DNSTranslator{})
 	registerValidator(val, "cidr", ValidateCIDR, CIDRTranslator{})
-
-	registerValidatorNoTrans(val, "namespaced", ValidateNamespaceScopeResource)
-	registerValidatorNoTrans(val, "clusterd", ValidateClusterScopeResource)
+	registerValidatorNoTrans(val, "ips", ValidateIPs)
+	registerValidatorNoTrans(val, "ip", ValidateIP)
+	// registerValidatorNoTrans(val, "namespaced", ValidateNamespaceScopeResource)
+	// registerValidatorNoTrans(val, "clusterd", ValidateClusterScopeResource)
 
 	return &customValidator{validator: val}
 }
 
 // registerValidator注册校验器和对应的错误翻译
 func registerValidator(
-	validator *validation.Validator,
+	validator *validation.CustomValidator,
 	tag string,
 	validate func(fl validator.FieldLevel) bool,
 	translator Translator,
@@ -108,7 +109,7 @@ func registerValidator(
 }
 
 func registerValidatorNoTrans(
-	validator *validation.Validator,
+	validator *validation.CustomValidator,
 	tag string,
 	validate func(fl validator.FieldLevel) bool,
 ) {
@@ -117,16 +118,28 @@ func registerValidatorNoTrans(
 	}
 }
 
-func Init(lang string) {
+func RegisterValidatorNoTrans(
+	tag string,
+	validate func(fl validator.FieldLevel) bool,
+) {
+	registerValidatorNoTrans(cval.validator, tag, validate)
+}
+
+func Init(lang string) *customValidator {
 	cval := NewCustomValidator(lang)
 	//如果需要自定义验证器，可以在这里注册到 gin的校验器
 	// 必须执行这一步, 否则无法使用binding tag作为校验器
 	cval.Engine()
 	// 更改gin binding的检测器, gin会在bindJson时进行参数检测
 	binding.Validator = cval
+	return cval
 }
+
+var (
+	cval *customValidator
+)
 
 // nolint: gochecknoinits
 func init() {
-	Init(validation.LangEN)
+	cval = Init(validation.LangEN)
 }

@@ -82,6 +82,17 @@ func (s *setting) Delete(ctx context.Context, id string) error {
 	})
 }
 
+// 获取或创建
+func (s *setting) FirstOrCreate(ctx context.Context, data *iapiserver.Setting) (*iapiserver.Setting, error) {
+	err := s.ds.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		err := s.ds.db.WithContext(ctx).Model(&iapiserver.Setting{}).
+			Where("name = ?", data.Name).
+			FirstOrCreate(&data).Error
+		return errors.WithStack(err)
+	})
+	return data, errors.WithStack(err)
+}
+
 // 创建或更新
 func (s *setting) Upsert(ctx context.Context, data *iapiserver.Setting) (*iapiserver.Setting, error) {
 	result := iapiserver.Setting{}

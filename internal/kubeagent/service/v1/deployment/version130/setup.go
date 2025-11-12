@@ -27,6 +27,21 @@ type setupContext struct {
 
 type setupFunc func(c *setupContext) error
 
+func initSetupMasterContext(dc *ikubeagent.KubernetesDeployConfig, isMaster bool) (*setupContext, error) {
+	templateDir := ikubeagent.TemplateDirPath
+	kubeRootDir := ikubeagent.KubeletRootDir
+	KubeadmConfigYamlPath := ikubeagent.KubeadmConfigYamlPath
+
+	return &setupContext{
+		config:                dc,
+		isMaster0:             isMaster,
+		templateDir:           templateDir,
+		kubeRootDir:           kubeRootDir,
+		KubeadmConfigYamlPath: KubeadmConfigYamlPath,
+	}, nil
+}
+
+
 func initSetupContext(dc *ikubeagent.KubernetesDeployConfig, isMaster bool) (*setupContext, error) {
 	templateDir := ikubeagent.TemplateDirPath
 	kubeRootDir := ikubeagent.KubeletRootDir

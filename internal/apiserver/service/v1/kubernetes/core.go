@@ -25,7 +25,7 @@ import (
 	"github.com/wangweihong/eazycloud/internal/pkg/libkubernetes"
 )
 
-func (k *kubernetesService) PodCreate(ctx context.Context, req *iapiserver.PodRequest) (*iapiserver.PodInfo, error) {
+func (k *kubernetesService) PodAdd(ctx context.Context, req *iapiserver.PodRequest) (*iapiserver.PodInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -52,15 +52,29 @@ func (k *kubernetesService) PodDelete(ctx context.Context, req *iapiserver.PodRe
 	return nil
 }
 
+func (k *kubernetesService) PodBatchDelete(ctx context.Context, req *iapiserver.PodBatchRequest) waitgroup.BatchGenericOutput[*iapiserver.PodRequest] {
+	wg := waitgroup.RunGenericConcurrently[*iapiserver.PodRequest, *iapiserver.PodRequest](ctx, req.Resources, func(ctx context.Context, res *iapiserver.PodRequest) waitgroup.GenericResult[*iapiserver.PodRequest] {
+		cluster, err := k.store.Clusters().Get(ctx, res.Cluster)
+		if err != nil {
+			return waitgroup.NewGenericResult(res, err)
+		}
+		if err := clientset.PodDelete(ctx, cluster, res.Resource.Namespace, res.Resource, res.DeleteOpts); err != nil {
+			return waitgroup.NewGenericResult(res, err)
+		}
+		return waitgroup.NewGenericResult(res, nil)
+	})
+	return wg.BatchGenericOutput()
+}
+
 func (k *kubernetesService) PodLogList(ctx context.Context, req *iapiserver.PodLogRequest) (*iapiserver.PodLogResponse, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	ret, err := clientset.PodLogList(ctx, cluster, req.Namespace, req.Name, req.ToLogOption())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	resp := &iapiserver.PodLogResponse{}
@@ -79,12 +93,12 @@ func (k *kubernetesService) PodLogList(ctx context.Context, req *iapiserver.PodL
 func (k *kubernetesService) PodLogStream(ctx context.Context, req *iapiserver.PodLogRequest) (io.ReadCloser, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	ret, err := clientset.PodLogStream(ctx, cluster, req.Namespace, req.Name, req.ToLogOption())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return ret, nil
@@ -231,12 +245,12 @@ func (k *kubernetesService) PodList(ctx context.Context, req *iapiserver.PodList
 func (k *kubernetesService) PodGet(ctx context.Context, req *iapiserver.ResourceGetRequest) (*iapiserver.PodInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.PodGet(ctx, cluster, req.Namespace, req.Name, req.ToGetOpts())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	info := convertK8sPodToApi(meta, cluster, nil)
@@ -247,7 +261,7 @@ func (k *kubernetesService) PodGet(ctx context.Context, req *iapiserver.Resource
 		Namespace: req.Namespace,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	info.Controller = getResourceController(string(meta.UID), childParent, resourceInfo)
@@ -412,12 +426,12 @@ func (k *kubernetesService) GetComponentPod(ctx context.Context, req *iapiserver
 func (k *kubernetesService) PodPatch(ctx context.Context, req *iapiserver.PodRequest) (*iapiserver.PodInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := libkubernetes.PodPatch(ctx, cluster.Config, req.Resource.Namespace, req.Resource.Name, req.Pt, req.Data, req.PatchOpts, req.SubResources...)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return convertK8sPodToApi(meta, cluster, nil), nil
@@ -426,39 +440,40 @@ func (k *kubernetesService) PodPatch(ctx context.Context, req *iapiserver.PodReq
 func (k *kubernetesService) PodEvict(ctx context.Context, req *iapiserver.PodRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if err := clientset.PodEvict(ctx, cluster, req.Resource.Namespace, req.Resource, req.DeleteOpts); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
 }
 
+/* ************************ service ***************** */
 func (k *kubernetesService) ServiceUpdate(ctx context.Context, req *iapiserver.ServiceRequest) (*iapiserver.ServiceInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.ServiceUpdate(ctx, cluster, req.Resource.Namespace, req.Resource, req.UpdateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return iapiserver.NewServiceInfo(meta, cluster), nil
 }
 
-func (k *kubernetesService) ServiceCreate(ctx context.Context, req *iapiserver.ServiceRequest) (*iapiserver.ServiceInfo, error) {
+func (k *kubernetesService) ServiceAdd(ctx context.Context, req *iapiserver.ServiceRequest) (*iapiserver.ServiceInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.ServiceCreate(ctx, cluster, req.Resource.Namespace, req.Resource, req.CreateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return iapiserver.NewServiceInfo(meta, cluster), nil
@@ -467,11 +482,11 @@ func (k *kubernetesService) ServiceCreate(ctx context.Context, req *iapiserver.S
 func (k *kubernetesService) ServiceDelete(ctx context.Context, req *iapiserver.ServiceRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if err := clientset.ServiceDelete(ctx, cluster, req.Resource.Namespace, req.Resource.Name, req.DeleteOpts); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -479,21 +494,21 @@ func (k *kubernetesService) ServiceDelete(ctx context.Context, req *iapiserver.S
 
 type NamespaceObjectDelete func(cluster *iapiserver.Cluster, namespace, name string, options metav1.DeleteOptions) error
 
-func (k *kubernetesService) NamespaceResourceDelete(ctx context.Context, clusterUUID string, obj metav1.Object, opt metav1.DeleteOptions, delFunc NamespaceObjectDelete) (*v1.Service, error) {
+func (k *kubernetesService) NamespaceResourceDelete(ctx context.Context, clusterUUID string, obj metav1.Object, opt metav1.DeleteOptions, delFunc NamespaceObjectDelete) error {
 	if err := libkubernetes.ValidateNamespacedObjectParameters(obj); err != nil {
-		return nil, err
+		return errors.WithStack(err)
 	}
 
 	cluster, err := k.store.Kubernetes().Get(ctx, clusterUUID)
 	if err != nil {
-		return nil, err
+		return errors.WithStack(err)
 	}
 
 	if err := delFunc(cluster, obj.GetNamespace(), obj.GetName(), opt); err != nil {
-		return nil, err
+		return errors.WithStack(err)
 	}
 
-	return nil, err
+	return nil
 }
 
 func (k *kubernetesService) ServiceBatchDelete(ctx context.Context, req *iapiserver.ServiceBatchRequest) waitgroup.BatchGenericOutput[*iapiserver.ServiceRequest] {
@@ -513,12 +528,12 @@ func (k *kubernetesService) ServiceBatchDelete(ctx context.Context, req *iapiser
 func (k *kubernetesService) ServiceGet(ctx context.Context, req *iapiserver.ServiceGetRequest) (*iapiserver.ServiceInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.ServiceGet(ctx, cluster, req.Namespace, req.Name, req.ToGetOpts())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return iapiserver.NewServiceInfo(meta, cluster), nil
 }
@@ -554,10 +569,10 @@ func (k *kubernetesService) ServiceList(ctx context.Context, req *iapiserver.Ser
 			}
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
-	return resp, err
+	return resp, errors.WithStack(err)
 }
 
-func (k *kubernetesService) SecretCreate(ctx context.Context, req *iapiserver.SecretRequest) (*iapiserver.SecretInfo, error) {
+func (k *kubernetesService) SecretAdd(ctx context.Context, req *iapiserver.SecretRequest) (*iapiserver.SecretInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -613,17 +628,17 @@ func (k *kubernetesService) SecretBatchDelete(ctx context.Context, req *iapiserv
 func (k *kubernetesService) SecretGet(ctx context.Context, req *iapiserver.SecretGetRequest) (*iapiserver.SecretInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.SecretGet(ctx, cluster, req.Namespace, req.Name, req.ToGetOpts())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return iapiserver.NewSecretInfo(meta, cluster), nil
 }
 
-func (k *kubernetesService) SecretListAll(ctx context.Context, req *iapiserver.SecretListRequest) (*iapiserver.SecretListResponse, error) {
+func (k *kubernetesService) SecretList(ctx context.Context, req *iapiserver.SecretListRequest) (*iapiserver.SecretListResponse, error) {
 	resp := &iapiserver.SecretListResponse{}
 	var err error
 	resp.EachRangeListState, resp.TotalCount, err = multiClusterResourceList(ctx, k.store, &resp.List, req.ResourceListRequest,
@@ -653,18 +668,18 @@ func (k *kubernetesService) SecretListAll(ctx context.Context, req *iapiserver.S
 			}
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
-	return resp, err
+	return resp, errors.WithStack(err)
 }
 
 func (k *kubernetesService) EndpointsAdd(ctx context.Context, req *iapiserver.EndpointsRequest) (*v1.Endpoints, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.EndpointsCreate(ctx, cluster, req.Endpoints.Namespace, req.Endpoints, req.CreateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return meta, nil
 }
@@ -672,11 +687,11 @@ func (k *kubernetesService) EndpointsAdd(ctx context.Context, req *iapiserver.En
 func (k *kubernetesService) EndpointsDelete(ctx context.Context, req *iapiserver.EndpointsRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if err = clientset.EndpointsDelete(ctx, cluster, req.Endpoints.Namespace, req.Endpoints, req.DeleteOpts); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -685,12 +700,12 @@ func (k *kubernetesService) EndpointsDelete(ctx context.Context, req *iapiserver
 func (k *kubernetesService) EndpointsGet(ctx context.Context, req *iapiserver.EndpointsGetRequest) (*v1.Endpoints, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return clientset.EndpointsGet(ctx, cluster, req.Namespace, req.Name, req.ToGetOpts())
 }
 
-func (k *kubernetesService) EndpointsListAll(ctx context.Context, req *iapiserver.EndpointListRequest) (*iapiserver.EndpointsListResponse, error) {
+func (k *kubernetesService) EndpointsList(ctx context.Context, req *iapiserver.EndpointListRequest) (*iapiserver.EndpointsListResponse, error) {
 	resp := &iapiserver.EndpointsListResponse{}
 	var err error
 	resp.EachRangeListState, resp.TotalCount, err = multiClusterResourceList(ctx, k.store, &resp.List, req.ResourceListRequest,
@@ -715,13 +730,13 @@ func (k *kubernetesService) EndpointsListAll(ctx context.Context, req *iapiserve
 		}, func(i, j int) bool {
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
-	return resp, err
+	return resp, errors.WithStack(err)
 }
 
-func (k *kubernetesService) ResourceQuotaCreate(ctx context.Context, req *iapiserver.ResourceQuotaRequest) (*iapiserver.ResourceQuotaInfo, error) {
+func (k *kubernetesService) ResourceQuotaAdd(ctx context.Context, req *iapiserver.ResourceQuotaRequest) (*iapiserver.ResourceQuotaInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	// 限制系统命名空间创建resource quota
@@ -734,7 +749,7 @@ func (k *kubernetesService) ResourceQuotaCreate(ctx context.Context, req *iapise
 		if meta, _ := clientset.ResourceQuotaGet(ctx, cluster, req.Resource.Namespace, req.Resource.Name, req.GetOpts); meta != nil {
 			meta, err = clientset.ResourceQuotaUpdate(ctx, cluster, req.Resource.Namespace, req.Resource, req.UpdateOpts)
 			if err != nil {
-				return nil, err
+				return nil, errors.WithStack(err)
 			}
 
 			return convertK8sResourceQuotaToApi(meta, cluster), nil
@@ -742,7 +757,7 @@ func (k *kubernetesService) ResourceQuotaCreate(ctx context.Context, req *iapise
 	}
 	meta, err := clientset.ResourceQuotaCreate(ctx, cluster, req.Resource.Namespace, req.Resource, req.CreateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return convertK8sResourceQuotaToApi(meta, cluster), nil
@@ -751,11 +766,11 @@ func (k *kubernetesService) ResourceQuotaCreate(ctx context.Context, req *iapise
 func (k *kubernetesService) ResourceQuotaDelete(ctx context.Context, req *iapiserver.ResourceQuotaRequest) error {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	if err = clientset.ResourceQuotaDelete(ctx, cluster, req.Resource.Namespace, req.Resource, req.DeleteOpts); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -764,12 +779,12 @@ func (k *kubernetesService) ResourceQuotaDelete(ctx context.Context, req *iapise
 func (k *kubernetesService) ResourceQuotaUpdate(ctx context.Context, req *iapiserver.ResourceQuotaRequest) (*iapiserver.ResourceQuotaInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.ResourceQuotaUpdate(ctx, cluster, req.Resource.Namespace, req.Resource, req.UpdateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return convertK8sResourceQuotaToApi(meta, cluster), nil
@@ -778,18 +793,18 @@ func (k *kubernetesService) ResourceQuotaUpdate(ctx context.Context, req *iapise
 func (k *kubernetesService) ResourceQuotaGet(ctx context.Context, req *iapiserver.ResourceQuotaGetRequest) (*iapiserver.ResourceQuotaInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.ResourceQuotaGet(ctx, cluster, req.Namespace, req.Name, req.ToGetOpts())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return convertK8sResourceQuotaToApi(meta, cluster), nil
 }
 
-func (k *kubernetesService) ResourceQuotaListAll(ctx context.Context, req *iapiserver.ResourceQuotaListRequest) (*iapiserver.ResourceQuotaListResponse, error) {
+func (k *kubernetesService) ResourceQuotaList(ctx context.Context, req *iapiserver.ResourceQuotaListRequest) (*iapiserver.ResourceQuotaListResponse, error) {
 	resp := &iapiserver.ResourceQuotaListResponse{}
 
 	var err error
@@ -815,7 +830,7 @@ func (k *kubernetesService) ResourceQuotaListAll(ctx context.Context, req *iapis
 		}, func(i, j int) bool {
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
-	return resp, err
+	return resp, errors.WithStack(err)
 }
 
 // k8s会把限制转成human-readable,  如 100000--> 100k , 10000000 ---> 1m
@@ -1075,17 +1090,17 @@ func getNotSuccessPodConditions(conditions []v1.PodCondition) []v1.PodCondition 
 	return notReadyConditions
 }
 
-func (k *kubernetesService) LimitRangeCreate(ctx context.Context, req *iapiserver.LimitRangeRequest) (*iapiserver.LimitRangeInfo, error) {
+func (k *kubernetesService) LimitRangeAdd(ctx context.Context, req *iapiserver.LimitRangeRequest) (*iapiserver.LimitRangeInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	if req.UpdateIfExists {
 		if meta, _ := clientset.LimitRangeGet(ctx, cluster, req.Resource.Namespace, req.Resource.Name, req.GetOpts); meta != nil {
 			meta, err := clientset.LimitRangeUpdate(ctx, cluster, req.Resource.Namespace, req.Resource, req.UpdateOpts)
 			if err != nil {
-				return nil, err
+				return nil, errors.WithStack(err)
 			}
 
 			return convertK8sLimitRangeToApi(meta, cluster, req.Yaml), nil
@@ -1093,7 +1108,7 @@ func (k *kubernetesService) LimitRangeCreate(ctx context.Context, req *iapiserve
 	}
 	meta, err := clientset.LimitRangeCreate(ctx, cluster, req.Resource.Namespace, req.Resource, req.CreateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return convertK8sLimitRangeToApi(meta, cluster, req.Yaml), nil
@@ -1107,7 +1122,7 @@ func (k *kubernetesService) LimitRangeDelete(ctx context.Context, req *iapiserve
 
 	err = clientset.LimitRangeDelete(ctx, cluster, req.Resource.Namespace, req.Resource, req.DeleteOpts)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -1116,12 +1131,12 @@ func (k *kubernetesService) LimitRangeDelete(ctx context.Context, req *iapiserve
 func (k *kubernetesService) LimitRangeUpdate(ctx context.Context, req *iapiserver.LimitRangeRequest) (*iapiserver.LimitRangeInfo, error) {
 	cluster, err := k.store.Kubernetes().Get(ctx, req.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	meta, err := clientset.LimitRangeUpdate(ctx, cluster, req.Resource.Namespace, req.Resource, req.UpdateOpts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return convertK8sLimitRangeToApi(meta, cluster, req.Yaml), nil
@@ -1166,7 +1181,7 @@ func (k *kubernetesService) LimitRangeList(ctx context.Context, req *iapiserver.
 		}, func(i, j int) bool {
 			return sortWithCommonObjectParam(resp.List[i].Resource, resp.List[j].Resource, req.SortBy, req.SortDesc)
 		}, 10*time.Second)
-	return resp, err
+	return resp, errors.WithStack(err)
 }
 
 func convertK8sLimitRangeToApi(meta *v1.LimitRange, cluster *iapiserver.Cluster, yaml bool) *iapiserver.LimitRangeInfo {
