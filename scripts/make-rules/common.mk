@@ -89,16 +89,14 @@ FIND := find . ! -path './third_party/*' ! -path './vendor/*'
 XARGS := xargs --no-run-if-empty
 
 
-#ifeq ($(origin CHANGE_HOOK_LINE_SPERATOR), undefined)
 #	# 保证脚本换行符为\n,CRLF-->LF
 #	#CHANGE_HOOK_LINE_SPERATOR = $(shell dos2unix ./scripts/githooks/* )
 #	CHANGE_HOOK_LINE_SPERATOR = $(shell find ./scripts/githooks -type f -exec sh -c 'tr -d "\r" < "$0" > "$0.tmp" && mv "$0.tmp" "$0"' {} \; )
 #	# 保证脚本可执行
-	MAKE_HOOK_EXECUTABLE:= $(shell chmod +x ./scripts/githooks/*)
+MAKE_HOOK_EXECUTABLE:= $(shell chmod +x ./scripts/githooks/*)
 #    # Copy githook scripts when execute makefile
     # 采取这种方式, 可以实现git hook的统一和强制. 当执行Make任意规则时,强制进行拷贝。因此不需要单独的规则来拷贝
-    COPY_GITHOOK:=$(shell cp -f ./scripts/githooks/* .git/hooks/)
-#endif
+COPY_GITHOOK:=$(shell mkdir -p .git/hooks/ && cp -f ./scripts/githooks/* .git/hooks/)
 
 # Specify tools severity, include: BLOCKER_TOOLS, CRITICAL_TOOLS, TRIVIAL_TOOLS.
 # Missing BLOCKER_TOOLS can cause the CI flow execution failed, i.e. `make all` failed.

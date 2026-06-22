@@ -1,11 +1,12 @@
 package example_server
 
 import (
+	"github.com/wangweihong/gotoolbox/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/shutdown"
+	"github.com/wangweihong/gotoolbox/pkg/shutdown/managers/posixsignal"
+
 	"github.com/wangweihong/eazycloud/internal/exampleserver/config"
 	"github.com/wangweihong/eazycloud/pkg/httpsvr"
-	"github.com/wangweihong/eazycloud/pkg/log"
-	"github.com/wangweihong/eazycloud/pkg/shutdown"
-	"github.com/wangweihong/eazycloud/pkg/shutdown/managers/posixsignal"
 )
 
 type server struct {

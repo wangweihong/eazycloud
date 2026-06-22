@@ -5,8 +5,9 @@ import (
 
 	"google.golang.org/grpc"
 
+	pkgversion "github.com/wangweihong/gotoolbox/pkg/version"
+
 	"github.com/wangweihong/eazycloud/pkg/grpcproto/apis/version"
-	pkgversion "github.com/wangweihong/eazycloud/pkg/version"
 )
 
 type versionService struct{}

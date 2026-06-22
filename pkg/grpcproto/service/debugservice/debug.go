@@ -6,10 +6,11 @@ import (
 
 	"github.com/wangweihong/eazycloud/pkg/grpcproto/apis/callstatus"
 
-	"github.com/wangweihong/eazycloud/pkg/code"
-	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/eazycloud/internal/pkg/code"
+
+	"github.com/wangweihong/gotoolbox/pkg/log"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
@@ -45,7 +46,7 @@ func (s *debugService) Example(ctx context.Context, req *debug.ExampleRequest) (
 	}
 
 	if !req.GetSuccess() {
-		err := errors.Wrap(code.ErrDatabase, "error test")
+		err := errors.WithCode(code.ErrDatabase, "error test")
 		log.F(ctx).Errorf("%#+v", err)
 		resp.CallStatus = callstatus.FromError(err)
 	}

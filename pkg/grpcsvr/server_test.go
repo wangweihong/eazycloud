@@ -11,7 +11,7 @@ import (
 
 	"google.golang.org/grpc/credentials"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 
 	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/grpc"

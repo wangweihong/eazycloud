@@ -1,0 +1,8 @@
+server = "{{.RegistryAddress}}"
+
+[host."{{.RegistryAddress}}"]
+  capabilities = ["pull", "resolve", "push"]
+  skip_verify = {{.RegistryEnableVerify}}
+  ca = "{{.RegistryCAPath}}"
+  [host."{{.RegistryAddress}}".header]
+    authorization = "Basic {{.RegistryAuth}}"

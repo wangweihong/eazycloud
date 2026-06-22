@@ -228,7 +228,8 @@ cscope.po.out
 *testsdir
 *testsfile
 *testsfiles
-*test
+#*test
+**/testdata/
 *testdir
 *testfile
 *testfiles
@@ -347,3 +348,6 @@ dist
 .note.md
 
 # config files, may contain sensitive information
+
+# vscode 
+.vscode

@@ -3,7 +3,7 @@ package grpccli
 import (
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/gotoolbox/pkg/skipper"
 
 	"google.golang.org/grpc"
 )

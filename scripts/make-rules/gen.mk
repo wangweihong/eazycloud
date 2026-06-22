@@ -12,13 +12,13 @@ gen.errcode: gen.errcode.code gen.errcode.doc
 .PHONY: gen.errcode.code
 gen.errcode.code: tools.verify.codegen
 	@echo "===========> Generating error code go source files to path:${ROOT_DIR}/internal/pkg/code"
-	@codegen -type=int ${ROOT_DIR}/pkg/code
+	@codegen -type=int ${ROOT_DIR}/internal/pkg/code
 
 .PHONY: gen.errcode.doc
 gen.errcode.doc: tools.verify.codegen
 	@echo "===========> Generating error code markdown documentation:${ROOT_DIR}/docs/guide/zh-CN/api/error_code_generated.md"
 	@codegen -type=int -doc \
-		-output ${ROOT_DIR}/docs/guide/zh-CN/api/error_code_generated.md ${ROOT_DIR}/pkg/code
+		-output ${ROOT_DIR}/docs/guide/zh-CN/api/error_code_generated.md ${ROOT_DIR}/internal/pkg/code
 
 .PHONY: gen.docgo.doc
 gen.docgo.doc:
@@ -53,3 +53,18 @@ gen.defaultconfigs: $(addprefix gen.defaultconfigs., $(COMPONENTS))
 gen.clean:
 	@echo "===========> Clean gen files in wildcards '*_generated.go' in ${ROOT_DIR}/internal/pkg/code"
 	@$(FIND) -path ${ROOT_DIR}/internal/pkg/code -type f -name '*_generated.go' -delete
+
+	
+.PHONY: gen.deepcopy
+gen.deepcopy: tools.verify.deepcopy-gen
+	@echo "===========> Generating errodeepcopyr code go source files to path:${ROOT_DIR}/apis/iapiserver"
+	@deepcopy-gen --input-dirs=./apis/iapiserver --output-base=../
+
+	
+.PHONY: gen.manifest
+gen.manifest: tools.verify.manifestgen
+	@echo "===========> Generatingin wildcards '*_generated.go' in ${ROOT_DIR}/internal/kubeagent/service/.."
+	@manifestgen -package "version130" \
+		-name "fps" \
+        -root "${ROOT_DIR}/internal/kubeagent/service/v1/deployment/version130/template" \
+        -output "${ROOT_DIR}/internal/kubeagent/service/v1/deployment/version130/manifest_generated.go"

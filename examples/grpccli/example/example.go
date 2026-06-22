@@ -7,7 +7,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
+
 	"github.com/wangweihong/eazycloud/pkg/grpcproto/apis/debug"
 	"github.com/wangweihong/eazycloud/pkg/grpcproto/apis/version"
 )
@@ -22,7 +23,7 @@ type Backend interface {
 func NewBackend(addr string, opt ...grpccli.Option) (Backend, error) {
 	c, err := grpccli.NewClient(addr, opt...)
 	if err != nil {
-		return nil, errors.UpdateStack(err)
+		return nil, errors.WithStack(err)
 	}
 	return &example{c: c}, nil
 }
@@ -42,11 +43,11 @@ func (c *example) Version(
 		var e error
 		out, e = version.NewVersionServiceClient(conn).Version(ctx, in, opt...)
 		if e != nil {
-			return errors.UpdateStack(e)
+			return errors.WithStack(e)
 		}
 		return nil
 	}); err != nil {
-		return nil, errors.UpdateStack(err)
+		return nil, errors.WithStack(err)
 	}
 	return out, nil
 }
@@ -62,11 +63,11 @@ func (c *example) Example(
 		var e error
 		out, e = debug.NewDebugServiceClient(conn).Example(ctx, in, opt...)
 		if e != nil {
-			return errors.UpdateStack(e)
+			return errors.WithStack(e)
 		}
 		return nil
 	}); err != nil {
-		return nil, errors.UpdateStack(err)
+		return nil, errors.WithStack(err)
 	}
 	return out, nil
 }

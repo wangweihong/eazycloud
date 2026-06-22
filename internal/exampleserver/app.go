@@ -1,10 +1,11 @@
 package example_server
 
 import (
+	"github.com/wangweihong/gotoolbox/pkg/log"
+
 	"github.com/wangweihong/eazycloud/internal/exampleserver/config"
 	"github.com/wangweihong/eazycloud/internal/exampleserver/options"
 	"github.com/wangweihong/eazycloud/pkg/app"
-	"github.com/wangweihong/eazycloud/pkg/log"
 )
 
 const commandDesc = `Example of simple http server`

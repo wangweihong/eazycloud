@@ -1,5 +1,5 @@
 #  Ref: https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings
-
+#  警告: git会根据gitattirbutes来处理lf/crlf,这会导致有时候git无法rollback只有lf/crlf区别的commit。
 # Set the default behavior, in case people don't have core.autocrlf set
 *                 text=auto
 
