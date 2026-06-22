@@ -7,15 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wangweihong/eazycloud/pkg/util/errorutil"
-
-	"github.com/wangweihong/eazycloud/pkg/errors"
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/skipper"
 
 	"google.golang.org/grpc/peer"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
-	"github.com/wangweihong/eazycloud/pkg/util/netutil"
+	"github.com/wangweihong/gotoolbox/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/netutil"
 
 	"google.golang.org/grpc"
 )
@@ -30,7 +28,7 @@ var (
 func UnaryServerInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryServerInterceptor {
 	name := "logging"
 
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		log.F(ctx).Debugf("Interceptor %s Enter", name)
 		defer log.F(ctx).Debugf("Interceptor %s Finish", name)
 
@@ -38,12 +36,12 @@ func UnaryServerInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryServer
 			log.F(ctx).Debugf("skip interceptor %s for %s", name, info.FullMethod)
 
 			resp, err := handler(ctx, req)
-			return resp, errors.UpdateStack(err)
+			return resp, errors.WithStack(err)
 		}
 
 		// 调用下一个拦截器或最终的RPC处理程序
 		start := time.Now()
-		fields := make(map[string]interface{})
+		fields := make(map[string]any)
 		clientIP := getClientIPFromContext(ctx)
 		// log会根据key的排序来依次打印，调整key的命名以达到控制输出顺序
 		fields["host_pid"] = os.Getpid()
@@ -64,20 +62,20 @@ func UnaryServerInterceptor(skipperFunc ...skipper.SkipperFunc) grpc.UnaryServer
 
 		fields["req_latency_ms"] = Latency
 		fields["req_time_end"] = end.Format("2006-01-02 15:04:05.000000")
-		fields["resp_err"] = errorutil.ErrorMsg(err)
+		fields["resp_err"] = errors.Message(err)
 		if !DisableCopy {
 			fields["resp_body"] = resp
 		}
 
 		simpleCallInfo := fmt.Sprintf("[%s] %v %s", clientIP, Latency, info.FullMethod)
 		log.F(ctx).Info(simpleCallInfo, log.Every("call-detail", fields))
-		return resp, errors.UpdateStack(err)
+		return resp, errors.WithStack(err)
 	}
 }
 
 // StreamServerInterceptor returns a new streaming server interceptor for trace.
 func StreamServerInterceptor() grpc.StreamServerInterceptor {
-	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
+	return func(srv any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		// TODO: how to trace stream request?
 		return handler(srv, stream)
 	}

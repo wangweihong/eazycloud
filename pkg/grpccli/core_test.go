@@ -9,16 +9,17 @@ import (
 
 	"github.com/wangweihong/eazycloud/pkg/grpccli"
 
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/gotoolbox/pkg/skipper"
 
 	"github.com/wangweihong/eazycloud/pkg/grpccli/interceptorcli/callstatus"
 
 	"github.com/wangweihong/eazycloud/pkg/grpcproto/apis/debug"
 
-	"github.com/wangweihong/eazycloud/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/errors"
+	"github.com/wangweihong/gotoolbox/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/tracectx"
+
 	"github.com/wangweihong/eazycloud/pkg/grpcsvr/interceptor"
-	"github.com/wangweihong/eazycloud/pkg/log"
-	"github.com/wangweihong/eazycloud/pkg/tracectx"
 
 	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/grpc"
@@ -116,7 +117,7 @@ func TestClient_Call(t *testing.T) {
 			defer c.Close()
 
 			ctx := context.Background()
-			fields := make(map[string]interface{})
+			fields := make(map[string]any)
 			fields[string(log.KeyRequestID)] = tracectx.NewTraceID()
 			ctx = log.WithFields(ctx, fields)
 
@@ -147,11 +148,11 @@ func Version(
 
 		out, e = version.NewVersionServiceClient(conn).Version(ctx, in, opt...)
 		if e != nil {
-			return errors.UpdateStack(e)
+			return errors.WithStack(e)
 		}
 		return nil
 	}); err != nil {
-		return nil, errors.UpdateStack(err)
+		return nil, errors.WithStack(err)
 	}
 
 	return out, nil

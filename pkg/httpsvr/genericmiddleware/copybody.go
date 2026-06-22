@@ -7,12 +7,12 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/gotoolbox/pkg/skipper"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/wangweihong/eazycloud/pkg/json"
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/json"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 )
 
 const (
@@ -61,7 +61,7 @@ func CopyBodyMiddleware(skippers ...skipper.SkipperFunc) gin.HandlerFunc {
 	}
 }
 
-func SetResponseBody(c *gin.Context, data interface{}) {
+func SetResponseBody(c *gin.Context, data any) {
 	if !DisableCopy {
 		b, err := json.Marshal(data)
 		if err != nil {

@@ -6,19 +6,20 @@ import (
 
 	"github.com/wangweihong/eazycloud/pkg/httpsvr"
 
-	"github.com/wangweihong/eazycloud/pkg/debug"
+	"github.com/wangweihong/gotoolbox/pkg/debug"
 
-	"github.com/wangweihong/eazycloud/pkg/util/maputil"
+	"github.com/wangweihong/gotoolbox/pkg/maputil"
 
-	"github.com/wangweihong/eazycloud/pkg/util/sliceutil"
+	"github.com/wangweihong/gotoolbox/pkg/sliceutil"
 
 	"github.com/spf13/pflag"
 
+	"github.com/wangweihong/gotoolbox/pkg/sets"
+
 	"github.com/wangweihong/eazycloud/pkg/httpsvr/genericmiddleware"
-	"github.com/wangweihong/eazycloud/pkg/sets"
 )
 
-// ServerRunOptions contains the options while running a generic api server.
+// ServerRunOptions contains the options while running a generic apis server.
 type ServerRunOptions struct {
 	Mode        string   `json:"mode"        mapstructure:"mode"`        // GIN服务模式
 	Version     bool     `json:"version"     mapstructure:"version"`     // 开启版本模式
@@ -67,7 +68,7 @@ func (s *ServerRunOptions) Validate() []error {
 
 	rm, repeated := sliceutil.StringSlice(s.Middlewares).GetRepeat()
 	if repeated {
-		errors = append(errors, fmt.Errorf("middleware `%v` is repeated", maputil.StringIntMap(rm).Keys()))
+		errors = append(errors, fmt.Errorf("middleware `%v` is repeated", maputil.StringInt(rm).Keys()))
 	}
 
 	supportedMiddleware := sets.NewString(genericmiddleware.MiddlewareNames...)

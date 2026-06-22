@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"path"
 
-	"github.com/wangweihong/eazycloud/pkg/tls"
+	"github.com/wangweihong/gotoolbox/pkg/tls"
 
 	"github.com/spf13/pflag"
 )
@@ -59,7 +59,7 @@ func (s *TCPOptions) Validate() []error {
 	return errors
 }
 
-// AddFlags adds flags related to features for a specific api server to the
+// AddFlags adds flags related to features for a specific apis server to the
 // specified FlagSet.
 func (s *TCPOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.Required, "tcp.required", s.Required,

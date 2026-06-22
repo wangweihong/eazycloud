@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/wangweihong/eazycloud/pkg/debug"
+	"github.com/wangweihong/gotoolbox/pkg/debug"
 
-	"github.com/wangweihong/eazycloud/pkg/util/maputil"
-	"github.com/wangweihong/eazycloud/pkg/util/sliceutil"
+	"github.com/wangweihong/gotoolbox/pkg/maputil"
+	"github.com/wangweihong/gotoolbox/pkg/sliceutil"
 
 	"github.com/spf13/pflag"
 
+	"github.com/wangweihong/gotoolbox/pkg/sets"
+
 	"github.com/wangweihong/eazycloud/pkg/grpcsvr/interceptor"
-	"github.com/wangweihong/eazycloud/pkg/sets"
 
 	"github.com/wangweihong/eazycloud/pkg/grpcsvr"
 )
@@ -67,7 +68,7 @@ func (s *ServerRunOptions) Validate() []error {
 
 	rm, repeated := sliceutil.StringSlice(s.UnaryInterceptors).GetRepeat()
 	if repeated {
-		errors = append(errors, fmt.Errorf("unary interceptors `%v` is repeated", maputil.StringIntMap(rm).Keys()))
+		errors = append(errors, fmt.Errorf("unary interceptors `%v` is repeated", maputil.StringInt(rm).Keys()))
 	}
 
 	supportedUnaryInterceptor := sets.NewString(interceptor.UnaryServerInterceptorNames...)

@@ -6,7 +6,7 @@ import (
 	"github.com/wangweihong/eazycloud/pkg/grpccli/interceptorcli/callstatus"
 	"github.com/wangweihong/eazycloud/pkg/grpccli/interceptorcli/logging"
 
-	"github.com/wangweihong/eazycloud/pkg/skipper"
+	"github.com/wangweihong/gotoolbox/pkg/skipper"
 )
 
 const (

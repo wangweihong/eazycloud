@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- tigera_operator.yaml
+- custom_resource.yaml
+- image_pull_secret.yaml
+
+images:
+- name: quay.io/tigera/operator
+  newName: {{if .ImageRepository}}{{.ImageRepository}}/quay.io/tigera/operator{{ else }}quay.io/tigera/operator{{end}}

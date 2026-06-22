@@ -7,7 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/wangweihong/eazycloud/pkg/util/homedir"
+
+	"github.com/wangweihong/gotoolbox/pkg/homedir"
 
 	"github.com/gosuri/uitable"
 
@@ -19,7 +20,7 @@ const configFlagName = "config"
 
 var cfgFile string
 
-//nolint: gochecknoinits
+// nolint: gochecknoinits
 func init() {
 	pflag.StringVarP(&cfgFile, configFlagName, "c", cfgFile, "Read configuration from specified `FILE`, "+
 		"support JSON, TOML, YAML, HCL, or Java properties formats.")

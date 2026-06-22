@@ -1,17 +1,17 @@
 package grpcsvr
 
 import (
-	"github.com/wangweihong/eazycloud/pkg/debug"
-	"github.com/wangweihong/eazycloud/pkg/tls/grpctls"
+	"github.com/wangweihong/gotoolbox/pkg/debug"
+	"github.com/wangweihong/gotoolbox/pkg/tls/grpctls"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/wangweihong/eazycloud/pkg/tls"
+	"github.com/wangweihong/gotoolbox/pkg/tls"
 
 	"github.com/wangweihong/eazycloud/pkg/grpcsvr/interceptor"
 
-	"github.com/wangweihong/eazycloud/pkg/log"
+	"github.com/wangweihong/gotoolbox/pkg/log"
 	//"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc".
 )
 

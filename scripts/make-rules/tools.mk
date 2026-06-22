@@ -66,7 +66,7 @@ install.protoc-gen-go:
 install.protoc:
 	#@apt install -y protobuf-compiler
 	@curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.15.8/protoc-3.15.8-linux-x86_64.zip
-	@unzip protoc-3.15.8-linux-x86_64.zip -d /usr/bin
+	@unzip protoc-3.15.8-linux-x86_64.zip -d /usr/
 
 .PHONY: install.grpcurl
 install.grpcurl:
@@ -95,6 +95,10 @@ install.rts:
 .PHONY: install.codegen
 install.codegen:
 	@$(GO) install ${ROOT_DIR}/tools/codegen/codegen.go
+
+.PHONY: install.manifestgen
+install.manifestgen:
+	@$(GO) install ${ROOT_DIR}/tools/manifestgen/manifestgen.go
 
 .PHONY: install.kube-score
 install.kube-score:
